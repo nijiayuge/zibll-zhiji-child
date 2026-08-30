@@ -1,0 +1,10 @@
+/**
+ * 此文件已于 1.7.7 弃用，不再被任何代码 enqueue。
+ *
+ * 原用途：强制执行商品编辑页底部「元框」区（.edit-post-meta-boxes-area）display:block，
+ * 以绕过 Gutenberg resize separator 对折叠按钮的遮挡。
+ *
+ * 退役原因：子比主题的商品配置入口在右侧 Gutenberg 边栏「商品配置」面板（6 个 tab），
+ * 底部「元框」区在父主题下本就是默认折叠/空的；强制 display:block 反而把空元框暴露成
+ * "空白区"假象。回归父主题原生布局后无需此补丁。切勿重新 enqueue 本文件。
+ */

@@ -1,0 +1,299 @@
+/* ============================================================
+ * 知集·大抽奖 前端弹窗样式（交互层）
+ * ------------------------------------------------------------
+ * 设计要点（对应「点击抽奖弹窗闪烁/抖动」BUG 修复）：
+ *  1) 弹窗用 opacity + visibility 控制显隐，绝不切换 display，避免重绘闪烁；
+ *  2) 初始即预渲染 DOM（visibility:hidden），点击只加 .is-open 类做过渡；
+ *  3) 隐藏时 pointer-events:none，避免隐形遮罩误挡页面点击；
+ *  4) 卡片 transform:translateZ(0) 独立合成层，隔离父主题可能存在的 transform 上下文；
+ *  5) z-index 拉高（100000）并以 .zhiji-lottery- 前缀命名，避免与 Zibll 弹窗/主题样式冲突。
+ * ============================================================ */
+
+/* 弹窗遮罩层 */
+.zhiji-lottery-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, .6);
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition: opacity .25s ease;
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
+	will-change: opacity;
+}
+
+/* 打开态：仅切换类，平滑显现（无 display 切换、无节点移动） */
+.zhiji-lottery-modal.is-open {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+}
+
+.zhiji-lottery-modal * {
+	box-sizing: border-box;
+}
+
+/* 弹窗卡片 */
+.zhiji-lottery-card {
+	position: relative;
+	width: 92%;
+	max-width: calc(var(--zhiji-lottery-size, 240px) + 64px);
+	max-height: 92vh;
+	overflow-y: auto;
+	background: #fff;
+	border-radius: 16px;
+	padding: 24px 20px 20px;
+	box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+	transform: translateZ(0); /* 独立合成层，避免与祖先 transform 互相干扰 */
+}
+
+/* 关闭按钮 */
+.zhiji-lottery-close {
+	position: absolute;
+	top: 8px;
+	right: 14px;
+	font-size: 28px;
+	line-height: 1;
+	color: #bbb;
+	text-decoration: none;
+	font-weight: 300;
+	cursor: pointer;
+	transition: color .15s;
+}
+
+.zhiji-lottery-close:hover {
+	color: #888;
+}
+
+.zhiji-lottery-title {
+	margin: 0 0 14px;
+	text-align: center;
+	font-size: 18px;
+	color: #333;
+}
+
+/* 转盘容器与指针 */
+.zhiji-lottery-wheel {
+	position: relative;
+	display: inline-block;
+	width: var(--zhiji-lottery-size, 240px);
+	max-width: 100%;
+}
+
+.zhiji-lottery-pointer {
+	position: absolute;
+	top: -10px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 3;
+	width: 0;
+	height: 0;
+	border-left: 12px solid transparent;
+	border-right: 12px solid transparent;
+	border-top: 24px solid #e24b4a;
+	filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .25));
+}
+
+.zhiji-lottery-canvas {
+	display: block;
+	margin: 0 auto;
+	max-width: 100%;
+	height: auto;
+	border-radius: 50%;
+	box-shadow: 0 6px 22px rgba(0, 0, 0, .16);
+}
+
+/* 消息 / 统计文本 */
+.zhiji-lottery-msg {
+	text-align: center;
+	min-height: 22px;
+	margin: 10px 0;
+	font-size: 12px;
+	color: #666;
+}
+
+.zhiji-lottery-msg.is-error {
+	color: #e24b4a;
+}
+
+/* 结果区：用 opacity/visibility 控制，禁止 display:none 以免重排闪烁 */
+.zhiji-lottery-result {
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity .3s ease;
+}
+
+.zhiji-lottery-result.show {
+	opacity: 1;
+	visibility: visible;
+}
+
+.zhiji-lottery-result-inner {
+	text-align: center;
+	padding: 16px 8px;
+}
+
+.zhiji-lottery-result-emoji {
+	font-size: 36px;
+	margin-bottom: 8px;
+}
+
+.zhiji-lottery-result-title {
+	font-size: 17px;
+	font-weight: 600;
+	color: #333;
+}
+
+.zhiji-lottery-result-sub {
+	font-size: 13px;
+	color: #888;
+	margin-top: 6px;
+}
+
+/* 按钮区 */
+.zhiji-lottery-actions {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+	justify-content: center;
+	margin-top: 6px;
+}
+
+.zhiji-btn {
+	display: inline-block;
+	padding: 9px 16px;
+	border-radius: 8px;
+	font-size: 14px;
+	text-decoration: none;
+	cursor: pointer;
+	color: #fff;
+	border: none;
+	line-height: 1.4;
+	transition: filter .15s;
+	user-select: none;
+}
+
+.zhiji-btn:hover {
+	filter: brightness(1.08);
+}
+
+.zhiji-btn:active {
+	filter: brightness(.95);
+}
+
+/* 加载锁视觉态：抽奖进行中按钮变灰且不可点 */
+.zhiji-btn.is-drawing {
+	opacity: .6;
+	pointer-events: none;
+}
+
+.zhiji-btn-blue {
+	background: #378add;
+}
+
+.zhiji-btn-yellow {
+	background: #ef9f27;
+}
+
+.zhiji-btn-green {
+	background: #1d9e75;
+}
+
+.zhiji-lottery-stats {
+	color: #999;
+	font-size: 12px;
+	margin-top: 10px;
+}
+
+/* 看板记录 */
+.zhiji-lottery-log {
+	margin-top: 16px;
+	text-align: left;
+}
+
+.zhiji-lottery-log-title {
+	font-size: 12px;
+	color: #999;
+	font-weight: 600;
+	margin-bottom: 6px;
+}
+
+.zhiji-lottery-log table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.zhiji-lottery-log th,
+.zhiji-lottery-log td {
+	padding: 5px 8px;
+	font-size: 11px;
+	text-align: left;
+}
+
+/* 背景滚动锁（打开弹窗时加在 body 上） */
+.zhiji-lottery-noscroll {
+	overflow: hidden;
+}
+
+/* 移动端响应式 */
+@media (max-width: 480px) {
+	.zhiji-lottery-card {
+		padding: 20px 14px 16px;
+		border-radius: 14px;
+	}
+
+	.zhiji-lottery-title {
+		font-size: 16px;
+	}
+
+	.zhiji-lottery-actions {
+		flex-direction: column;
+	}
+
+	.zhiji-lottery-actions .zhiji-btn {
+		width: 100%;
+		text-align: center;
+	}
+}
+
+/* ============================================================
+ * 首页转盘触发器（trigger="wheel"）：可见的 Canvas 转盘，
+ * 点击直接弹窗抽奖，全程不离开首页。
+ * ============================================================ */
+.zhiji-lottery-trigger-wrap {
+	display: inline-block;
+	text-align: center;
+	line-height: 1.4;
+}
+
+.zhiji-lottery-trigger-wheel {
+	display: block;
+	margin: 0 auto;
+	border-radius: 50%;
+	cursor: pointer;
+	box-shadow: 0 8px 22px rgba(91, 106, 240, .28);
+	transition: transform .2s ease, box-shadow .2s ease;
+	-webkit-backface-visibility: hidden;
+	backface-visibility: hidden;
+}
+
+.zhiji-lottery-trigger-wheel:hover {
+	transform: scale(1.04) rotate(8deg);
+	box-shadow: 0 12px 30px rgba(91, 106, 240, .42);
+}
+
+.zhiji-lottery-trigger-wheel.is-disabled {
+	cursor: not-allowed;
+}
+
+.zhiji-lottery-trigger-hint {
+	margin-top: 12px;
+	font-weight: 600;
+	font-size: 15px;
+	color: #5b6af0;
+}

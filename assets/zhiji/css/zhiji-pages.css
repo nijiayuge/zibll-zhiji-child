@@ -1,0 +1,533 @@
+/* ============================================================
+ * zibll-zhiji 前端 4 页面美化 —— 套用 zibll 主题视觉体系
+ * 作用域：.zhiji-consume-rank / .zhiji-download-center
+ *          .zhiji-entitlements / .zhiji-ask-form
+ * 配色全部引用 zibll 主题 CSS 变量，自动跟随站点主题色；
+ * 变量缺失时提供 fallback，保证不依赖父主题也能正常显示。
+ * ============================================================ */
+
+/* 区块标题：复用 zibll 的 .title-h-left 装饰，这里统一字号 */
+.zhiji-consume-rank > .title-h-left,
+.zhiji-download-center > .title-h-left,
+.zhiji-entitlements > .title-h-left,
+.zhiji-ask-form > .title-h-left {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 16px;
+}
+
+/* ===================== 消费排行榜 ===================== */
+.zhiji-rank-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.zhiji-rank-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    background: var(--main-bg-color, #fff);
+    border: 1px solid var(--main-border-color, #eee);
+    border-radius: var(--main-radius, 10px);
+    box-shadow: 0 0 10px var(--main-shadow, rgba(0, 0, 0, 0.04));
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.zhiji-rank-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px var(--main-shadow, rgba(0, 0, 0, 0.08));
+}
+.zhiji-rank-no {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    background: var(--theme-color, #f04494);
+}
+.zhiji-rank-item:nth-child(1) .zhiji-rank-no {
+    background: linear-gradient(135deg, #ffd56b, #f5a623);
+}
+.zhiji-rank-item:nth-child(2) .zhiji-rank-no {
+    background: linear-gradient(135deg, #d6dde3, #9aa7b3);
+}
+.zhiji-rank-item:nth-child(3) .zhiji-rank-no {
+    background: linear-gradient(135deg, #e0a878, #cd7f32);
+}
+.zhiji-rank-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.zhiji-rank-total {
+    flex: 0 0 auto;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--theme-color, #f04494);
+}
+
+/* ===================== 独立下载中心 ===================== */
+.zhiji-dl-quota {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    background: var(--focus-color-opacity1, rgba(240, 68, 148, 0.08));
+    border-radius: var(--main-radius, 10px);
+    font-size: 15px;
+}
+.zhiji-dl-quota b {
+    color: var(--theme-color, #f04494);
+}
+.zhiji-dl-list {
+    display: grid;
+    gap: 14px;
+}
+.zhiji-dl-item {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px;
+    background: var(--main-bg-color, #fff);
+    border: 1px solid var(--main-border-color, #eee);
+    border-radius: var(--main-radius, 10px);
+    box-shadow: 0 0 10px var(--main-shadow, rgba(0, 0, 0, 0.04));
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.zhiji-dl-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px var(--main-shadow, rgba(0, 0, 0, 0.08));
+}
+.zhiji-dl-meta {
+    flex: 1 1 200px;
+    min-width: 0;
+}
+.zhiji-dl-name {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+}
+.zhiji-dl-cost {
+    font-size: 13px;
+    color: var(--muted-color, #999);
+}
+.zhiji-dl-desc {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: var(--muted-color, #999);
+}
+
+/* ===================== 用户权益聚合层 ===================== */
+.zhiji-ent-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+}
+.zhiji-ent-card {
+    padding: 22px 18px;
+    text-align: center;
+    background: var(--main-bg-color, #fff);
+    border: 1px solid var(--main-border-color, #eee);
+    border-radius: var(--main-radius, 10px);
+    box-shadow: 0 0 10px var(--main-shadow, rgba(0, 0, 0, 0.04));
+    transition: transform 0.2s ease;
+}
+.zhiji-ent-card:hover {
+    transform: translateY(-3px);
+}
+.zhiji-ent-label {
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--muted-color, #999);
+}
+.zhiji-ent-val {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--theme-color, #f04494);
+}
+
+/* ===================== 问答提问页 ===================== */
+.zhiji-ask-form-box {
+    max-width: 720px;
+}
+.zhiji-ask-form-box .form-control {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* 排行榜头像 */
+.zhiji-rank-avatar {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--main-border-color, #eee);
+}
+
+/* ===================== 下载中心封面 ===================== */
+.zhiji-dl-item { align-items: center; }
+.zhiji-dl-cover {
+    flex: 0 0 auto;
+    width: 84px;
+    height: 84px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: var(--main-border-color, #eee);
+}
+.zhiji-dl-cover-ph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--theme-color, #f04494), var(--theme-color-2, #ff7eb3));
+    color: #fff;
+    font-size: 30px;
+    font-weight: 700;
+}
+.zhiji-dl-body {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    min-width: 0;
+}
+
+/* ===================== 任务发布表单（短代码） ===================== */
+.zhiji-task-form {
+    background: var(--main-bg-color, #fff);
+    border: 1px solid var(--main-border-color, #eee);
+    border-radius: var(--main-radius, 10px);
+    padding: 18px;
+    box-shadow: 0 0 10px var(--main-shadow, rgba(0, 0, 0, 0.04));
+    max-width: 560px;
+}
+.zhiji-task-form .zhiji-tf-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+.zhiji-task-form .form-control { width: 100%; }
+.zhiji-task-form .zhiji-tf-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.zhiji-task-form .zhiji-tf-row .form-control { flex: 1 1 160px; }
+.zhiji-task-form .but { margin-top: 4px; }
+
+/* ===================== 任务大厅 ===================== */
+.zhiji-task-head {
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.zhiji-task-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.zhiji-task-tab {
+    display: inline-block;
+    padding: 7px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted-color, #888);
+    background: var(--main-border-color, #f0f0f0);
+    text-decoration: none;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+.zhiji-task-tab:hover {
+    color: var(--theme-color, #f04494);
+}
+.zhiji-task-tab.active {
+    color: #fff;
+    background: var(--theme-color, #f04494);
+}
+
+.zhiji-task-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    background: var(--main-bg-color, #fff);
+    border: 1px solid var(--main-border-color, #eee);
+    border-radius: var(--main-radius, 12px);
+    box-shadow: 0 0 12px var(--main-shadow, rgba(0, 0, 0, 0.04));
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.zhiji-task-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px var(--main-shadow, rgba(0, 0, 0, 0.10));
+    border-color: var(--theme-color, #f04494);
+}
+.zhiji-task-cover {
+    flex: 0 0 auto;
+    width: 120px;
+    height: 84px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--theme-color, #f04494), #ff8fb3);
+}
+.zhiji-task-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.zhiji-task-cover-ph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: #fff;
+    font-size: 34px;
+    font-weight: 700;
+}
+.zhiji-task-body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.zhiji-task-title {
+    margin: 0 0 6px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--key-color, #333);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.zhiji-task-meta {
+    font-size: 12px;
+    color: var(--muted-color, #999);
+    margin-bottom: 8px;
+}
+.zhiji-task-reward {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 999px;
+}
+.zhiji-task-reward.points {
+    color: var(--theme-color, #f04494);
+    background: var(--focus-color-opacity1, rgba(240, 68, 148, 0.10));
+}
+.zhiji-task-reward.balance {
+    color: #c0392b;
+    background: rgba(192, 57, 43, 0.10);
+}
+.zhiji-task-status {
+    flex: 0 0 auto;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+.zhiji-task-status.open {
+    color: #2e9e5b;
+    background: rgba(46, 158, 91, 0.12);
+}
+.zhiji-task-status.done {
+    color: #b9770a;
+    background: rgba(245, 166, 35, 0.14);
+}
+.zhiji-task-empty {
+    text-align: center;
+}
+
+/* 任务详情封面 banner（沿用旧结构，保持兼容） */
+.zhiji-task-cover-banner {
+    width: 100%;
+    max-height: 280px;
+    border-radius: var(--main-radius, 10px);
+    overflow: hidden;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, var(--theme-color, #f04494), #ff8fb3);
+}
+.zhiji-task-cover-banner img {
+    width: 100%;
+    max-height: 280px;
+    object-fit: cover;
+    display: block;
+}
+
+/* ===================== 任务大厅内「我的工作台」 ===================== */
+.zhiji-workbench {
+    margin-bottom: 28px;
+}
+.zhiji-wb-section {
+    padding: 18px;
+    margin-bottom: 16px;
+    background: var(--main-bg-color, #fff);
+    border: 1px solid var(--main-border-color, #eee);
+    border-radius: var(--main-radius, 12px);
+    box-shadow: 0 0 10px var(--main-shadow, rgba(0, 0, 0, 0.04));
+}
+.zhiji-wb-h {
+    margin: 0 0 14px;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--key-color, #333);
+}
+.zhiji-wb-h .fa {
+    color: var(--theme-color, #f04494);
+    margin-right: 6px;
+}
+.zhiji-wb-h2 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--key-color, #333);
+}
+.zhiji-wb-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.zhiji-wb-stat {
+    flex: 1 1 140px;
+    padding: 14px 16px;
+    background: var(--focus-color-opacity1, rgba(240, 68, 148, 0.06));
+    border-radius: var(--main-radius, 10px);
+}
+.zhiji-wb-stat .v {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--theme-color, #f04494);
+}
+.zhiji-wb-stat .v .sub {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted-color, #999);
+}
+.zhiji-wb-stat .l {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--muted-color, #999);
+}
+.zhiji-wb-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.zhiji-wb-item {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--main-border-color, #eee);
+    border-radius: var(--main-radius, 10px);
+}
+.zhiji-wb-item .wb-title {
+    flex: 1 1 200px;
+    min-width: 0;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--key-color, #333);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.zhiji-wb-item .wb-title:hover {
+    color: var(--theme-color, #f04494);
+}
+.zhiji-wb-item .wb-meta {
+    font-size: 12px;
+    color: var(--muted-color, #999);
+}
+.zhiji-wb-item .wb-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.zhiji-wb-empty {
+    padding: 14px;
+    text-align: center;
+}
+
+/* 工作台顶部导航（点击进入对应视图） */
+.zhiji-wb-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--main-border-color, #eee);
+}
+.zhiji-wb-nav-btn {
+    display: inline-block;
+    padding: 8px 18px;
+    border-radius: var(--main-radius, 8px);
+    background: var(--main-bg-color, #fff);
+    color: var(--main-color, #333);
+    border: 1px solid var(--main-border-color, #e5e5e5);
+    font-size: 14px;
+    text-decoration: none;
+    transition: all .15s;
+}
+.zhiji-wb-nav-btn:hover {
+    border-color: var(--theme-color, #2f6fed);
+    color: var(--theme-color, #2f6fed);
+}
+.zhiji-wb-nav-btn.active {
+    background: var(--theme-color, #2f6fed);
+    border-color: var(--theme-color, #2f6fed);
+    color: #fff;
+}
+/* 工作台视图容器 */
+.zhiji-wb-view {
+    padding-top: 4px;
+}
+.zhiji-wb-view .zhiji-wb-h {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 6px 0 16px;
+}
+.zhiji-wb-view .zhiji-wb-h .fa {
+    color: var(--theme-color, #2f6fed);
+    margin-right: 6px;
+}
+/* 工作台 - 收敛入口提示（指向主题用户中心） */
+.zhiji-wb-note {
+    margin-top: 16px;
+}
+.zhiji-wb-note .but {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+/* 任务详情 - 返回任务大厅入口 */
+.zhiji-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    line-height: 1.4;
+    color: var(--theme-color, #2f6fed);
+    text-decoration: none;
+    font-weight: 500;
+    transition: opacity .15s ease;
+}
+.zhiji-back-link:hover {
+    opacity: .72;
+    text-decoration: none;
+    color: var(--theme-color, #2f6fed);
+}
+.zhiji-back-link:active {
+    opacity: .5;
+}

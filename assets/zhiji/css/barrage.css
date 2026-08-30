@@ -1,0 +1,127 @@
+/*弹幕*/
+#danmu>*{
+
+    box-sizing:content-box;
+}
+#danmu {
+position:fixed;
+z-index:999;
+max-width:300px;
+right:10px;
+bottom:40px;
+}
+#danmu li {
+white-space: nowrap;
+display:flex;
+align-items:center;
+opacity:0;
+border-radius:20px;
+color:#fff;
+padding:3px 10px 3px 3px;
+clear:both;
+font-size:13px;
+height:26px;
+float:right;
+line-height:26px
+}
+#danmu li a.img {
+display:flex;
+align-items:center;
+gap:4px;
+height:26px;
+flex-shrink:0;
+margin-right:4px;
+text-decoration:none;
+}
+/* 仅头像（a.img 的直接子元素 img）设为 26x26 圆形 */
+#danmu li a.img > img {
+width:26px;
+height:26px;
+border-radius:100%;
+flex-shrink:0;
+display:block;
+}
+/* 用户名容器：覆盖父主题 flex1，避免占据剩余空间 */
+#danmu li a.img name {
+display:inline-flex;
+align-items:center;
+gap:3px;
+flex:0 0 auto;
+height:26px;
+line-height:26px;
+}
+#danmu li a.img name .display-name,
+#danmu li a.img name span {
+color:#fff;
+text-decoration:none;
+font-weight:500;
+display:inline-flex;
+align-items:center;
+gap:3px;
+}
+/* 用户名里的图标：保持父主题原始尺寸，垂直居中，不强制缩放 */
+#danmu li a.img name img.img-icon {
+width:1em;
+height:1em;
+border-radius:0;
+flex-shrink:0;
+vertical-align:middle;
+}
+#danmu li a.img name icon,
+#danmu li a.img name svg {
+width:1em;
+height:1em;
+flex-shrink:0;
+display:inline-flex;
+align-items:center;
+justify-content:center;
+}
+#danmu li a:hover {
+color:var(--theme-color)!important
+}
+#danmu li a:last-child,#danmu li a:last-child font {
+color:#fff
+}
+#danmu li a:last-child n {
+text-decoration:underline;
+margin:0 5px
+}
+#danmu li a.altitle {
+max-width:150px;
+white-space:nowrap;
+text-overflow:ellipsis;
+overflow:hidden;
+word-break:break-all;
+}
+/* 弹幕类型标签 */
+#danmu li .danmu-type {
+display:inline-flex;
+align-items:center;
+gap:2px;
+padding:1px 6px;
+border-radius:8px;
+font-size:11px;
+font-weight:600;
+margin-right:4px;
+flex-shrink:0;
+line-height:1.4;
+}
+/* 看板娘弹幕联动挥手动画 */
+.zhiji-kanban.danmu-wave,
+#zhiji-kanban.danmu-wave,
+.kanban-niang.danmu-wave {
+animation:danmuWave 1.5s ease-in-out;
+}
+@keyframes danmuWave {
+0%,100% { transform:rotate(0deg); }
+20% { transform:rotate(-15deg) scale(1.05); }
+40% { transform:rotate(15deg) scale(1.05); }
+60% { transform:rotate(-10deg) scale(1.02); }
+80% { transform:rotate(10deg); }
+}
+
+@media screen and (max-width:900px) {
+#danmu {
+display:none
+}
+}

@@ -1,0 +1,43 @@
+/*头像框*/
+.txgj {
+    top: 2px;
+    transform: scale(1.7);
+    width: 90px;
+    position: absolute;
+    z-index: 1;
+}
+
+.top-user-info-box-name .txgj {
+    left: -5px;
+    transform: scale(1);
+    top: 6px;
+}
+
+.post-meta-left .txgj {
+    display: none;
+}
+
+.post-meta-left .avatar-parent .txgj {
+    display: block;
+    transform: scale(1.6);
+    display: block;
+    left: 0px !important;
+}
+
+.top-user-box-drop .avatar {
+    border-radius: 50%;
+}
+
+.comment .gravatar img {
+    border-radius: 50%;
+}
+
+/*用户中心头像圆形*/
+.author-header .avatar-img {
+    --this-size: 95px;
+}
+
+.author-header .avatar-img .avatar {
+    border-radius: 50px;
+    border: 4px solid var(--main-bg-color)
+}

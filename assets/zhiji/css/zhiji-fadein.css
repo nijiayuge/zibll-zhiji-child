@@ -1,0 +1,3 @@
+/* 仅在 JS 就绪后隐藏，保证无 JS 时内容依旧可见（修正原教程 display:none 导致 JS 失败时整页空白的问题） */
+        .zhiji-fade-on .zhiji-fade{opacity:0;transform:translate3d(0,40px,0);transition:opacity .8s ease,transform .8s ease;}
+        .zhiji-fade-on .zhiji-fade.zhiji-in{opacity:1;transform:none;}

@@ -1,0 +1,445 @@
+/* 知集营销模块样式：多人拼团 + 砍价（复用父主题 .but / .jb-blue 按钮基类） */
+.zhiji-gb-box,
+.zhiji-bg-box {
+	margin: 14px 0;
+	padding: 14px;
+	border: 1px solid var(--border-color, #eee);
+	border-radius: 10px;
+	background: var(--background-2, #fafafa);
+}
+.zhiji-gb-head,
+.zhiji-bg-head {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+.zhiji-gb-badge,
+.zhiji-bg-badge {
+	display: inline-block;
+	padding: 3px 10px;
+	border-radius: 999px;
+	background: linear-gradient(135deg, #ff7eb3, #ff6a88);
+	color: #fff;
+	font-size: 12px;
+	font-weight: 600;
+}
+.zhiji-gb-result,
+.zhiji-bg-result {
+	margin-top: 10px;
+}
+.zhiji-gb-share code,
+.zhiji-bg-share code {
+	display: inline-block;
+	max-width: 100%;
+	padding: 4px 8px;
+	background: #fff;
+	border: 1px dashed #ccc;
+	border-radius: 6px;
+	word-break: break-all;
+	font-size: 12px;
+}
+.zhiji-gb-list {
+	margin-top: 12px;
+}
+.zhiji-gb-list-title {
+	font-weight: 600;
+	margin-bottom: 6px;
+}
+.zhiji-gb-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 10px;
+	background: #fff;
+	border: 1px solid #eee;
+	border-radius: 8px;
+	margin-bottom: 6px;
+}
+.zhiji-gb-done,
+.zhiji-bg-done,
+.zhiji-bg-helped {
+	color: #2bae66;
+	font-weight: 600;
+}
+.zhiji-bg-card,
+.zhiji-bg-help-box {
+	margin-top: 12px;
+	padding: 12px;
+	background: #fff;
+	border: 1px solid #eee;
+	border-radius: 8px;
+}
+.zhiji-bg-bar {
+	height: 8px;
+	border-radius: 999px;
+	background: #eee;
+	overflow: hidden;
+	margin: 8px 0;
+}
+.zhiji-bg-bar > span {
+	display: block;
+	height: 100%;
+	background: linear-gradient(90deg, #ffb347, #ff6a88);
+}
+.zhiji-bg-help-title {
+	font-weight: 600;
+	margin-bottom: 4px;
+}
+.zhiji-toast {
+	position: fixed;
+	left: 50%;
+	top: 20%;
+	transform: translateX(-50%);
+	z-index: 99999;
+	padding: 10px 18px;
+	background: rgba(0, 0, 0, .82);
+	color: #fff;
+	border-radius: 8px;
+	font-size: 14px;
+	box-shadow: 0 6px 20px rgba(0, 0, 0, .25);
+}
+.zhiji-toast.err {
+	background: rgba(220, 60, 60, .92);
+}
+
+/* 兑换成功弹窗 */
+.zhiji-modal-mask {
+	position: fixed;
+	left: 0; top: 0; right: 0; bottom: 0;
+	background: rgba(0, 0, 0, .5);
+	z-index: 99998;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	opacity: 0;
+	transition: opacity .2s ease;
+}
+.zhiji-modal-mask.show { opacity: 1; }
+.zhiji-modal {
+	width: 300px;
+	max-width: 86vw;
+	background: #fff;
+	border-radius: 14px;
+	padding: 26px 22px 22px;
+	text-align: center;
+	box-shadow: 0 12px 40px rgba(0, 0, 0, .28);
+	transform: translateY(8px);
+	transition: transform .2s ease;
+}
+.zhiji-modal-mask.show .zhiji-modal { transform: translateY(0); }
+.zhiji-modal-icon {
+	width: 54px; height: 54px; line-height: 54px;
+	margin: 0 auto 12px;
+	border-radius: 50%;
+	background: #2ecc71;
+	color: #fff;
+	font-size: 30px;
+	font-weight: 700;
+}
+.zhiji-modal-title {
+	font-size: 18px;
+	font-weight: 700;
+	color: #222;
+	margin-bottom: 14px;
+}
+.zhiji-modal-row {
+	display: flex;
+	justify-content: space-between;
+	font-size: 14px;
+	color: #666;
+	padding: 6px 0;
+	border-bottom: 1px dashed #eee;
+}
+.zhiji-modal-row b { color: #333; }
+.zhiji-modal-price {
+	margin: 14px 0 18px;
+	padding: 12px;
+	border-radius: 10px;
+	background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+	color: #e65100;
+	font-size: 17px;
+	font-weight: 700;
+}
+.zhiji-modal-btn {
+	width: 100%;
+	padding: 10px;
+	border: 0;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 15px;
+}
+
+/* 加载弹窗：转圈 + “兑换请稍后” */
+.zhiji-modal-spinner {
+	width: 42px;
+	height: 42px;
+	margin: 4px auto 14px;
+	border: 4px solid #e3e6ec;
+	border-top-color: #2e7cf6;
+	border-radius: 50%;
+	animation: zhiji-spin .8s linear infinite;
+}
+.zhiji-modal-loading-text {
+	font-size: 15px;
+	color: #555;
+	line-height: 1.4;
+}
+@keyframes zhiji-spin {
+	to { transform: rotate(360deg); }
+}
+
+/* ── 秒杀限时抢购 ── */
+.zhiji-seckill-box {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+	margin: 14px 0;
+	padding: 12px 16px;
+	border-radius: 10px;
+	background: linear-gradient(135deg, #fff4f4, #ffe9ef);
+	border: 1px solid #ffd0d8;
+}
+.zhiji-seckill-box.ended {
+	filter: grayscale(.6);
+	opacity: .7;
+}
+.zhiji-seckill-badge {
+	padding: 3px 10px;
+	border-radius: 999px;
+	background: linear-gradient(135deg, #ff5b5b, #ff2d55);
+	color: #fff;
+	font-size: 12px;
+	font-weight: 700;
+}
+.zhiji-seckill-price {
+	font-size: 22px;
+	font-weight: 800;
+	color: #ff2d55;
+}
+.zhiji-seckill-origin {
+	color: #999;
+	text-decoration: line-through;
+}
+.zhiji-seckill-off {
+	color: #ff7a00;
+	font-weight: 600;
+	font-size: 13px;
+}
+.zhiji-seckill-label {
+	color: #888;
+	font-size: 13px;
+}
+.zhiji-seckill-count {
+	font-variant-numeric: tabular-nums;
+	font-weight: 700;
+	color: #333;
+}
+
+/* ── 积分商城 ── */
+.zhiji-mall {
+	margin: 16px 0;
+}
+.zhiji-mall-balance {
+	margin-bottom: 14px;
+	font-size: 15px;
+	padding: 10px 14px;
+	background: var(--background-2, #f6f7f9);
+	border-radius: 10px;
+}
+.zhiji-mall-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+	gap: 14px;
+}
+.zhiji-mall-card {
+	position: relative;
+	border: 1px solid var(--border-color, #eee);
+	border-radius: 12px;
+	padding: 16px 14px 14px;
+	background: #fff;
+	text-align: center;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, .04);
+	transition: transform .15s ease, box-shadow .15s ease;
+}
+.zhiji-mall-card:not(.zhiji-mall-disabled):hover {
+	transform: translateY(-2px);
+	box-shadow: 0 8px 22px rgba(0, 0, 0, .08);
+}
+.zhiji-mall-card.zhiji-mall-disabled {
+	opacity: .68;
+	background: var(--background-2, #fafafa);
+}
+.zhiji-mall-thumb {
+	width: 100%;
+	height: 110px;
+	object-fit: cover;
+	border-radius: 10px;
+	margin-bottom: 10px;
+}
+.zhiji-mall-tags {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	margin-bottom: 8px;
+	flex-wrap: wrap;
+}
+.zhiji-mall-tag {
+	display: inline-block;
+	padding: 3px 9px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+	color: #fff;
+}
+.zhiji-mall-tag-coupon { background: linear-gradient(135deg, #ff7eb3, #ff6a88); }
+.zhiji-mall-tag-balance { background: linear-gradient(135deg, #42a5f5, #2196f3); }
+.zhiji-mall-tag-download { background: linear-gradient(135deg, #ab47bc, #8e24aa); }
+.zhiji-mall-scope {
+	font-size: 12px;
+	color: #888;
+}
+.zhiji-mall-title {
+	font-weight: 700;
+	font-size: 15px;
+	margin-bottom: 8px;
+	line-height: 1.35;
+}
+.zhiji-mall-cost {
+	color: #ff7a00;
+	font-weight: 800;
+	font-size: 22px;
+	margin-bottom: 6px;
+}
+.zhiji-mall-cost small {
+	font-size: 13px;
+	font-weight: 600;
+}
+.zhiji-mall-meta {
+	font-size: 12px;
+	color: #888;
+	margin-bottom: 12px;
+	line-height: 1.5;
+}
+.zhiji-mall-btn {
+	display: inline-block;
+	padding: 7px 18px;
+	cursor: pointer;
+	font-size: 14px;
+}
+.zhiji-mall-card .but.jb-gray {
+	cursor: not-allowed;
+}
+
+/* ── 连续包月订阅 ── */
+.zhiji-sub {
+	margin: 16px 0;
+}
+.zhiji-sub-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 14px;
+}
+.zhiji-sub-card {
+	border: 1px solid var(--border-color, #eee);
+	border-radius: 10px;
+	padding: 16px;
+	background: var(--background-2, #fafafa);
+	text-align: center;
+}
+.zhiji-sub-title {
+	font-weight: 700;
+	font-size: 16px;
+}
+.zhiji-sub-price {
+	color: #ff2d55;
+	font-weight: 700;
+	margin: 6px 0;
+}
+.zhiji-sub-desc {
+	color: #888;
+	font-size: 13px;
+	min-height: 18px;
+	margin-bottom: 10px;
+}
+.zhiji-sub-btn {
+	display: inline-block;
+	padding: 6px 18px;
+	cursor: pointer;
+}
+.zhiji-sub-mine {
+	margin-top: 18px;
+}
+.zhiji-sub-row {
+	padding: 8px 0;
+	border-top: 1px dashed var(--border-color, #eee);
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+/* ── 在线工具箱 ── */
+.zhiji-toolbox {
+	margin: 16px 0;
+	border: 1px solid var(--border-color, #eee);
+	border-radius: 10px;
+	overflow: hidden;
+}
+.zhiji-tb-tabs {
+	display: flex;
+	flex-wrap: wrap;
+	background: var(--background-2, #f6f6f6);
+	border-bottom: 1px solid var(--border-color, #eee);
+}
+.zhiji-tb-tab {
+	border: 0;
+	background: transparent;
+	padding: 10px 16px;
+	cursor: pointer;
+	font-size: 14px;
+	color: #555;
+}
+.zhiji-tb-tab.active {
+	color: var(--theme-color, #2f7cff);
+	font-weight: 700;
+	box-shadow: inset 0 -2px 0 var(--theme-color, #2f7cff);
+}
+.zhiji-tb-body {
+	padding: 14px;
+}
+.zhiji-tb-pane .zhiji-tb-input {
+	width: 100%;
+	min-height: 90px;
+	border: 1px solid var(--border-color, #ddd);
+	border-radius: 8px;
+	padding: 8px 10px;
+	font-family: monospace;
+	box-sizing: border-box;
+	margin-bottom: 8px;
+}
+.zhiji-tb-pane[data-pane="timestamp"] .zhiji-tb-input {
+	min-height: 0;
+}
+.zhiji-tb-actions {
+	margin-bottom: 8px;
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+.zhiji-tb-actions .but {
+	padding: 5px 14px;
+	cursor: pointer;
+}
+.zhiji-tb-out {
+	background: #1e1e1e;
+	color: #d4ffb0;
+	border-radius: 8px;
+	padding: 10px 12px;
+	min-height: 40px;
+	white-space: pre-wrap;
+	word-break: break-all;
+	font-size: 13px;
+}

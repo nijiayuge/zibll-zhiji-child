@@ -1,0 +1,455 @@
+/* ============================================================
+   CareerCompass 登录弹窗复刻样式（子主题扩展，不修改父主题任何文件）
+   设计来源：github.com/arsh342/careercompass  (Next.js 15 + shadcn/ui)
+   忠实配色 token：
+     --primary        #4051B5  (HSL 231 48% 48%, indigo)
+     --primary-hover  #36459c
+     --border         #e2e8f0  (slate-200)
+     --muted          #64748b  (slate-500)
+     --foreground     #0f172a
+     --destructive    #ef4444
+     --radius         8px
+   左侧品牌面板渐变：gray-400 -> gray-500 -> gray-600
+                     #9ca3af -> #6b7280 -> #4b5563
+   仅作用于带 .cc-login-active 的 #u_sign 弹窗，避免影响其它弹窗。
+   ============================================================ */
+
+/* 弹窗整体不裁切（保证右上角小萝莉可见） */
+#u_sign.cc-login-active .modal-content {
+    overflow: visible;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+/* 两栏容器 */
+#u_sign.cc-login-active .sign-content {
+    display: flex;
+    align-items: stretch;
+    padding: 0;
+    overflow: visible;
+    border-radius: 16px;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .28);
+}
+
+/* 隐藏父主题登录背景图（与两栏布局冲突） */
+#u_sign.cc-login-active .sign-img {
+    display: none;
+}
+
+/* ---------- 左侧：CareerCompass 品牌面板 ---------- */
+#u_sign.cc-login-active .cc-brand {
+    flex: 0 0 42%;
+    max-width: 360px;
+    position: relative;
+    container-type: inline-size;   /* 建立查询容器，让 logo 尺寸随左栏宽度等比缩放 */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 40px;
+    color: #fff;
+    background: linear-gradient(135deg, #9ca3af 0%, #6b7280 50%, #4b5563 100%);
+    border-radius: 16px 0 0 16px;
+    overflow: hidden;
+}
+
+/* 网格纹理 + 光斑装饰（对应原项目的 bg-grid / blur-3xl） */
+#u_sign.cc-login-active .cc-brand::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, .06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .06) 1px, transparent 1px);
+    background-size: 20px 20px;
+    pointer-events: none;
+}
+#u_sign.cc-login-active .cc-brand::after {
+    content: "";
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    top: 18%;
+    right: 12%;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .18);
+    filter: blur(60px);
+    pointer-events: none;
+}
+
+#u_sign.cc-login-active .cc-brand > * {
+    position: relative;
+    z-index: 2;
+}
+
+#u_sign.cc-login-active .cc-brand-top {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: -.01em;
+}
+/* 左栏：原 logo 位置现为站点名称（居中显示） */
+#u_sign.cc-login-active .cc-brand-name {
+    font-size: clamp(22px, 7cqw, 30px);
+    font-weight: 700;
+    letter-spacing: -.02em;
+    color: #fff;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, .25);
+    white-space: nowrap;
+}
+
+#u_sign.cc-login-active .cc-brand-center {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    text-align: center;
+    min-height: 0;
+    position: relative;        /* 作为偷看气泡的定位上下文 */
+}
+/* 四个动画角色舞台（移植自 careercompass 的 AnimatedCharacters 组件） */
+#u_sign.cc-login-active .cc-chars {
+    position: relative;
+    width: 280px;
+    height: 204px;
+    margin: 0 auto;
+    transform-origin: bottom center;
+}
+#u_sign.cc-login-active .cc-brand-center .cc-tag {
+    font-size: 13px;
+    line-height: 1.5;
+    opacity: .82;
+    max-width: 240px;
+}
+
+/* ---- 四个角色（纯 CSS 形状） ---- */
+#u_sign.cc-login-active .cc-char {
+    position: absolute;
+    bottom: 0;
+    transition: transform .15s ease-out;
+    transform-origin: bottom center;
+}
+#u_sign.cc-login-active .cc-eyes {
+    position: absolute;
+    display: flex;
+    gap: 8px;
+}
+#u_sign.cc-login-active .cc-eye {
+    position: relative;
+    background: #fff;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: height .12s ease-out;
+}
+#u_sign.cc-login-active .cc-eye.is-blink { height: 2px !important; }
+#u_sign.cc-login-active .cc-eye.is-blink .cc-pupil { opacity: 0; }
+#u_sign.cc-login-active .cc-pupil {
+    background: #2D2D2D;
+    border-radius: 50%;
+    transition: transform .1s ease-out;
+}
+#u_sign.cc-login-active .cc-mouth {
+    position: absolute;
+    background: #2D2D2D;
+    border-radius: 2px;
+}
+
+/* 紫：高矩形（后排） */
+#u_sign.cc-login-active .cc-char--purple {
+    left: 36px; width: 92px; height: 204px;
+    background: #6C3FF5; border-radius: 10px 10px 0 0; z-index: 1;
+}
+#u_sign.cc-login-active .cc-char--purple .cc-eyes { left: 52px; top: 13px; }
+#u_sign.cc-login-active .cc-char--purple .cc-eye { width: 10px; height: 10px; }
+#u_sign.cc-login-active .cc-char--purple .cc-pupil { width: 5px; height: 5px; }
+
+/* 黑：中高矩形（中排） */
+#u_sign.cc-login-active .cc-char--black {
+    left: 122px; width: 61px; height: 158px;
+    background: #2D2D2D; border-radius: 8px 8px 0 0; z-index: 2;
+}
+#u_sign.cc-login-active .cc-char--black .cc-eyes { left: 25px; top: 11px; }
+#u_sign.cc-login-active .cc-char--black .cc-eye { width: 9px; height: 9px; }
+#u_sign.cc-login-active .cc-char--black .cc-pupil { width: 4px; height: 4px; }
+
+/* 橙：半圆（前排左） */
+#u_sign.cc-login-active .cc-char--orange {
+    left: 0; width: 122px; height: 102px;
+    background: #FF9B6B; border-radius: 61px 61px 0 0; z-index: 3;
+}
+#u_sign.cc-login-active .cc-char--orange .cc-eyes { left: 70px; top: 44px; }
+#u_sign.cc-login-active .cc-char--orange .cc-pupil { width: 7px; height: 7px; }
+
+/* 黄：圆顶矩形（前排右） */
+#u_sign.cc-login-active .cc-char--yellow {
+    left: 158px; width: 71px; height: 117px;
+    background: #E8D754; border-radius: 36px 36px 0 0; z-index: 4;
+}
+#u_sign.cc-login-active .cc-char--yellow .cc-eyes { left: 29px; top: 26px; }
+#u_sign.cc-login-active .cc-char--yellow .cc-pupil { width: 7px; height: 7px; }
+#u_sign.cc-login-active .cc-char--yellow .cc-mouth { left: 27px; top: 62px; width: 24px; height: 4px; }
+
+/* ---------- 偷看彩蛋（点击密码眼睛图标触发） ---------- */
+/* 气泡：默认隐藏，.cc-brand-center.cc-peek 时淡入上浮 */
+#u_sign.cc-login-active .cc-peek-bubble {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translate(-50%, 8px) scale(.9);
+    background: rgba(255, 255, 255, .16);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 999px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 6;
+    white-space: nowrap;
+    transition: opacity .25s ease, transform .25s ease;
+}
+#u_sign.cc-login-active .cc-brand-center.cc-peek .cc-peek-bubble {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+}
+/* 偷看时紫色角色发光高亮 */
+#u_sign.cc-login-active .cc-brand-center.cc-peek .cc-char--purple {
+    transform-origin: 100% 100%;   /* 以右下角为变换原点，rotate/scale 不再使底边向下溢出 */
+    filter: drop-shadow(0 0 10px rgba(167, 139, 250, .95));
+}
+
+/* 窄屏时整体缩放避免溢出 */
+@media (max-width: 920px) {
+    #u_sign.cc-login-active .cc-chars { transform: scale(.85); }
+}
+
+#u_sign.cc-login-active .cc-brand-foot {
+    display: flex;
+    gap: 24px;
+    font-size: 13px;
+}
+#u_sign.cc-login-active .cc-brand-foot a {
+    color: rgba(255, 255, 255, .82);
+    text-decoration: none;
+    transition: color .2s;
+}
+#u_sign.cc-login-active .cc-brand-foot a:hover {
+    color: #fff;
+}
+
+/* ---------- 右侧：登录表单（复刻 careercompass 右栏） ---------- */
+#u_sign.cc-login-active .sign {
+    flex: 1 1 auto;
+    max-width: 420px;
+    width: 100%;
+    margin: 0;
+    background: #fff;
+    border-radius: 0 16px 16px 0;
+    padding: 40px 36px;
+    box-shadow: none;
+}
+
+/* 隐藏父主题中文标题，改用 Welcome 标题 */
+#u_sign.cc-login-active #tab-sign-in .title-h-left {
+    display: none;
+}
+
+#u_sign.cc-login-active .cc-welcome {
+    margin-bottom: 26px;
+}
+#u_sign.cc-login-active .cc-welcome h2 {
+    margin: 0 0 6px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    color: #0f172a;
+}
+#u_sign.cc-login-active .cc-welcome p {
+    margin: 0;
+    font-size: 14px;
+    color: #64748b;
+}
+
+/* 输入框：方框化，去掉父主题下划线 */
+#u_sign.cc-login-active .sign .line-form {
+    border-bottom: none !important;
+    margin-bottom: 16px;
+}
+#u_sign.cc-login-active .sign .line-form-line {
+    display: none;
+}
+#u_sign.cc-login-active .sign .line-form-input {
+    height: 48px;
+    width: 100%;
+    padding: 0 14px;
+    margin-top: 0;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 15px;
+    color: #0f172a;
+    transition: border-color .15s, box-shadow .15s;
+}
+#u_sign.cc-login-active .sign .line-form-input:focus {
+    border-color: #4051B5;
+    box-shadow: 0 0 0 3px rgba(64, 81, 181, .15);
+    outline: none;
+}
+#u_sign.cc-login-active .sign .scale-placeholder {
+    display: none;
+}
+/* 隐藏浮动标签后，给输入框留出处女占位空间 */
+#u_sign.cc-login-active .sign .line-form .abs-right {
+    margin-top: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 12px;
+    color: #94a3b8;
+}
+
+/* 记住登录 / 忘记密码 行 */
+#u_sign.cc-login-active .sign .relative.line-form.mb10.em09 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: none !important;
+    margin-bottom: 18px;
+}
+#u_sign.cc-login-active .sign .form-checkbox {
+    color: #475569;
+    font-size: 14px;
+}
+#u_sign.cc-login-active .sign .pull-right.muted-2-color a,
+#u_sign.cc-login-active .sign .pull-right.muted-2-color {
+    color: #4051B5;
+    font-size: 14px;
+    font-weight: 500;
+}
+#u_sign.cc-login-active .sign .pull-right.muted-2-color a:hover {
+    text-decoration: underline;
+}
+
+/* 主登录按钮：careercompass primary */
+#u_sign.cc-login-active .sign .but.jb-blue {
+    background: #4051B5 !important;
+    color: #fff !important;
+    border: none !important;
+    height: 48px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 16px;
+    width: 100%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background .15s;
+}
+#u_sign.cc-login-active .sign .but.jb-blue:hover {
+    background: #36459c !important;
+}
+
+/* 社交登录：复刻为带边框的整行按钮 */
+#u_sign.cc-login-active .social-separator {
+    display: none;
+}
+#u_sign.cc-login-active .social_loginbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 16px;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+/* 错误提示沿用 destructive 红 */
+#u_sign.cc-login-active .sign .alert,
+#u_sign.cc-login-active .sign .notice {
+    border-radius: 8px;
+}
+
+/* ---------- 移动端 / 平板竖屏：隐藏品牌面板，恢复单列 ----------
+   阈值抬到 991px：父主题仅在 min-width:992px 给 #u_sign .modal-dialog 设固定 800px，
+   768–991px 之间（大屏手机/折叠屏/平板竖屏/横屏）仍会落入两栏且 width:auto 下内容撑开，
+   必须缩小页面才能看全。故此处统一覆盖到 991px，并强制弹窗撑满、用 !important 压过父主题宽度。
+*/
+@media (max-width: 991px) {
+    /* 强制弹窗在窄屏撑满，避免父主题固定/最小宽度导致横向溢出 */
+    #u_sign.cc-login-active.modal,
+    #u_sign.cc-login-active .modal-dialog {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 0 14px !important;
+    }
+    #u_sign.cc-login-active .modal-content {
+        width: 100% !important;
+        overflow: visible !important;
+    }
+    #u_sign.cc-login-active .sign-content {
+        display: block !important;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, .28);
+    }
+    #u_sign.cc-login-active .cc-brand {
+        display: none !important;
+    }
+    #u_sign.cc-login-active .sign {
+        max-width: 100% !important;
+        width: 100% !important;
+        margin: 0 auto;
+        border-radius: 16px;
+        padding: 30px 22px;
+    }
+}
+
+/* ---------- Logo 移到右侧表单面板顶部 ---------- */
+#u_sign.cc-login-active .cc-form-logo-wrap {
+    display: flex;
+    align-items: center;
+    padding: 2px 0 16px;
+}
+#u_sign.cc-login-active .cc-form-logo {
+    width: clamp(84px, 14vw, 132px);   /* 随右侧面板宽度等比缩放，保持原始比例，不变形 */
+    height: auto;
+    flex-shrink: 0;
+    object-fit: contain;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, .04);
+    padding: 6px;
+}
+
+/* ---------- “没有账号？立即注册” + “找回密码” 合并一行（注册在左、找回在右） ---------- */
+#u_sign.cc-login-active .cc-login-links {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+    font-size: 14px;
+}
+#u_sign.cc-login-active .cc-login-links a {
+    color: #4051B5;
+    font-weight: 500;
+    text-decoration: none;
+}
+#u_sign.cc-login-active .cc-login-links a:hover {
+    text-decoration: underline;
+}
+
+/* 兜底：隐藏原位置的链接（即使 JS 因 AJAX 时机未移动成功，也不重复显示） */
+#u_sign.cc-login-active #tab-sign-in > .box-body > a[href="#tab-sign-up"],
+#u_sign.cc-login-active #tab-sign-in .pull-right.muted-2-color a {
+    display: none;
+}

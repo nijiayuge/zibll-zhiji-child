@@ -1,0 +1,29 @@
+/* Zibll Zhiji 美化样式
+ * 作用域：仅 body.zhiji-ui 内生效（由 zhiji.js 添加标记类）
+ * 约定：优先使用主题 CSS 变量与工具类，不写死颜色，自动适配亮/暗色。
+ */
+
+/* 内容卡片：悬停轻微抬升 + 主题阴影 */
+body.zhiji-ui .theme-box.radius8 {
+	transition: box-shadow .25s ease, transform .25s ease;
+}
+body.zhiji-ui .theme-box.radius8:hover {
+	box-shadow: var(--main-shadow), 0 8px 30px -12px rgba(0, 0, 0, .18);
+	transform: translateY(-2px);
+}
+
+/* 内容卡片描边，弱化默认分割 */
+body.zhiji-ui .box-body {
+	border: 1px solid var(--main-border-color);
+}
+
+/* 侧栏模块标题字距微调 */
+body.zhiji-ui .zib-widget .title {
+	letter-spacing: .5px;
+}
+
+/* 页面头部留白 */
+body.zhiji-ui .tags-page h1,
+body.zhiji-ui .page-header {
+	margin-bottom: 20px;
+}
