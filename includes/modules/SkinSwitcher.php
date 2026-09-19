@@ -515,9 +515,12 @@ function zhiji_skin_css_vars($tokens)
         return implode(';', $out);
     };
 
-    $css  = 'html:root{' . $build($light) . '}';
+    $css = 'html:root{' . $build($light) . '}';
     if ($dark) {
+        // 暗色：父主题把 dark-theme 类挂在 **<body>**（不是 html），
+        // 因此两种挂载点都要覆盖，否则暗色令牌不会生效（实测踩过）。
         $css .= 'html.dark-theme:root{' . $build($dark) . '}';
+        $css .= 'body.dark-theme{' . $build($dark) . '}';
     }
     return $css;
 }
@@ -539,6 +542,25 @@ add_action('wp_head', function () {
     }
     echo "\n<style id=\"zhiji-skin-vars\">" . $css . "</style>\n";
 }, 999);
+
+/**
+ * 资源入队：必须挂在 wp_enqueue_scripts
+ * ⚠️ 不能在 wp_footer 回调里 enqueue —— wp_print_footer_scripts 在 wp_footer:20 已执行完，
+ *    晚于它再入队，资源标签根本不会输出（本项目坑清单里的经典坑）。
+ */
+add_action('wp_enqueue_scripts', function () {
+    if (!zhiji_is_enabled('skin_switcher_enabled')) {
+        return;
+    }
+    if (!zhiji_is_enabled('skin_switcher_allow_guest', true) && !is_user_logged_in()) {
+        return;
+    }
+    if (!zhiji_is_enabled('skin_switcher_show_ui', true)) {
+        return;
+    }
+    wp_enqueue_style('zhiji-skin-switcher', zhiji_asset_url('css/skin-switcher.css'), array(), null);
+    wp_enqueue_script('zhiji-skin-switcher', zhiji_asset_url('js/skin-switcher.js'), array(), null, true);
+}, 20);
 
 /**
  * wp_footer：输出全部皮肤数据 + 切换器 UI（供前端零刷新切换）
@@ -571,9 +593,6 @@ add_action('wp_footer', function () {
     if (!$payload) {
         return;
     }
-
-    wp_enqueue_style('zhiji-skin-switcher', zhiji_asset_url('css/skin-switcher.css'), array(), null);
-    wp_enqueue_script('zhiji-skin-switcher', zhiji_asset_url('js/skin-switcher.js'), array(), null, true);
 
     printf(
         "<script id='zhiji-skin-data'>window.zhijiSkins=%s;window.zhijiSkinActive=%s;</script>\n",

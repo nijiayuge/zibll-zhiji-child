@@ -14,9 +14,11 @@
     display: none;
 }
 
-.zhiji-skin-switcher--right-bottom { right: 16px; bottom: 88px; }
+/* 默认位置：右下角，但**向左避让 72px** —— 父主题 zibll 的悬浮按钮
+   （礼盒/皇冠/分享/客服/回到顶部）占据了最右侧一列，贴右会互相压住 */
+.zhiji-skin-switcher--right-bottom { right: 72px; bottom: 88px; }
 .zhiji-skin-switcher--left-bottom  { left: 16px;  bottom: 88px; }
-.zhiji-skin-switcher--right-top    { right: 16px; top: 88px; }
+.zhiji-skin-switcher--right-top    { right: 72px; top: 88px; }
 
 .zhiji-skin-switcher__toggle {
     width: 44px;
