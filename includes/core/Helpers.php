@@ -22,6 +22,23 @@ function zhiji_asset_url($rel)
 }
 
 /**
+ * 写入单个配置项（只改指定键，不动其它键；禁止在模块里直接 update_option）
+ *
+ * @param string $key
+ * @param mixed  $value
+ * @return bool
+ */
+function zhiji_update_option($key, $value)
+{
+    $options = get_option(ZHIJI_OPTION_KEY, array());
+    if (!is_array($options)) {
+        $options = array();
+    }
+    $options[$key] = $value;
+    return update_option(ZHIJI_OPTION_KEY, $options);
+}
+
+/**
  * 开关判定：CSF 的 switcher 存的是字符串 '0'/'1'，必须统一用布尔解析
  *
  * @param string $key

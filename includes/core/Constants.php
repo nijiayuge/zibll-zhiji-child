@@ -32,9 +32,12 @@ if (!defined('ZHIJI_URL')) {
     define('ZHIJI_URL', trailingslashit(get_stylesheet_directory_uri()));
 }
 
-/** inc/ 目录绝对路径（带尾斜杠） */
+/** 主题代码目录（core/ notify/ modules/ 所在目录，带尾斜杠）
+ *  注意：本项目结构是 includes/，**不是** inc/ —— 子主题内不得有 inc/inc.php（白屏红线），
+ *  写成 'inc/' 会导致模块扫描 glob 落空、所有模块静默不加载。
+ */
 if (!defined('ZHIJI_INC')) {
-    define('ZHIJI_INC', ZHIJI_PATH . 'inc/');
+    define('ZHIJI_INC', ZHIJI_PATH . 'includes/');
 }
 
 /** 静态资源 URL（带尾斜杠）—— 所有资源必须放这里，禁止引用外部 CDN */
