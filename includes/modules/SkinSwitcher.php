@@ -27,29 +27,29 @@ function zhiji_skins()
             'note'    => '冷灰蓝底 + 橄榄绿，清爽耐看（实物配色卡：夏天/PalmTones.png）',
             'card'    => '夏天/PalmTones.png',
             'palette' => array('#D8DCE6', '#BBCFDB', '#3C363E', '#72825C', '#877D7E'),
-            'preview' => array('#72825C', '#6291AD', '#F5F5F7', '#343036'),
+            'preview' => array('#72825C', '#6291AD', '#F7F8F6', '#343036'),
             'tokens'  => array(
                 'light' => array(
-                    'bg' => '#F5F5F7',
-                    'surface' => '#FEFEFE',
+                    'bg' => '#F7F8F6',
+                    'surface' => '#FCFCFB',
                     'text' => '#343036',
                     'brand' => '#72825C',
                     'brand_dark' => '#586447',
                     'brand_weak' => '#EEF0EB',
                     'accent' => '#6291AD',
-                    'muted' => '#757378',
-                    'border' => '#DAD9DC',
+                    'muted' => '#757476',
+                    'border' => '#DCDCDB',
                 ),
                 'dark' => array(
-                    'bg' => '#222223',
-                    'surface' => '#2D2C2D',
+                    'bg' => '#1D1F1B',
+                    'surface' => '#242522',
                     'text' => '#E3E5E8',
                     'brand' => '#96A580',
                     'brand_dark' => '#72825C',
-                    'brand_weak' => '#343730',
+                    'brand_weak' => '#292D25',
                     'accent' => '#7DA4BB',
-                    'muted' => '#98999A',
-                    'border' => '#474649',
+                    'muted' => '#989A9A',
+                    'border' => '#31362A',
                 ),
             ),
         ),
@@ -58,29 +58,29 @@ function zhiji_skins()
             'note'    => '石板蓝 + 淡紫，沉静高级（实物配色卡：矿物/AgateBlues510.png）',
             'card'    => '矿物/AgateBlues510.png',
             'palette' => array('#D2CBC3', '#5D6E86', '#C7B5E3', '#C2D9F8', '#F2F1E1'),
-            'preview' => array('#5D6E86', '#9D7ECE', '#F7F7F5', '#2C323A'),
+            'preview' => array('#5D6E86', '#9D7ECE', '#F6F7F8', '#2C323A'),
             'tokens'  => array(
                 'light' => array(
-                    'bg' => '#F7F7F5',
-                    'surface' => '#FEFEFE',
+                    'bg' => '#F6F7F8',
+                    'surface' => '#FBFCFC',
                     'text' => '#2C323A',
                     'brand' => '#5D6E86',
                     'brand_dark' => '#485568',
                     'brand_weak' => '#ECEEF0',
                     'accent' => '#9D7ECE',
-                    'muted' => '#727578',
-                    'border' => '#DBDBDB',
+                    'muted' => '#71747A',
+                    'border' => '#DADBDD',
                 ),
                 'dark' => array(
-                    'bg' => '#212224',
-                    'surface' => '#2B2C2E',
+                    'bg' => '#1B1D1F',
+                    'surface' => '#222425',
                     'text' => '#EAE8E1',
                     'brand' => '#8292A8',
                     'brand_dark' => '#5D6E86',
-                    'brand_weak' => '#2E333A',
+                    'brand_weak' => '#25292E',
                     'accent' => '#AB90D5',
-                    'muted' => '#9B9A97',
-                    'border' => '#45474A',
+                    'muted' => '#9A9A98',
+                    'border' => '#2B3037',
                 ),
             ),
         ),
@@ -89,29 +89,29 @@ function zhiji_skins()
             'note'    => '暖棕 + 蜜金，温润亲和（实物配色卡：可食用的/PearTones605.png）',
             'card'    => '可食用的/PearTones605.png',
             'palette' => array('#CCA682', '#945638', '#D9C289', '#E3DDD3', '#6C706D'),
-            'preview' => array('#945638', '#A98837', '#F7F6F6', '#432E23'),
+            'preview' => array('#945638', '#A98837', '#F9F6F4', '#432E23'),
             'tokens'  => array(
                 'light' => array(
-                    'bg' => '#F7F6F6',
-                    'surface' => '#FEFEFE',
+                    'bg' => '#F9F6F4',
+                    'surface' => '#FDFBFB',
                     'text' => '#432E23',
                     'brand' => '#945638',
                     'brand_dark' => '#6F402A',
                     'brand_weak' => '#F2EBE7',
                     'accent' => '#A98837',
-                    'muted' => '#7E726C',
-                    'border' => '#DEDAD8',
+                    'muted' => '#80726B',
+                    'border' => '#E0DAD7',
                 ),
                 'dark' => array(
-                    'bg' => '#25211F',
-                    'surface' => '#312B29',
+                    'bg' => '#201B18',
+                    'surface' => '#262220',
                     'text' => '#E8E6E3',
                     'brand' => '#BF7755',
                     'brand_dark' => '#945638',
-                    'brand_weak' => '#3D2D24',
+                    'brand_weak' => '#31231D',
                     'accent' => '#C39F46',
-                    'muted' => '#9B9997',
-                    'border' => '#4E4541',
+                    'muted' => '#9C9996',
+                    'border' => '#3B2820',
                 ),
             ),
         ),
@@ -120,29 +120,29 @@ function zhiji_skins()
             'note'    => '青碧 + 麦金，清新明快（实物配色卡：家禽鸟类/AutumnChirp600.png）',
             'card'    => '家禽鸟类/AutumnChirp600.png',
             'palette' => array('#E8E7CF', '#659C9A', '#C78917', '#826E5F', '#FAB68E'),
-            'preview' => array('#598A88', '#BB8115', '#F7F7F5', '#39322D'),
+            'preview' => array('#598A88', '#BB8115', '#F6F9F8', '#39322D'),
             'tokens'  => array(
                 'light' => array(
-                    'bg' => '#F7F7F5',
-                    'surface' => '#FEFEFE',
+                    'bg' => '#F6F9F8',
+                    'surface' => '#FBFCFC',
                     'text' => '#39322D',
                     'brand' => '#598A88',
                     'brand_dark' => '#456B69',
                     'brand_weak' => '#EBF1F1',
                     'accent' => '#BB8115',
-                    'muted' => '#797571',
-                    'border' => '#DCDBD9',
+                    'muted' => '#787573',
+                    'border' => '#DCDDDC',
                 ),
                 'dark' => array(
-                    'bg' => '#232221',
-                    'surface' => '#2E2C2B',
+                    'bg' => '#1B201F',
+                    'surface' => '#222625',
                     'text' => '#E9E9E2',
                     'brand' => '#7EACAA',
                     'brand_dark' => '#598A88',
-                    'brand_weak' => '#2F3938',
+                    'brand_weak' => '#242F2E',
                     'accent' => '#E09A19',
-                    'muted' => '#9B9A97',
-                    'border' => '#4A4745',
+                    'muted' => '#999B97',
+                    'border' => '#293838',
                 ),
             ),
         ),
@@ -151,29 +151,29 @@ function zhiji_skins()
             'note'    => '朱红 + 杏橙，热烈活力（实物配色卡：古董/ColorWindow605.png）',
             'card'    => '古董/ColorWindow605.png',
             'palette' => array('#F4EDF5', '#DBD8ED', '#E1D7A0', '#E06661', '#FFC08C'),
-            'preview' => array('#DC5650', '#E16600', '#F7F5F7', '#4B1D1B'),
+            'preview' => array('#DC5650', '#E16600', '#FDF6F5', '#4B1D1B'),
             'tokens'  => array(
                 'light' => array(
-                    'bg' => '#F7F5F7',
-                    'surface' => '#FEFEFE',
+                    'bg' => '#FDF6F5',
+                    'surface' => '#FEFBFB',
                     'text' => '#4B1D1B',
                     'brand' => '#DC5650',
                     'brand_dark' => '#D03129',
                     'brand_weak' => '#FBEBEA',
                     'accent' => '#E16600',
-                    'muted' => '#826868',
-                    'border' => '#DFD7D8',
+                    'muted' => '#866765',
+                    'border' => '#E4D8D6',
                 ),
                 'dark' => array(
-                    'bg' => '#271E1E',
-                    'surface' => '#332727',
+                    'bg' => '#271B1A',
+                    'surface' => '#2B2222',
                     'text' => '#E7E2E9',
                     'brand' => '#E2736F',
                     'brand_dark' => '#DC5650',
-                    'brand_weak' => '#4F2A29',
+                    'brand_weak' => '#412322',
                     'accent' => '#FF7A0B',
-                    'muted' => '#9C969A',
-                    'border' => '#513F3E',
+                    'muted' => '#9D9599',
+                    'border' => '#512827',
                 ),
             ),
         ),
@@ -182,29 +182,29 @@ function zhiji_skins()
             'note'    => '玫红 + 石板蓝，文艺柔和（实物配色卡：自然/FallSpectrum605.png）',
             'card'    => '自然/FallSpectrum605.png',
             'palette' => array('#545F6D', '#CA798B', '#B8C8D2', '#F2B780', '#9E525B'),
-            'preview' => array('#C4697E', '#DA7416', '#F5F6F7', '#2F3237'),
+            'preview' => array('#C4697E', '#DA7416', '#FCF7F8', '#2F3237'),
             'tokens'  => array(
                 'light' => array(
-                    'bg' => '#F5F6F7',
-                    'surface' => '#FEFEFE',
+                    'bg' => '#FCF7F8',
+                    'surface' => '#FEFCFC',
                     'text' => '#2F3237',
                     'brand' => '#C4697E',
                     'brand_dark' => '#B34760',
                     'brand_weak' => '#F8EDF0',
                     'accent' => '#DA7416',
-                    'muted' => '#727578',
-                    'border' => '#D9DBDC',
+                    'muted' => '#767477',
+                    'border' => '#DFDBDD',
                 ),
                 'dark' => array(
-                    'bg' => '#222223',
-                    'surface' => '#2B2C2E',
+                    'bg' => '#251D1E',
+                    'surface' => '#2A2325',
                     'text' => '#E3E6E8',
                     'brand' => '#CE8394',
                     'brand_dark' => '#C4697E',
-                    'brand_weak' => '#463237',
+                    'brand_weak' => '#3C272C',
                     'accent' => '#EA892F',
-                    'muted' => '#98999A',
-                    'border' => '#464749',
+                    'muted' => '#999999',
+                    'border' => '#4A2E34',
                 ),
             ),
         ),
@@ -213,29 +213,29 @@ function zhiji_skins()
             'note'    => '靛蓝 + 荧光黄绿，现代锐利（实物配色卡：家禽鸟类/FeatheredBrights605.png）',
             'card'    => '家禽鸟类/FeatheredBrights605.png',
             'palette' => array('#E6FF79', '#816665', '#412F47', '#3032AA', '#8ED4CE'),
-            'preview' => array('#3032AA', '#85A300', '#F8F9F4', '#362C3A'),
+            'preview' => array('#3032AA', '#85A300', '#F4F4FA', '#362C3A'),
             'tokens'  => array(
                 'light' => array(
-                    'bg' => '#F8F9F4',
-                    'surface' => '#FEFEFD',
+                    'bg' => '#F4F4FA',
+                    'surface' => '#FAFAFD',
                     'text' => '#362C3A',
                     'brand' => '#3032AA',
                     'brand_dark' => '#252682',
                     'brand_weak' => '#E6E6F5',
                     'accent' => '#85A300',
-                    'muted' => '#787378',
-                    'border' => '#DDDCDA',
+                    'muted' => '#75707B',
+                    'border' => '#D9D8DF',
                 ),
                 'dark' => array(
-                    'bg' => '#232124',
-                    'surface' => '#2D2B2E',
+                    'bg' => '#171822',
+                    'surface' => '#1F1F28',
                     'text' => '#ECF0DB',
-                    'brand' => '#6B6DD5',
+                    'brand' => '#5F61D1',
                     'brand_dark' => '#3032AA',
-                    'brand_weak' => '#262541',
+                    'brand_weak' => '#1B1B36',
                     'accent' => '#A6CC00',
-                    'muted' => '#9D9E94',
-                    'border' => '#49454A',
+                    'muted' => '#9B9D95',
+                    'border' => '#1D1E42',
                 ),
             ),
         ),
@@ -244,29 +244,29 @@ function zhiji_skins()
             'note'    => '紫罗兰 + 品紫，夜色静谧（实物配色卡：矿物/AmethystRocks615.png）',
             'card'    => '矿物/AmethystRocks615.png',
             'palette' => array('#3A343D', '#E0BCE8', '#A95FC2', '#774282', '#B8B7C8'),
-            'preview' => array('#774282', '#A95FC2', '#F7F5F7', '#343036'),
+            'preview' => array('#774282', '#A95FC2', '#F8F5F8', '#343036'),
             'tokens'  => array(
                 'light' => array(
-                    'bg' => '#F7F5F7',
-                    'surface' => '#FEFEFE',
+                    'bg' => '#F8F5F8',
+                    'surface' => '#FCFBFC',
                     'text' => '#343036',
                     'brand' => '#774282',
                     'brand_dark' => '#583160',
                     'brand_weak' => '#EFE8F0',
                     'accent' => '#A95FC2',
-                    'muted' => '#767378',
-                    'border' => '#DCD9DC',
+                    'muted' => '#777278',
+                    'border' => '#DDD9DD',
                 ),
                 'dark' => array(
-                    'bg' => '#232223',
-                    'surface' => '#2D2C2D',
+                    'bg' => '#1E191F',
+                    'surface' => '#242125',
                     'text' => '#E9E0EB',
                     'brand' => '#A05EAD',
                     'brand_dark' => '#774282',
-                    'brand_weak' => '#352938',
+                    'brand_weak' => '#2B1F2D',
                     'accent' => '#B97DCD',
-                    'muted' => '#9B969C',
-                    'border' => '#484748',
+                    'muted' => '#9C959D',
+                    'border' => '#322236',
                 ),
             ),
         ),
@@ -275,29 +275,29 @@ function zhiji_skins()
             'note'    => '蓝紫 + 藕粉，柔和清雅（实物配色卡：春天/SpringFlora500.png）',
             'card'    => '春天/SpringFlora500.png',
             'palette' => array('#F0C6B3', '#674F86', '#8960A3', '#C8B7D4', '#EBA9D0'),
-            'preview' => array('#674F86', '#DA62A9', '#F8F5F5', '#322A3C'),
+            'preview' => array('#674F86', '#DA62A9', '#F7F5F8', '#322A3C'),
             'tokens'  => array(
                 'light' => array(
-                    'bg' => '#F8F5F5',
-                    'surface' => '#FEFEFD',
+                    'bg' => '#F7F5F8',
+                    'surface' => '#FCFBFC',
                     'text' => '#322A3C',
                     'brand' => '#674F86',
                     'brand_dark' => '#4E3C66',
                     'brand_weak' => '#EDEAF0',
                     'accent' => '#DA62A9',
-                    'muted' => '#76717A',
-                    'border' => '#DCD9DB',
+                    'muted' => '#74707B',
+                    'border' => '#DBD9DE',
                 ),
                 'dark' => array(
-                    'bg' => '#222124',
-                    'surface' => '#2C2A2F',
+                    'bg' => '#1C1A1F',
+                    'surface' => '#232125',
                     'text' => '#EDE3DE',
                     'brand' => '#8A71AB',
                     'brand_dark' => '#674F86',
-                    'brand_weak' => '#312B3A',
+                    'brand_weak' => '#27222E',
                     'accent' => '#E283BB',
-                    'muted' => '#9D9795',
-                    'border' => '#47444B',
+                    'muted' => '#9C9796',
+                    'border' => '#2E2637',
                 ),
             ),
         ),
@@ -306,29 +306,29 @@ function zhiji_skins()
             'note'    => '沙棕 + 麦金，大地质感（实物配色卡：矿物/AgateGolds610.png）',
             'card'    => '矿物/AgateGolds610.png',
             'palette' => array('#E0D28F', '#E2DFE7', '#D6A953', '#8F7E53', '#DEDFA4'),
-            'preview' => array('#8F7E53', '#B2832A', '#F6F6F6', '#3C372A'),
+            'preview' => array('#8F7E53', '#B2832A', '#F9F8F6', '#3C372A'),
             'tokens'  => array(
                 'light' => array(
-                    'bg' => '#F6F6F6',
-                    'surface' => '#FEFEFE',
+                    'bg' => '#F9F8F6',
+                    'surface' => '#FDFCFB',
                     'text' => '#3C372A',
                     'brand' => '#8F7E53',
                     'brand_dark' => '#6F6240',
                     'brand_weak' => '#F2F0EA',
                     'accent' => '#B2832A',
-                    'muted' => '#7A7770',
-                    'border' => '#DCDBD9',
+                    'muted' => '#7B7870',
+                    'border' => '#DFDDD9',
                 ),
                 'dark' => array(
-                    'bg' => '#242321',
-                    'surface' => '#2F2E2A',
+                    'bg' => '#201E1B',
+                    'surface' => '#262522',
                     'text' => '#E6E4E7',
                     'brand' => '#B1A178',
                     'brand_dark' => '#8F7E53',
-                    'brand_weak' => '#3C372C',
+                    'brand_weak' => '#302C23',
                     'accent' => '#CF9A35',
-                    'muted' => '#9A9899',
-                    'border' => '#4B4944',
+                    'muted' => '#9A9898',
+                    'border' => '#3A3428',
                 ),
             ),
         ),
@@ -337,29 +337,29 @@ function zhiji_skins()
             'note'    => '灰绿 + 陶粉，素雅耐看（实物配色卡：夏天/SunRoom620.png）',
             'card'    => '夏天/SunRoom620.png',
             'palette' => array('#DADBD2', '#6A776A', '#E6A293', '#FEFE0D', '#BEBDB1'),
-            'preview' => array('#6A776A', '#D76D55', '#F9F9F4', '#313531'),
+            'preview' => array('#6A776A', '#D76D55', '#F7F8F7', '#313531'),
             'tokens'  => array(
                 'light' => array(
-                    'bg' => '#F9F9F4',
-                    'surface' => '#FEFEFD',
+                    'bg' => '#F7F8F7',
+                    'surface' => '#FCFCFC',
                     'text' => '#313531',
                     'brand' => '#6A776A',
                     'brand_dark' => '#525C52',
                     'brand_weak' => '#EDEFED',
                     'accent' => '#D76D55',
-                    'muted' => '#767872',
-                    'border' => '#DDDED9',
+                    'muted' => '#747674',
+                    'border' => '#DBDDDB',
                 ),
                 'dark' => array(
-                    'bg' => '#222322',
-                    'surface' => '#2C2D2C',
+                    'bg' => '#1D1E1D',
+                    'surface' => '#232423',
                     'text' => '#F0F0DB',
                     'brand' => '#8E9A8E',
                     'brand_dark' => '#6A776A',
-                    'brand_weak' => '#323532',
+                    'brand_weak' => '#282B28',
                     'accent' => '#DF8976',
                     'muted' => '#9E9F93',
-                    'border' => '#464846',
+                    'border' => '#2E322E',
                 ),
             ),
         ),
@@ -368,29 +368,29 @@ function zhiji_skins()
             'note'    => '玫粉 + 薄荷，清爽通透（实物配色卡：夏天/ColorBlown605.png）',
             'card'    => '夏天/ColorBlown605.png',
             'palette' => array('#FAFAE6', '#C8E6DD', '#EB778D', '#EBCE4C', '#DEBBE4'),
-            'preview' => array('#E65671', '#469A82', '#F8F8F4', '#4E1823'),
+            'preview' => array('#E65671', '#469A82', '#FEF6F7', '#4E1823'),
             'tokens'  => array(
                 'light' => array(
-                    'bg' => '#F8F8F4',
-                    'surface' => '#FEFEFD',
+                    'bg' => '#FEF6F7',
+                    'surface' => '#FEFBFC',
                     'text' => '#4E1823',
                     'brand' => '#E65671',
                     'brand_dark' => '#DF2A4C',
                     'brand_weak' => '#FCEBEE',
                     'accent' => '#469A82',
-                    'muted' => '#84666B',
-                    'border' => '#E0D9D7',
+                    'muted' => '#87636A',
+                    'border' => '#E5D7D9',
                 ),
                 'dark' => array(
-                    'bg' => '#281D1F',
-                    'surface' => '#332629',
+                    'bg' => '#281B1D',
+                    'surface' => '#2C2224',
                     'text' => '#ECECDF',
                     'brand' => '#E96880',
                     'brand_dark' => '#E65671',
-                    'brand_weak' => '#522A31',
+                    'brand_weak' => '#432329',
                     'accent' => '#56B298',
-                    'muted' => '#9F9A93',
-                    'border' => '#523C41',
+                    'muted' => '#9F9993',
+                    'border' => '#542831',
                 ),
             ),
         ),
@@ -539,6 +539,63 @@ function zhiji_skin_css_vars($tokens)
     $css .= 'html body.white-theme{' . $build($light) . '}';
     if ($dark) {
         $css .= 'html body.dark-theme{' . $build($dark) . '}';
+    }
+
+    // 语义色类映射（可关）：让「主 CTA / 链接」跟随皮肤
+    if (zhiji_is_enabled('skin_switcher_strong', true)) {
+        $css .= zhiji_skin_semantic_css($light, $dark);
+    }
+    return $css;
+}
+
+/**
+ * 把父主题的「硬编码色类」映射到皮肤令牌。
+ *
+ * 为什么需要：CSS 变量只影响「用变量的地方」。zibll 里大量按钮/链接带的是
+ * 硬编码色类（`.jb-blue` 是写死的蓝色渐变 #59c3fb→#268df7），不读 `--theme-color`，
+ * 所以只改变量时它们纹丝不动 —— 这正是"换了皮肤但网站没变"的观感来源。
+ *
+ * 行业做法（Radix / Material / Tailwind 的 token 体系一致）：
+ *   - **品牌/主操作色** 跟随主题：主 CTA（.jb-blue）、链接（.c-blue）、主色按钮（.b-blue）
+ *   - **语义色** 保留不动：红=危险/删除、绿=成功/免费、黄=警告、紫=VIP、粉=会员
+ *     把它们也刷成主色会破坏信息传达（用户分不清"删除"和"发布"）。
+ *
+ * 覆盖手段：提高特异性到 `html body .xxx`（等价于 CSS Cascade Layers 的效果，
+ * 因为不能改父主题、无法把父主题 CSS 放进 @layer）。
+ *
+ * @param array $light 浅色令牌
+ * @param array $dark  暗色令牌
+ * @return string
+ */
+function zhiji_skin_semantic_css($light, $dark)
+{
+    // ⚠️ 每个选择器都必须独自带 `html body ` 前缀：
+    // 逗号分隔的选择器是独立的，写成 `html body .b-blue,.b-blue-2` 会让后者退化成
+    // 全局 `.b-blue-2`，特异性反而低于父主题；且 `html body.x` 是"body 自身有 x 类"，
+    // 必须是 `html body .x`（后代）。
+    $cta = function ($prefix, $t) {
+        if (empty($t['brand'])) {
+            return '';
+        }
+        $from = $t['brand'];
+        $to   = !empty($t['brand_dark']) ? $t['brand_dark'] : $from;
+        $out  = array();
+        // 主 CTA 渐变按钮（发布、开通会员等）：改渐变两端 + zibll 预留的 --this-bg-b
+        $out[] = $prefix . '.jb-blue{--this-bg-b:' . $from . ';--this-bg:linear-gradient(135deg,' . $from . ' 10%,' . $to . ' 100%)}';
+        // 主色实心按钮（逐个写全前缀）
+        $out[] = $prefix . '.b-blue{--this-bg:' . $from . '}';
+        $out[] = $prefix . '.b-blue-2{--this-bg:' . $from . '}';
+        // 链接 / 文字主色
+        if (!empty($t['brand_weak'])) {
+            $out[] = $prefix . '.c-blue{--this-color:' . $from . ';--this-bg:' . $t['brand_weak'] . '}';
+            $out[] = $prefix . '.c-blue-2{--this-color:' . $from . ';--this-bg:' . $t['brand_weak'] . '}';
+        }
+        return implode('', $out);
+    };
+
+    $css = $cta('html body ', $light);
+    if ($dark) {
+        $css .= $cta('html body.dark-theme ', $dark);
     }
     return $css;
 }
@@ -716,6 +773,14 @@ add_action('zhiji_loaded', function () {
             ),
             'default'    => 'right-bottom',
             'inline'     => true,
+            'dependency' => array('skin_switcher_enabled', '==', 'true'),
+        ),
+        array(
+            'id'         => 'skin_switcher_strong',
+            'type'       => 'switcher',
+            'title'      => '主按钮/链接跟随皮肤',
+            'desc'       => '把父主题硬编码的主 CTA 渐变（.jb-blue）、主色按钮（.b-blue）与链接色（.c-blue）映射到当前皮肤。语义色（红=删除、绿=成功、黄=警告、紫=会员）始终保留，不会被刷成主色。',
+            'default'    => true,
             'dependency' => array('skin_switcher_enabled', '==', 'true'),
         ),
     ));
