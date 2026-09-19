@@ -494,11 +494,16 @@ function zhiji_skin_css_vars($tokens)
      * ⚠️ 关键：父主题 zibll 把 `--theme-color` 等**挂载在 `body{}` 上**（zib-head.php:240），
      * 而 CSS 变量是"元素自身声明优先于继承值"——因此我们这些必须**同样作用在 body 上**，
      * 否则写 `html:root` 会被 body 自身的声明压掉，全站配色根本不变（只剩我们自己的组件变色）。
+     *
+     * ⚠️ 背景（--body-bg-color / --main-bg-color）**不覆盖**：用户明确要求背景保持父主题默认
+     * （尊重 zibll 后台的背景图/背景色配置，也避免"整页被染色"）。
+     * 皮肤只接管"主色系统"——强调色、文字、边框与语义色类。
+     * 背景令牌仍生成到 `--zhiji-bg`/`--zhiji-surface`，供我们自己的组件与预览页使用。
      */
     $map = array(
         'brand'      => array('zhiji-brand', 'theme-color', 'focus-color'),
-        'bg'         => array('zhiji-bg', 'body-bg-color'),
-        'surface'    => array('zhiji-surface', 'main-bg-color'),
+        'bg'         => array('zhiji-bg'),
+        'surface'    => array('zhiji-surface'),
         'text'       => array('zhiji-text', 'main-color'),
         'muted'      => array('zhiji-muted', 'muted-color'),
         'border'     => array('zhiji-border', 'main-border-color'),
