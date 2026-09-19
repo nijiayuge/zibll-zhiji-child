@@ -1,0 +1,17 @@
+# 探针与临时文件（铁律：禁止入库）
+_*.php
+_tmp/
+*.bak
+*.bak-*
+*.damaged-local
+
+# 编辑器 / 系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+
+# 本地同步工具产物
+/sync_local/

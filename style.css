@@ -1,0 +1,21 @@
+/*
+	Theme Name: 知集
+	Description: 知集（zhiji）子主题 —— 基于子比主题（Zibll）的站点级开发层。功能模块化、统一通知机制、统一命名规范，所有功能自研，模块可独立开关；不修改父主题任何文件。
+	Theme URI: https://zhiji.example.com
+	Author: 知集
+	Author URI: https://zhiji.example.com
+	Template: zibll
+	Version: 2.0.0
+	Child Version: 2.0.0
+	Requires at least: 5.0
+	Requires PHP: 7.0-8.2
+	Text Domain: zhiji
+	Domain Path: /languages
+	Tags: 社区、论坛、圈子、商城、中文、博客、科技、简约、付费阅读、付费下载、扁平化、用户中心、网址导航、SEO优化、响应式
+	License: 自有项目（未公开授权，禁止再分发）
+*/
+
+/* =====================================================================
+ * 本文件只承载主题声明，不写业务样式。
+ * 全局样式放 assets/zhiji/css/，由 zhiji_asset_url() 统一附加 ?v=filemtime 版本号。
+ * ===================================================================== */
