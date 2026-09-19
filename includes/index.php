@@ -49,7 +49,18 @@ zib_require(array(
     'core/Registry',
 ), true, 'includes/');
 
-// ②③ 配置层与功能层（框架既有结构，保持不动）
+// ② 通知层：统一通知中心（事件表 → 分发 → 渠道），业务模块只允许通过 zhiji_notify() 发通知
+zib_require(array(
+    'notify/Events',
+    'notify/Notify',
+    'notify/Channels/Msg',
+    'notify/Channels/Mail',
+    'notify/Channels/Toast',
+    'notify/Channels/Badge',
+    'notify/Channels/Wechat',
+), true, 'includes/');
+
+// ③ 配置层与功能层（框架既有结构，保持不动）
 zib_require(array(
     'includes/options/options',
     'includes/functions/functions',

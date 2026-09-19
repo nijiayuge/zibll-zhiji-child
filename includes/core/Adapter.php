@@ -101,13 +101,32 @@ class Zhiji_Adapter
     }
 
     /**
+     * 用户中心地址（父主题路由；缺失时回落到首页，保证链接永远不会是空串）
+     *
+     * @param string $type 目标页，如 msg / order / coupon
+     * @param string $tab  子页签
+     * @return string
+     */
+    public static function user_center_url($type = 'msg', $tab = '')
+    {
+        if (function_exists('zib_get_user_center_url')) {
+            $url = zib_get_user_center_url($type, $tab);
+            if ($url) {
+                return $url;
+            }
+        }
+        return home_url('/');
+    }
+
+    /**
      * 临时停用父主题对 wp_mail 内容的覆盖（发自定义邮件前调用）
      * 用法：self::mail_filter_off(); wp_mail(...); self::mail_filter_on();
+     * 注意：父主题挂载点为 add_filter('wp_mail','zib_get_mail_content')（默认优先级 10，见 zib-email.php:77）
      */
     public static function mail_filter_off()
     {
         if (function_exists('zib_get_mail_content')) {
-            remove_filter('wp_mail', 'zib_get_mail_content', 999);
+            remove_filter('wp_mail', 'zib_get_mail_content', 10);
         }
     }
 
@@ -117,7 +136,7 @@ class Zhiji_Adapter
     public static function mail_filter_on()
     {
         if (function_exists('zib_get_mail_content')) {
-            add_filter('wp_mail', 'zib_get_mail_content', 999);
+            add_filter('wp_mail', 'zib_get_mail_content', 10);
         }
     }
 
