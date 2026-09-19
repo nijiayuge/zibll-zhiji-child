@@ -22,6 +22,31 @@ function zhiji_asset_url($rel)
 }
 
 /**
+ * hex → rgba 字符串（用于派生父主题的半透明强调色变量）
+ *
+ * @param string $hex   #RRGGBB 或 RRGGBB
+ * @param float  $alpha 0-1
+ * @return string
+ */
+function zhiji_hex_rgba($hex, $alpha)
+{
+    $hex = ltrim((string) $hex, '#');
+    if (3 === strlen($hex)) {
+        $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+    }
+    if (6 !== strlen($hex)) {
+        return 'rgba(0,0,0,' . (float) $alpha . ')';
+    }
+    return sprintf(
+        'rgba(%d,%d,%d,%s)',
+        hexdec(substr($hex, 0, 2)),
+        hexdec(substr($hex, 2, 2)),
+        hexdec(substr($hex, 4, 2)),
+        rtrim(rtrim(number_format((float) $alpha, 3, '.', ''), '0'), '.')
+    );
+}
+
+/**
  * 写入单个配置项（只改指定键，不动其它键；禁止在模块里直接 update_option）
  *
  * @param string $key
