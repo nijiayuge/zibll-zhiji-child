@@ -149,14 +149,14 @@ add_action('after_setup_theme', function () {
             'default'    => 20,
             'min'        => 5,
             'max'        => 50,
-            'dependency' => array('weiyu_enabled', '==', 'true'),
+            'dependency' => array('weiyu_enabled', '==', '1'),
         ),
         array(
             'id'         => 'weiyu_show_avatar',
             'type'       => 'switcher',
             'title'      => '显示作者头像',
             'default'    => true,
-            'dependency' => array('weiyu_enabled', '==', 'true'),
+            'dependency' => array('weiyu_enabled', '==', '1'),
         ),
         array(
             'id'         => 'weiyu_like_enabled',
@@ -164,7 +164,7 @@ add_action('after_setup_theme', function () {
             'title'      => '启用说说点赞',
             'default'    => true,
             'desc'       => '开启后每条微语显示点赞按钮（同源校验 + IP 限频），支持与弹幕联动。',
-            'dependency' => array('weiyu_enabled', '==', 'true'),
+            'dependency' => array('weiyu_enabled', '==', '1'),
         ),
     ));
 }, 20);

@@ -274,7 +274,7 @@ add_action('after_setup_theme', function () {
                 'plugins' => '插件目录 (plugins)',
                 'uploads' => '上传目录 (uploads)',
             ),
-            'dependency' => array('security_scan_enabled', '==', 'true'),
+            'dependency' => array('security_scan_enabled', '==', '1'),
         ),
     ));
 }, 20);

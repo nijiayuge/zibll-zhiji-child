@@ -130,7 +130,7 @@ add_action('after_setup_theme', function () {
             'title'      => '默认显示数量',
             'default'    => '10',
             'desc'       => '短代码默认显示的动态数量（可通过 count 参数覆盖）。',
-            'dependency' => array('stream_enable', '==', 'true'),
+            'dependency' => array('stream_enable', '==', '1'),
         ),
         array(
             'id'         => 'stream_default_types',
@@ -138,7 +138,7 @@ add_action('after_setup_theme', function () {
             'title'      => '默认内容类型',
             'default'    => 'post,shuoshuo,infomation',
             'desc'       => '短代码默认聚合的内容类型（可通过 types 参数覆盖，逗号分隔）。',
-            'dependency' => array('stream_enable', '==', 'true'),
+            'dependency' => array('stream_enable', '==', '1'),
         ),
     ));
 }, 20);

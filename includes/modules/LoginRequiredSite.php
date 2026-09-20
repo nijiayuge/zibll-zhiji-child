@@ -106,7 +106,7 @@ add_action('after_setup_theme', function () {
             'type'       => 'switcher',
             'title'      => '排除首页',
             'default'    => false,
-            'dependency' => array('login_required_enabled', '==', 'true'),
+            'dependency' => array('login_required_enabled', '==', '1'),
         ),
         array(
             'id'         => 'login_required_exclude_pages',
@@ -114,7 +114,7 @@ add_action('after_setup_theme', function () {
             'title'      => '排除页面ID',
             'desc'       => '多个页面ID用逗号分隔',
             'default'    => '',
-            'dependency' => array('login_required_enabled', '==', 'true'),
+            'dependency' => array('login_required_enabled', '==', '1'),
         ),
         array(
             'id'         => 'login_required_whitelist_ips',
@@ -122,7 +122,7 @@ add_action('after_setup_theme', function () {
             'title'      => '白名单IP',
             'desc'       => '每行一个IP，这些IP访问不受限制',
             'default'    => '',
-            'dependency' => array('login_required_enabled', '==', 'true'),
+            'dependency' => array('login_required_enabled', '==', '1'),
         ),
     ));
 }, 20);

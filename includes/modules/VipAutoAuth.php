@@ -249,14 +249,14 @@ add_action('after_setup_theme', function () {
             'title'      => '认证用户组',
             'options'    => array('contributor' => '投稿者', 'author' => '作者', 'editor' => '编辑'),
             'default'    => 'contributor',
-            'dependency' => array('vip_auto_auth_enabled', '==', 'true'),
+            'dependency' => array('vip_auto_auth_enabled', '==', '1'),
         ),
         array(
             'id'         => 'vip_auto_auth_name',
             'type'       => 'text',
             'title'      => '认证名称',
             'default'    => 'VIP认证用户',
-            'dependency' => array('vip_auto_auth_enabled', '==', 'true'),
+            'dependency' => array('vip_auto_auth_enabled', '==', '1'),
         ),
     ));
 }, 20);

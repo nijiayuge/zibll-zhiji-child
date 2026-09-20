@@ -137,7 +137,7 @@ add_action('after_setup_theme', function () {
             'title'      => '模糊范围',
             'options'    => array('site' => '全站图片', 'article' => '仅文章内图片'),
             'default'    => 'site',
-            'dependency' => array('guest_blur_enabled', '==', 'true'),
+            'dependency' => array('guest_blur_enabled', '==', '1'),
         ),
         array(
             'id'         => 'guest_blur_level',
@@ -147,28 +147,28 @@ add_action('after_setup_theme', function () {
             'max'        => 30,
             'step'       => 1,
             'default'    => 8,
-            'dependency' => array('guest_blur_enabled', '==', 'true'),
+            'dependency' => array('guest_blur_enabled', '==', '1'),
         ),
         array(
             'id'         => 'guest_blur_exclude_logo',
             'type'       => 'switcher',
             'title'      => '排除Logo图片',
             'default'    => true,
-            'dependency' => array('guest_blur_enabled', '==', 'true', 'guest_blur_mode', '==', 'site'),
+            'dependency' => array('guest_blur_enabled', '==', '1', 'guest_blur_mode', '==', 'site'),
         ),
         array(
             'id'         => 'guest_blur_exclude_avatar',
             'type'       => 'switcher',
             'title'      => '排除头像图片',
             'default'    => true,
-            'dependency' => array('guest_blur_enabled', '==', 'true', 'guest_blur_mode', '==', 'site'),
+            'dependency' => array('guest_blur_enabled', '==', '1', 'guest_blur_mode', '==', 'site'),
         ),
         array(
             'id'         => 'guest_blur_tip',
             'type'       => 'text',
             'title'      => '点击提示文字',
             'default'    => '登录后查看清晰图片',
-            'dependency' => array('guest_blur_enabled', '==', 'true'),
+            'dependency' => array('guest_blur_enabled', '==', '1'),
         ),
     ));
 }, 20);

@@ -122,21 +122,21 @@ add_action('after_setup_theme', function () {
             'options'    => array('gradient' => '渐变背景', 'glass' => '毛玻璃', 'dark' => '暗黑'),
             'default'    => 'gradient',
             'inline'     => true,
-            'dependency' => array('home_search_enabled', '==', 'true'),
+            'dependency' => array('home_search_enabled', '==', '1'),
         ),
         array(
             'id'         => 'home_search_placeholder',
             'type'       => 'text',
             'title'      => '搜索提示文字',
             'default'    => '搜索你想要的内容...',
-            'dependency' => array('home_search_enabled', '==', 'true'),
+            'dependency' => array('home_search_enabled', '==', '1'),
         ),
         array(
             'id'         => 'home_search_hot',
             'type'       => 'switcher',
             'title'      => '显示热门搜索',
             'default'    => true,
-            'dependency' => array('home_search_enabled', '==', 'true'),
+            'dependency' => array('home_search_enabled', '==', '1'),
         ),
         array(
             'id'         => 'home_search_hot_tags',
@@ -144,7 +144,7 @@ add_action('after_setup_theme', function () {
             'title'      => '热门搜索标签',
             'desc'       => '用逗号分隔',
             'default'    => 'WordPress,子比主题,知集,教程,资源',
-            'dependency' => array('home_search_hot', '==', 'true'),
+            'dependency' => array('home_search_hot', '==', '1'),
         ),
     ));
 }, 20);

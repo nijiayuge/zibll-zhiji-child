@@ -126,7 +126,7 @@ add_action('after_setup_theme', function () {
             'default'    => 30,
             'min'        => 5,
             'max'        => 80,
-            'dependency' => array('tag3d_enabled', '==', 'true'),
+            'dependency' => array('tag3d_enabled', '==', '1'),
         ),
         array(
             'id'         => 'tag3d_radius',
@@ -135,7 +135,7 @@ add_action('after_setup_theme', function () {
             'default'    => 150,
             'min'        => 80,
             'max'        => 260,
-            'dependency' => array('tag3d_enabled', '==', 'true'),
+            'dependency' => array('tag3d_enabled', '==', '1'),
         ),
     ));
 }, 20);

@@ -197,7 +197,7 @@ add_action('after_setup_theme', function () {
             'title'      => '文档 URL 别名（slug）',
             'default'    => 'docs',
             'desc'       => '文档归档页的 URL 前缀，修改后需重新保存固定链接。',
-            'dependency' => array('document_enabled', '==', 'true'),
+            'dependency' => array('document_enabled', '==', '1'),
         ),
         array(
             'id'         => 'document_toc',
@@ -205,7 +205,7 @@ add_action('after_setup_theme', function () {
             'title'      => '详情页 TOC 自动目录',
             'default'    => true,
             'desc'       => '在文档详情页自动生成 h2/h3 目录导航（由模板渲染）。',
-            'dependency' => array('document_enabled', '==', 'true'),
+            'dependency' => array('document_enabled', '==', '1'),
         ),
     ));
 }, 20);

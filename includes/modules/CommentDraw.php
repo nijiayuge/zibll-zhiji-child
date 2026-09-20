@@ -200,7 +200,7 @@ add_action('after_setup_theme', function () {
             'type'       => 'text',
             'title'      => '按钮提示文字',
             'default'    => '手绘一张配图，让评论更生动',
-            'dependency' => array('comment_draw_enabled', '==', 'true'),
+            'dependency' => array('comment_draw_enabled', '==', '1'),
         ),
     ));
 }, 20);

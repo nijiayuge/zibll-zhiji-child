@@ -105,7 +105,7 @@ add_action('after_setup_theme', function () {
             'min'        => 10,
             'max'        => 200,
             'desc'       => '热门标签页面显示的标签数量（按文章数量降序）。',
-            'dependency' => array('hot_tags_enabled', '==', 'true'),
+            'dependency' => array('hot_tags_enabled', '==', '1'),
         ),
         array(
             'id'         => 'hot_tags_columns',
@@ -114,7 +114,7 @@ add_action('after_setup_theme', function () {
             'default'    => '6',
             'options'    => array('3' => '3列', '4' => '4列', '5' => '5列', '6' => '6列'),
             'desc'       => '桌面端每行显示的标签卡片数量（移动端固定 3 列）。',
-            'dependency' => array('hot_tags_enabled', '==', 'true'),
+            'dependency' => array('hot_tags_enabled', '==', '1'),
         ),
         array(
             'id'         => 'hot_tags_show_count',
@@ -122,7 +122,7 @@ add_action('after_setup_theme', function () {
             'title'      => '显示文章数量',
             'default'    => true,
             'desc'       => '在标签卡片下方显示该标签下的文章数量。',
-            'dependency' => array('hot_tags_enabled', '==', 'true'),
+            'dependency' => array('hot_tags_enabled', '==', '1'),
         ),
     ));
 }, 20);

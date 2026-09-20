@@ -75,28 +75,28 @@ add_action('after_setup_theme', function () {
             'type'       => 'textarea',
             'title'      => '自定义 CSS',
             'desc'       => '输出到 head 的 style 标签内',
-            'dependency' => array('custom_code_enabled', '==', 'true'),
+            'dependency' => array('custom_code_enabled', '==', '1'),
         ),
         array(
             'id'         => 'custom_head',
             'type'       => 'textarea',
             'title'      => '自定义 head 代码',
             'desc'       => '统计代码/验证代码等，原样输出（仅管理员可改）',
-            'dependency' => array('custom_code_enabled', '==', 'true'),
+            'dependency' => array('custom_code_enabled', '==', '1'),
         ),
         array(
             'id'         => 'custom_footer',
             'type'       => 'textarea',
             'title'      => '自定义 footer 代码',
             'desc'       => '输出到 body 结束前，原样输出（仅管理员可改）',
-            'dependency' => array('custom_code_enabled', '==', 'true'),
+            'dependency' => array('custom_code_enabled', '==', '1'),
         ),
         array(
             'id'         => 'footer_credit',
             'type'       => 'text',
             'title'      => '自定义页脚版权',
             'desc'       => '纯文本，显示在页脚底部',
-            'dependency' => array('custom_code_enabled', '==', 'true'),
+            'dependency' => array('custom_code_enabled', '==', '1'),
         ),
     ));
 }, 20);

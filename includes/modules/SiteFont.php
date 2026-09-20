@@ -166,7 +166,7 @@ add_action('after_setup_theme', function () {
             'desc'       => '字体文件随主题分发，所有访客无需安装即可显示（与下方手填字体名叠加使用：手填字体优先，本地字体兜底）。',
             'options'    => zhiji_site_font_local_fonts(),
             'default'    => 'none',
-            'dependency' => array('site_font_enabled', '==', 'true'),
+            'dependency' => array('site_font_enabled', '==', '1'),
         ),
         array(
             'id'         => 'site_font_body',
@@ -174,7 +174,7 @@ add_action('after_setup_theme', function () {
             'title'      => '正文字体',
             'desc'       => '可选。填访客电脑已安装的字体名（如 楷体）；留空时使用上方内置本地字体。',
             'default'    => '',
-            'dependency' => array('site_font_enabled', '==', 'true'),
+            'dependency' => array('site_font_enabled', '==', '1'),
         ),
         array(
             'id'         => 'site_font_title',
@@ -182,7 +182,7 @@ add_action('after_setup_theme', function () {
             'title'      => '标题字体',
             'desc'       => '字体名称，如：Noto Serif SC',
             'default'    => '',
-            'dependency' => array('site_font_enabled', '==', 'true'),
+            'dependency' => array('site_font_enabled', '==', '1'),
         ),
         array(
             'id'         => 'site_font_size',
@@ -192,7 +192,7 @@ add_action('after_setup_theme', function () {
             'default'    => '',
             'min'        => 12,
             'max'        => 24,
-            'dependency' => array('site_font_enabled', '==', 'true'),
+            'dependency' => array('site_font_enabled', '==', '1'),
         ),
         array(
             'id'         => 'site_font_custom_url',
@@ -200,7 +200,7 @@ add_action('after_setup_theme', function () {
             'title'      => '自托管字体样式地址',
             'desc'       => '如需外部字体，请先自托管（本地或自建 CDN）再填写 CSS 地址。主题不内置任何外部字体源。',
             'default'    => '',
-            'dependency' => array('site_font_enabled', '==', 'true'),
+            'dependency' => array('site_font_enabled', '==', '1'),
         ),
     ));
 }, 20);

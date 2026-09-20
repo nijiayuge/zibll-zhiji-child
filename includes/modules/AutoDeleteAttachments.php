@@ -102,7 +102,7 @@ add_action('after_setup_theme', function () {
             'options'    => array('thumbnail' => '仅特色图片', 'all' => '全部附件'),
             'default'    => 'all',
             'inline'     => true,
-            'dependency' => array('auto_delete_attachments_enabled', '==', 'true'),
+            'dependency' => array('auto_delete_attachments_enabled', '==', '1'),
         ),
         array(
             'id'         => 'auto_delete_attachments_file',
@@ -110,7 +110,7 @@ add_action('after_setup_theme', function () {
             'title'      => '同时删除服务器文件',
             'default'    => true,
             'desc'       => '关闭则仅从媒体库删除，保留服务器文件',
-            'dependency' => array('auto_delete_attachments_enabled', '==', 'true'),
+            'dependency' => array('auto_delete_attachments_enabled', '==', '1'),
         ),
     ));
 }, 20);

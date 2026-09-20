@@ -129,7 +129,7 @@ add_action('after_setup_theme', function () {
             'min'        => 0,
             'max'        => 10,
             'desc'       => '0 为不补零；例如 6 位显示 000123',
-            'dependency' => array('comment_uid_enabled', '==', 'true'),
+            'dependency' => array('comment_uid_enabled', '==', '1'),
         ),
     ));
 }, 20);

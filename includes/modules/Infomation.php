@@ -120,7 +120,7 @@ add_action('after_setup_theme', function () {
             'title'      => 'URL 别名（slug）',
             'default'    => 'infomation',
             'desc'       => '修改后需在 设置→固定链接 中保存一次以刷新重写规则。',
-            'dependency' => array('infomation_enabled', '==', 'true'),
+            'dependency' => array('infomation_enabled', '==', '1'),
         ),
     ));
 }, 20);

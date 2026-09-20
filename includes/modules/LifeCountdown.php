@@ -171,7 +171,7 @@ add_action('after_setup_theme', function () {
             'title'      => '网站生日',
             'default'    => '',
             'desc'       => '格式 2026-01-01；留空自动取第一篇已发布文章日期',
-            'dependency' => array('countdown_enabled', '==', 'true'),
+            'dependency' => array('countdown_enabled', '==', '1'),
         ),
     ));
 }, 20);

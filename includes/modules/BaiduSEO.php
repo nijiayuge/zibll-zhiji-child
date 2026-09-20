@@ -105,7 +105,7 @@ add_action('after_setup_theme', function () {
             'title'      => '站点地址 site',
             'default'    => '',
             'desc'       => '百度搜索资源平台 → 普通收录 → 推送接口中显示的 site 参数',
-            'dependency' => array('baidu_seo_enabled', '==', 'true'),
+            'dependency' => array('baidu_seo_enabled', '==', '1'),
         ),
         array(
             'id'         => 'baidu_seo_token',
@@ -113,7 +113,7 @@ add_action('after_setup_theme', function () {
             'title'      => '推送令牌 token',
             'default'    => '',
             'desc'       => '百度搜索资源平台生成的推送 token',
-            'dependency' => array('baidu_seo_enabled', '==', 'true'),
+            'dependency' => array('baidu_seo_enabled', '==', '1'),
         ),
     ));
 }, 20);

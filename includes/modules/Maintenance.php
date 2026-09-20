@@ -129,14 +129,14 @@ add_action('after_setup_theme', function () {
             'type'       => 'text',
             'title'      => '维护页标题',
             'default'    => '站点维护中',
-            'dependency' => array('maintenance_enabled', '==', 'true'),
+            'dependency' => array('maintenance_enabled', '==', '1'),
         ),
         array(
             'id'         => 'maintenance_desc',
             'type'       => 'textarea',
             'title'      => '维护页描述',
             'default'    => '我们正在对站点进行升级维护，预计很快恢复。给您带来不便，敬请谅解！',
-            'dependency' => array('maintenance_enabled', '==', 'true'),
+            'dependency' => array('maintenance_enabled', '==', '1'),
         ),
         array(
             'id'         => 'maintenance_allow_login',
@@ -144,7 +144,7 @@ add_action('after_setup_theme', function () {
             'title'      => '登录用户可访问',
             'default'    => true,
             'desc'       => '开启后，已登录用户不受维护模式影响。',
-            'dependency' => array('maintenance_enabled', '==', 'true'),
+            'dependency' => array('maintenance_enabled', '==', '1'),
         ),
         array(
             'id'         => 'maintenance_whitelist',
@@ -152,7 +152,7 @@ add_action('after_setup_theme', function () {
             'title'      => '白名单 IP',
             'default'    => '',
             'desc'       => '多个IP用逗号分隔，白名单内的IP不受维护模式影响。',
-            'dependency' => array('maintenance_enabled', '==', 'true'),
+            'dependency' => array('maintenance_enabled', '==', '1'),
         ),
     ));
 }, 20);

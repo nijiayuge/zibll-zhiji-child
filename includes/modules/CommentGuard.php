@@ -114,7 +114,7 @@ add_action('after_setup_theme', function () {
             'type'       => 'textarea',
             'title'      => '敏感词列表',
             'desc'       => '使用 || 分隔，如：广告||加微信||代刷',
-            'dependency' => array('comment_guard_enabled', '==', 'true'),
+            'dependency' => array('comment_guard_enabled', '==', '1'),
         ),
         array(
             'id'         => 'comment_guard_require_cn',
@@ -122,7 +122,7 @@ add_action('after_setup_theme', function () {
             'title'      => '评论必须包含中文',
             'default'    => false,
             'desc'       => '评论内容不含任何中文字符时置为待审核',
-            'dependency' => array('comment_guard_enabled', '==', 'true'),
+            'dependency' => array('comment_guard_enabled', '==', '1'),
         ),
         array(
             'id'         => 'comment_guard_max_len',
@@ -130,7 +130,7 @@ add_action('after_setup_theme', function () {
             'title'      => '评论最大字数',
             'default'    => 0,
             'desc'       => '超过该字数的评论置为待审核，0 表示不限制',
-            'dependency' => array('comment_guard_enabled', '==', 'true'),
+            'dependency' => array('comment_guard_enabled', '==', '1'),
         ),
         array(
             'id'         => 'comment_guard_hint',
@@ -138,7 +138,7 @@ add_action('after_setup_theme', function () {
             'title'      => '前台提示文字',
             'default'    => '',
             'desc'       => '评论框下方显示规则提示，留空不显示',
-            'dependency' => array('comment_guard_enabled', '==', 'true'),
+            'dependency' => array('comment_guard_enabled', '==', '1'),
         ),
     ));
 }, 20);

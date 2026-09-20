@@ -188,7 +188,7 @@ add_action('after_setup_theme', function () {
             'min'        => 1,
             'max'        => 100,
             'step'       => 1,
-            'dependency' => array('webp_enabled', '==', 'true'),
+            'dependency' => array('webp_enabled', '==', '1'),
         ),
         array(
             'id'         => 'webp_keep_original',
@@ -196,7 +196,7 @@ add_action('after_setup_theme', function () {
             'title'      => '保留原图',
             'desc'       => '转换 WebP 后是否保留原始 JPG/PNG 文件（建议保留，兼容不支持 WebP 的浏览器）',
             'default'    => true,
-            'dependency' => array('webp_enabled', '==', 'true'),
+            'dependency' => array('webp_enabled', '==', '1'),
         ),
         array(
             'type'    => 'submessage',

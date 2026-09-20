@@ -140,7 +140,7 @@ add_action('after_setup_theme', function () {
             'title'      => 'alt属性前缀',
             'desc'       => '自动生成的alt属性前缀（可选）',
             'default'    => '',
-            'dependency' => array('auto_image_alt_enabled', '==', 'true'),
+            'dependency' => array('auto_image_alt_enabled', '==', '1'),
         ),
         array(
             'id'         => 'auto_image_alt_suffix',
@@ -148,7 +148,7 @@ add_action('after_setup_theme', function () {
             'title'      => 'alt属性后缀',
             'desc'       => '自动生成的alt属性后缀（可选）',
             'default'    => '',
-            'dependency' => array('auto_image_alt_enabled', '==', 'true'),
+            'dependency' => array('auto_image_alt_enabled', '==', '1'),
         ),
     ));
 }, 20);

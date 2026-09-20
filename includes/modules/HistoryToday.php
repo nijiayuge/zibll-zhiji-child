@@ -113,7 +113,7 @@ add_action('after_setup_theme', function () {
             'type'       => 'text',
             'title'      => '区块标题',
             'default'    => '往年今日',
-            'dependency' => array('history_today_enabled', '==', 'true'),
+            'dependency' => array('history_today_enabled', '==', '1'),
         ),
         array(
             'id'         => 'history_today_limit',
@@ -122,7 +122,7 @@ add_action('after_setup_theme', function () {
             'default'    => 10,
             'min'        => 1,
             'max'        => 50,
-            'dependency' => array('history_today_enabled', '==', 'true'),
+            'dependency' => array('history_today_enabled', '==', '1'),
         ),
     ));
 }, 20);

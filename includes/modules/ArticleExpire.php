@@ -109,7 +109,7 @@ add_action('after_setup_theme', function () {
             'default'    => 180,
             'min'        => 7,
             'max'        => 3650,
-            'dependency' => array('article_expire_enabled', '==', 'true'),
+            'dependency' => array('article_expire_enabled', '==', '1'),
         ),
         array(
             'id'         => 'article_expire_text',
@@ -117,21 +117,21 @@ add_action('after_setup_theme', function () {
             'title'      => '提示文字',
             'desc'       => '支持 {days} 变量显示实际天数',
             'default'    => '本文发布已超过 {days} 天，部分内容可能已过时，请谨慎参考。',
-            'dependency' => array('article_expire_enabled', '==', 'true'),
+            'dependency' => array('article_expire_enabled', '==', '1'),
         ),
         array(
             'id'         => 'article_expire_bg',
             'type'       => 'color',
             'title'      => '提示框背景色',
             'default'    => '#fff3cd',
-            'dependency' => array('article_expire_enabled', '==', 'true'),
+            'dependency' => array('article_expire_enabled', '==', '1'),
         ),
         array(
             'id'         => 'article_expire_text_color',
             'type'       => 'color',
             'title'      => '提示文字颜色',
             'default'    => '#856404',
-            'dependency' => array('article_expire_enabled', '==', 'true'),
+            'dependency' => array('article_expire_enabled', '==', '1'),
         ),
     ));
 }, 20);

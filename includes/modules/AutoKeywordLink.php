@@ -135,14 +135,14 @@ add_action('after_setup_theme', function () {
             'default'    => 1,
             'min'        => 1,
             'max'        => 5,
-            'dependency' => array('auto_keyword_link_enabled', '==', 'true'),
+            'dependency' => array('auto_keyword_link_enabled', '==', '1'),
         ),
         array(
             'id'         => 'auto_keyword_link_custom',
             'type'       => 'repeater',
             'title'      => '自定义关键词映射',
             'desc'       => '除文章标签外，可添加自定义关键词=>URL映射',
-            'dependency' => array('auto_keyword_link_enabled', '==', 'true'),
+            'dependency' => array('auto_keyword_link_enabled', '==', '1'),
             'fields'     => array(
                 array('id' => 'keyword', 'type' => 'text', 'title' => '关键词'),
                 array('id' => 'url',     'type' => 'text', 'title' => '链接URL'),
