@@ -39,7 +39,9 @@ function zhiji_article_expire_notice($content)
     if (!zhiji_is_enabled('article_expire_enabled')) {
         return $content;
     }
-    if (!is_singular('post') || !in_the_loop() || !is_main_query()) {
+    // ⚠️ 只判断 is_singular：实测父主题 zibll 渲染文章时 the_content 触发点不在主循环里
+    //    （in_the_loop() 恒为 false），若再加 in_the_loop/is_main_query 检查会把正常文章也挡掉
+    if (!is_singular('post')) {
         return $content;
     }
 
