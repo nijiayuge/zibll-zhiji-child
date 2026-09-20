@@ -43,27 +43,37 @@ function zhiji_site_font_safe_name($v)
 }
 
 /**
- * 内置本地字体清单（key => [family 名, 文件, 说明]）。
- * 字体文件随主题分发（assets/fonts/），所有访客无需本地安装。
- * 霞鹜文楷 Lite：开源 OFL 协议免费商用；已子集化（GB2312 全字 6906 字符，woff2 1.5MB）。
+ * 内置本地字体清单（key => 标签，下拉用）
  */
 function zhiji_site_font_local_fonts()
 {
     return array(
-        'none'   => '不使用本地字体',
-        'wenkai' => '霞鹜文楷（本地内置）',
+        'none'      => '不使用本地字体',
+        'wenkai'    => '霞鹜文楷（本地内置）',
+        'sourcehan' => '思源宋体（本地内置）',
     );
 }
 
 /**
- * 本地字体定义（key 与「内置本地字体」下拉一致）
+ * 本地字体定义（key 与下拉一致）。
+ * files: font-weight => 文件相对路径。含 700 字重时页面粗体用真字体而非合成加粗。
+ * 霞鹜文楷无 Bold 字重，用 Medium 映射到 700。
  *
- * @return array key => [family 名, 文件相对路径, font-display]
+ * @return array key => [family 名, files, font-display]
  */
 function zhiji_site_font_local_faces()
 {
     return array(
-        'wenkai' => array('LXGW WenKai Lite', 'fonts/lxgw-wenkai-lite.woff2', 'swap'),
+        'wenkai' => array(
+            'LXGW WenKai Lite',
+            array('normal' => 'fonts/lxgw-wenkai-lite.woff2', '700' => 'fonts/lxgw-wenkai-medium.woff2'),
+            'swap',
+        ),
+        'sourcehan' => array(
+            'Source Han Serif SC',
+            array('normal' => 'fonts/source-han-serif.woff2', '700' => 'fonts/source-han-serif-bold.woff2'),
+            'swap',
+        ),
     );
 }
 
@@ -94,14 +104,22 @@ add_action('wp_head', function () {
     $prefix     = '';
     $family_str = '';
     if (isset($faces[$local])) {
-        list($family, $file, $display) = $faces[$local];
+        list($family, $files, $display) = $faces[$local];
         $family_str = $family;
-        printf(
-            '<style id="zhiji-font-face">@font-face{font-family:"%1$s";src:url("%2$s") format("woff2");font-weight:normal;font-style:normal;font-display:%3$s;}</style>' . "\n",
-            esc_attr($family),
-            esc_url(zhiji_asset_url($file)),
-            esc_attr($display)
-        );
+
+        // 输出各字重的 @font-face（多 weight 同 family，浏览器按粗细自动选文件）
+        $face_css = '';
+        foreach ($files as $weight => $file) {
+            $face_css .= sprintf(
+                '@font-face{font-family:"%1$s";src:url("%2$s") format("woff2");font-weight:%3$s;font-style:normal;font-display:%4$s;}',
+                esc_attr($family),
+                esc_url(zhiji_asset_url($file)),
+                esc_attr($weight),
+                esc_attr($display)
+            );
+        }
+        printf('<style id="zhiji-font-face">%s</style>' . "\n", $face_css);
+
         $prefix = $family . ',';
         if ('' === $body) {
             $body = $family;
