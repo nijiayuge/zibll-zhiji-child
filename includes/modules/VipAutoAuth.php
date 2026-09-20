@@ -210,11 +210,24 @@ add_action('zhiji_daily_vip_check', function () {
         if (!$user->exists()) {
             continue;
         }
+        $auth_name = get_user_meta($user_id, 'zhiji_vip_auth_name', true);
+        if (!$auth_name) {
+            $auth_name = 'VIP认证用户';
+        }
         $user->set_role('subscriber');
         delete_user_meta($user_id, 'zhiji_vip_auth');
         delete_user_meta($user_id, 'zhiji_vip_auth_name');
         delete_user_meta($user_id, 'zhiji_vip_auth_time');
-        zhiji_notify('vip_auto_auth_expired', array('user_id' => $user_id));
+        zhiji_notify('vip_auto_auth_expired', array(
+            'user_id' => $user_id,
+            'title'   => '会员认证已到期取消',
+            'content' => sprintf('你的「%s」认证身份已于 %s 到期，用户组已恢复为普通用户。续费会员后可重新自动认证。', $auth_name, mysql2date('Y-m-d H:i', (string) $exp)),
+            'data'    => array(
+                '认证身份' => $auth_name,
+                '到期时间' => mysql2date('Y-m-d H:i', (string) $exp),
+                '当前用户组' => '订阅者（subscriber）',
+            ),
+        ));
     }
 });
 
