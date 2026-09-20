@@ -1,14 +1,19 @@
 <?php
 /**
  * @module  VipAutoAuth
- * @desc    开通会员自动认证：购买会员后自动调整用户组并加认证标识，会员到期自动取消
+ * @desc    开通会员自动认证：购买会员后自动调整用户组并加认证徽章；会员到期（每日巡检）自动取消
  * @option  vip_auto_auth_enabled  总开关
  *          vip_auto_auth_role     认证用户组
  *          vip_auto_auth_name     认证名称
- * @hook    zibpay_pay_success · zibpay_user_vip_expired · zib_get_user_name · wp_head
+ * @hook    payment_order_success（父主题真实钩子，zibpay/class/order-class.php，传订单对象）
+ *          user_name_badge（父主题用户名徽章 filter）
+ *          zhiji_daily_vip_check（每日 cron，自调度）
  * @since   2.0.0
  * @migrate 自 v1 `inc/Functions/VipAutoAuth.php`
- *          （依赖父主题 zibll 的 zibpay 钩子；钩子监听不经 Adapter，父主题未触发时静默无效果）
+ *          ⚠️ 2026-09-20 联调修正：v1 挂的 zibpay_pay_success / zibpay_user_vip_expired /
+ *          zib_get_user_name 三个钩子在父主题中**均不存在**（从未生效过）。
+ *          真实挂点：payment_order_success（订单对象）、user_name_badge（filter）、
+ *          到期取消改为自调度每日 cron 扫描 vip_exp_date。
  */
 
 defined('ABSPATH') || exit;
@@ -23,39 +28,44 @@ Zhiji_Registry::register_module('vip_auto_auth', array(
     'option'   => 'vip_auto_auth_enabled',
 ));
 
+/** 允许认证的角色白名单（防止配置被改成 administrator 等高危角色） */
+function zhiji_vip_auth_allowed_roles()
+{
+    return array('contributor', 'author', 'editor');
+}
+
 /* ============================================================
- * 业务逻辑
+ * 支付成功 → 自动认证
  * ============================================================ */
 
 /**
- * 开通会员（订单类型 4）后自动认证
+ * 购买会员（order_type=4）后自动认证
  *
- * @param array $order   订单数据
- * @param array $product 商品数据
+ * @param object $order 订单对象（zibpay_order 表行）
  * @return void
  */
-function zhiji_vip_auto_auth_after_pay($order, $product = array())
+function zhiji_vip_auto_auth_after_pay($order)
 {
     if (!zhiji_is_enabled('vip_auto_auth_enabled')) {
         return;
     }
-    $user_id = isset($order['user_id']) ? (int) $order['user_id'] : 0;
+    if (!is_object($order)) {
+        return;
+    }
+    $user_id = isset($order->user_id) ? (int) $order->user_id : 0;
     if (!$user_id) {
         return;
     }
-    // 4 = 购买会员
-    if (!isset($order['order_type']) || (int) $order['order_type'] !== 4) {
+    // 4 = 购买会员（父主题 order_type 为 varchar，宽松比较）
+    if (!isset($order->order_type) || 4 != $order->order_type) {
         return;
     }
 
     $role = (string) zhiji_get_option('vip_auto_auth_role', 'contributor');
-    $name = (string) zhiji_get_option('vip_auto_auth_name', 'VIP认证用户');
-
-    // 仅允许提升到白名单内的角色，避免配置被改成 administrator
-    $allowed = array('contributor', 'author', 'editor');
-    if (!in_array($role, $allowed, true)) {
+    if (!in_array($role, zhiji_vip_auth_allowed_roles(), true)) {
         $role = 'contributor';
     }
+    $name = (string) zhiji_get_option('vip_auto_auth_name', 'VIP认证用户');
 
     $user = new WP_User($user_id);
     if (!$user->exists()) {
@@ -68,66 +78,30 @@ function zhiji_vip_auto_auth_after_pay($order, $product = array())
 
     zhiji_notify('vip_auto_auth_granted', array('user_id' => $user_id, 'role' => $role));
 }
-add_action('zibpay_pay_success', 'zhiji_vip_auto_auth_after_pay', 10, 2);
+add_action('payment_order_success', 'zhiji_vip_auto_auth_after_pay', 20);
 
-/**
- * 会员到期后取消认证（恢复订阅者）
- *
- * @param int $user_id
- * @return void
- */
-function zhiji_vip_auto_auth_expired($user_id)
-{
+/* ============================================================
+ * 徽章（父主题 user_name_badge filter）
+ * ============================================================ */
+add_filter('user_name_badge', function ($icon, $user_id) {
     if (!zhiji_is_enabled('vip_auto_auth_enabled')) {
-        return;
-    }
-    $user_id = (int) $user_id;
-    if (!get_user_meta($user_id, 'zhiji_vip_auth', true)) {
-        return;
-    }
-
-    $user = new WP_User($user_id);
-    if (!$user->exists()) {
-        return;
-    }
-    $user->set_role('subscriber');
-    delete_user_meta($user_id, 'zhiji_vip_auth');
-    delete_user_meta($user_id, 'zhiji_vip_auth_name');
-    delete_user_meta($user_id, 'zhiji_vip_auth_time');
-}
-add_action('zibpay_user_vip_expired', 'zhiji_vip_auto_auth_expired', 10, 1);
-
-/**
- * 用户名后追加认证标识
- *
- * @param string $name    用户名 HTML
- * @param int    $user_id 用户 ID
- * @return string
- */
-function zhiji_vip_auto_auth_badge($name, $user_id)
-{
-    if (!zhiji_is_enabled('vip_auto_auth_enabled')) {
-        return $name;
+        return $icon;
     }
     if (!get_user_meta((int) $user_id, 'zhiji_vip_auth', true)) {
-        return $name;
+        return $icon;
     }
-    $auth_name = get_user_meta((int) $user_id, 'zhiji_vip_auth_name', true);
-    if (!$auth_name) {
-        $auth_name = 'VIP认证用户';
+    $name = get_user_meta((int) $user_id, 'zhiji_vip_auth_name', true);
+    if (!$name) {
+        $name = 'VIP认证用户';
     }
-
-    $badge = '<span class="zhiji-vip-auth-badge" title="' . esc_attr($auth_name) . '">'
+    return $icon . '<span class="zhiji-vip-auth-badge" title="' . esc_attr($name) . '">'
         . '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">'
         . '<path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>'
         . '</svg></span>';
-
-    return $name . $badge;
-}
-add_filter('zib_get_user_name', 'zhiji_vip_auto_auth_badge', 10, 2);
+}, 10, 2);
 
 /**
- * 认证标识样式（wp_head 内联，量小仅一段）
+ * 徽章样式
  */
 add_action('wp_head', function () {
     if (!zhiji_is_enabled('vip_auto_auth_enabled')) {
@@ -141,6 +115,56 @@ add_action('wp_head', function () {
 }, 100);
 
 /* ============================================================
+ * 到期取消（每日 cron 扫描）
+ * ============================================================ */
+
+/**
+ * 调度每日巡检（模块启用时）
+ */
+add_action('init', function () {
+    if (!zhiji_is_enabled('vip_auto_auth_enabled')) {
+        wp_clear_scheduled_hook('zhiji_daily_vip_check');
+        return;
+    }
+    if (!wp_next_scheduled('zhiji_daily_vip_check')) {
+        wp_schedule_event(time() + HOUR_IN_SECONDS, 'daily', 'zhiji_daily_vip_check');
+    }
+});
+
+add_action('zhiji_daily_vip_check', function () {
+    if (!zhiji_is_enabled('vip_auto_auth_enabled')) {
+        return;
+    }
+    $users = get_users(array(
+        'meta_key'   => 'zhiji_vip_auth',
+        'meta_value' => 1,
+        'fields'     => 'ID',
+        'number'     => 500,
+    ));
+    $now = current_time('timestamp');
+    foreach ($users as $user_id) {
+        $exp = get_user_meta($user_id, 'vip_exp_date', true);
+        // Permanent = 永久会员；空值视为未知（不动作）
+        if ('' === $exp || 'Permanent' === $exp) {
+            continue;
+        }
+        $ts = strtotime((string) $exp);
+        if (!$ts || $ts > $now) {
+            continue; // 未到期
+        }
+        $user = new WP_User($user_id);
+        if (!$user->exists()) {
+            continue;
+        }
+        $user->set_role('subscriber');
+        delete_user_meta($user_id, 'zhiji_vip_auth');
+        delete_user_meta($user_id, 'zhiji_vip_auth_name');
+        delete_user_meta($user_id, 'zhiji_vip_auth_time');
+        zhiji_notify('vip_auto_auth_expired', array('user_id' => $user_id));
+    }
+});
+
+/* ============================================================
  * 后台字段
  * ============================================================ */
 add_action('after_setup_theme', function () {
@@ -149,7 +173,7 @@ add_action('after_setup_theme', function () {
             'id'      => 'vip_auto_auth_enabled',
             'type'    => 'switcher',
             'title'   => '启用自动认证',
-            'desc'    => '用户开通会员后自动认证用户组（依赖父主题会员系统钩子）',
+            'desc'    => '用户购买会员（父主题 payment_order_success 事件）后自动认证用户组；每日巡检会员到期（vip_exp_date）自动取消。',
             'default' => false,
         ),
         array(
