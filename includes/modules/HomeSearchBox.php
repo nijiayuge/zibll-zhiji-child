@@ -2,17 +2,18 @@
 /**
  * @module  HomeSearchBox
  * @desc    首页大搜索框：渐变/毛玻璃/暗黑三种背景，含热门搜索标签；
- *          首页自动插入（父主题 zib_body_before 钩子）或 [zhiji_search_box] 短代码
+ *          通过 [zhiji_search_box] 短代码插入（可放子比模块化首页的自定义 HTML 模块）
  * @option  home_search_enabled     总开关
- *          home_search_auto        首页自动显示
  *          home_search_bg_style    背景 gradient|glass|dark
  *          home_search_placeholder 提示文字
  *          home_search_hot         显示热门搜索
  *          home_search_hot_tags    热门标签
- * @hook    zib_body_before · 优先级 20（父主题钩子）
  * @shortcode [zhiji_search_box]
  * @since   2.0.0
  * @migrate 自 v1 `inc/Functions/HomeSearchBox.php`
+ *          ⚠️ 2026-09-20 经蒸馏索引交叉验证：v1 挂的 zib_body_before 在父主题
+ *          zibll 9.1 中不存在（首页为模块化布局，无 body 顶部扩展点），
+ *          「首页自动插入」从未生效，死代码不迁移；home_search_auto 选项一并移除。
  */
 
 defined('ABSPATH') || exit;
@@ -103,21 +104,6 @@ add_shortcode('zhiji_search_box', function () {
     return ob_get_clean();
 });
 
-/**
- * 首页自动插入（父主题 zib_body_before 钩子）
- */
-add_action('zib_body_before', function () {
-    if (!zhiji_is_enabled('home_search_enabled')) {
-        return;
-    }
-    if (!is_front_page()) {
-        return;
-    }
-    if (zhiji_is_enabled('home_search_auto', true)) {
-        zhiji_render_search_box();
-    }
-}, 20);
-
 /* ============================================================
  * 后台字段
  * ============================================================ */
@@ -128,13 +114,6 @@ add_action('after_setup_theme', function () {
             'type'    => 'switcher',
             'title'   => '启用首页大搜索框',
             'default' => false,
-        ),
-        array(
-            'id'         => 'home_search_auto',
-            'type'       => 'switcher',
-            'title'      => '首页自动显示',
-            'default'    => true,
-            'dependency' => array('home_search_enabled', '==', 'true'),
         ),
         array(
             'id'         => 'home_search_bg_style',
