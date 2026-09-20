@@ -6,7 +6,7 @@
  *          weiyu_posts_per_page  每页条数
  *          weiyu_show_avatar     显示头像
  *          weiyu_like_enabled    点赞
- * @hook    init / template_include(20) / wp_ajax_bigfa_like
+ * @hook    init / template_include(20) / wp_ajax_zhiji_weiyu_like
  * @since   2.0.0
  * @migrate 自 v1 `inc/Functions/Weiyu.php`（模板 templates/zhiji-weiyu.php 随迁）
  */
@@ -77,18 +77,19 @@ add_filter('template_include', function ($template) {
 }, 20);
 
 /* ============================================================
- * 点赞（bigfa_like 协议：与常用点赞 JS 兼容）
+ * 点赞（统一 AJAX 命名 zhiji_weiyu_like；请求参数沿用 um_id/um_action
+ * 协议，前端模板随迁、前后端同源可控）
  * 安全：同源 Referer 校验 + 每 IP 每分钟 20 次限频
  * ============================================================ */
-add_action('wp_ajax_bigfa_like', 'zhiji_weiyu_bigfa_like');
-add_action('wp_ajax_nopriv_bigfa_like', 'zhiji_weiyu_bigfa_like');
+add_action('wp_ajax_zhiji_weiyu_like', 'zhiji_weiyu_like');
+add_action('wp_ajax_nopriv_zhiji_weiyu_like', 'zhiji_weiyu_like');
 
 /**
  * 点赞处理
  *
  * @return void
  */
-function zhiji_weiyu_bigfa_like()
+function zhiji_weiyu_like()
 {
     if (!zhiji_is_enabled('weiyu_enabled') || !zhiji_is_enabled('weiyu_like_enabled', true)) {
         die('0');

@@ -159,7 +159,7 @@ function zhiji_weiyu_like(el) {
 			setTimeout(function(){ el.style.transform = ''; }, 300);
 		}
 	};
-	xhr.send('action=bigfa_like&um_id=' + id + '&um_action=ding');
+	xhr.send('action=zhiji_weiyu_like&um_id=' + id + '&um_action=ding');
 }
 </script>
 <?php endif; ?>

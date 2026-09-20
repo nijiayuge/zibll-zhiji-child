@@ -1,7 +1,7 @@
 <?php
 
 // 批量提交链接到必应
-function zhiji_bulk_bing_url_submission()
+function zhiji_bing_bulk_submit()
 {
     // 验证是否为POST请求
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -34,7 +34,7 @@ function zhiji_bulk_bing_url_submission()
     }
     exit();
 }
-add_action('wp_ajax_bulk_bing_url_submission', 'zhiji_bulk_bing_url_submission');
+add_action('wp_ajax_zhiji_bing_bulk_submit', 'zhiji_bing_bulk_submit');
 
 //导入主题设置
 function zhiji_ajax_options_import()
