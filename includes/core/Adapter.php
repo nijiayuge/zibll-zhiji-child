@@ -158,4 +158,36 @@ class Zhiji_Adapter
     {
         return defined('THEME_VERSION') ? THEME_VERSION : '';
     }
+    /**
+     * SVG 图标（父主题图标库；缺失返回空串）
+     *
+     * @param string $name 图标名
+     * @return string
+     */
+    public static function svg($name)
+    {
+        return function_exists('zib_get_svg') ? zib_get_svg($name) : '';
+    }
+
+    /**
+     * 用户会员等级（0 = 无会员/父主题缺失）
+     *
+     * @param int $user_id
+     * @return int
+     */
+    public static function user_vip_level($user_id)
+    {
+        return function_exists('zib_get_user_vip_level') ? (int) zib_get_user_vip_level($user_id) : 0;
+    }
+
+    /**
+     * 优惠码折扣文案（父主题 zibpay 文案函数；缺失返回空串）
+     *
+     * @param array $discount discount 结构
+     * @return string
+     */
+    public static function coupon_discount_text($discount)
+    {
+        return function_exists('zibpay_get_coupon_discount_text') ? (string) zibpay_get_coupon_discount_text($discount) : '';
+    }
 }
