@@ -71,8 +71,8 @@ add_filter('the_content', function ($content) {
     if (!zhiji_is_enabled('transplant_enabled') || !zhiji_is_enabled('transplant_wcr', true)) {
         return $content;
     }
-    // 仅文章正文
-    if (!is_singular('post') || !in_the_loop()) {
+    // 仅文章正文（不判断 in_the_loop：zibll 模板渲染上下文中该值为 false）
+    if (!is_singular('post') || is_feed() || is_preview()) {
         return $content;
     }
     $info = zhiji_wcr_output();
