@@ -35,6 +35,45 @@ function zhiji_vip_auth_allowed_roles()
 }
 
 /* ============================================================
+ * 通知事件注册（票据邮件模板；必须在业务调用前登记）
+ * ============================================================ */
+add_action('init', function () {
+    zhiji_notify_register_event('vip_auto_auth_granted', array(
+        'label'    => '会员认证开通',
+        'title'    => '恭喜，你的会员认证已开通',
+        'channels' => array('msg', 'mail'),
+        'toast'    => 'success',
+        'mail'     => 'ticket',
+    ));
+    zhiji_notify_register_event('vip_auto_auth_expired', array(
+        'label'    => '会员认证到期',
+        'title'    => '会员认证已到期取消',
+        'channels' => array('msg', 'mail'),
+        'toast'    => 'info',
+        'mail'     => 'ticket',
+    ));
+}, 15);
+
+/**
+ * 支付方式的可读名称
+ *
+ * @param string $pay_type 支付类型标识
+ * @return string
+ */
+function zhiji_vip_auth_pay_type_name($pay_type)
+{
+    $map = array(
+        'wxpay'  => '微信支付',
+        'alipay' => '支付宝',
+        'qqpay'  => 'QQ钱包',
+        'balance' => '余额支付',
+        'points' => '积分兑换',
+        'card'   => '卡密兑换',
+    );
+    return isset($map[$pay_type]) ? $map[$pay_type] : (string) $pay_type;
+}
+
+/* ============================================================
  * 支付成功 → 自动认证
  * ============================================================ */
 
@@ -76,7 +115,22 @@ function zhiji_vip_auto_auth_after_pay($order)
     update_user_meta($user_id, 'zhiji_vip_auth_name', $name);
     update_user_meta($user_id, 'zhiji_vip_auth_time', current_time('mysql'));
 
-    zhiji_notify('vip_auto_auth_granted', array('user_id' => $user_id, 'role' => $role));
+    // 票据数据：金额取实付，无实付回落订单价（均为 double(10,2)，可能为 null）
+    $price = isset($order->pay_price) && null !== $order->pay_price && '' !== $order->pay_price
+        ? (float) $order->pay_price
+        : (isset($order->order_price) ? (float) $order->order_price : 0.0);
+    zhiji_notify('vip_auto_auth_granted', array(
+        'user_id' => $user_id,
+        'title'   => '恭喜，你的会员认证已开通',
+        'content' => sprintf('你购买的会员已支付成功，系统已自动为你开通「%s」认证身份。', $name),
+        'data'    => array(
+            '订单号'   => isset($order->order_num) ? (string) $order->order_num : '',
+            '支付金额' => '¥' . number_format($price, 2),
+            '支付方式' => zhiji_vip_auth_pay_type_name(isset($order->pay_type) ? (string) $order->pay_type : ''),
+            '认证身份' => $name,
+        ),
+        'dedupe_key' => 'vip_auth_' . $user_id . '_' . (isset($order->order_num) ? $order->order_num : ''),
+    ));
 }
 add_action('payment_order_success', 'zhiji_vip_auto_auth_after_pay', 20);
 
