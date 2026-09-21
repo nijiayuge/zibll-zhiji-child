@@ -15,7 +15,7 @@ Zhiji_Registry::register_module('friend_link_apply', array(
     'title'    => '友链申请',
     'parent'   => 'zhiji_page',
     'priority' => 130,
-    'option'   => 'friend_link_apply_enabled',
+    'option'   => 'link_apply_enabled',
 ));
 
 

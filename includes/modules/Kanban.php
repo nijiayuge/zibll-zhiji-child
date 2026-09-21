@@ -39,10 +39,10 @@ add_action('wp_footer', function () {
     <div class="pio-container" id="zhiji-pio-container" aria-label="看板娘" style="<?php echo esc_attr($inline); ?>"><div class="pio-action"></div><canvas id="pio"></canvas></div>
     <script>
     (function(){
-        var move=function(){ var c=document.getElementById('zhiji-pio-container'); if(c&&document.body&&c.parentNode!==document.body){ document.body.appendChild(c); } }
+        function move(){ var c=document.getElementById('zhiji-pio-container'); if(c&&document.body&&c.parentNode!==document.body){ document.body.appendChild(c); } }
         move();
         var loaded=false;
-        var boot=function(){
+        function boot(){
             if(loaded){ return; }
             loaded=true;
             var head=document.head||document.getElementsByTagName('head')[0];
@@ -56,7 +56,7 @@ add_action('wp_footer', function () {
                 l2d+'pio_sdk4.js'
             ];
             var i=0;
-            var next=function(){
+            function next(){
                 if(i<libs.length){
                     var s=document.createElement('script');
                     s.src=libs[i++]; s.onload=next; s.onerror=next;

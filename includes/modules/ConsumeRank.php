@@ -184,7 +184,7 @@ add_shortcode('zhiji_consume_rank', function () {
     </style>
     <script>
     (function(){
-    var boot=function(){
+    function boot(){
     jQuery(function($){
     var box=$('#zhijiCrList'); if(!box.length) return;
     $.ajax({

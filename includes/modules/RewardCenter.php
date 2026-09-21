@@ -410,7 +410,7 @@ function zhiji_balance_source_label_fix() {
 	?>
 	<script id="zhiji-balance-label-fix">
 	(function(){
-		var fix = function(node) {
+		function fix(node) {
 			if (!node) return;
 			if (node.nodeType === 3) {
 				var t = node.nodeValue;
@@ -424,7 +424,7 @@ function zhiji_balance_source_label_fix() {
 			var cs = node.childNodes;
 			for (var i = 0; i < cs.length; i++) { fix(cs[i]); }
 		}
-		var boot = function() {
+		function boot() {
 			var root = document.querySelector('.user-center') || document.querySelector('.user-center-sidebar');
 			if (root) { fix(root); }
 		}

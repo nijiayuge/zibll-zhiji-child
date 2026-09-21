@@ -1,0 +1,33 @@
+/* 蒲公英特效（自研，参考图风格：浅棕线条两株，左小右大）
+ * .dandelion.pos-right（默认右侧）/ .pos-left（左侧）
+ * 花球 = 中心点 + conic-gradient 放射线，茎为细线 */
+.dandelion{position:fixed;bottom:12px;z-index:99998;pointer-events:none;width:150px;height:200px}
+.dandelion.pos-right{right:24px}
+.dandelion.pos-left{left:24px}
+/* 主茎（右侧大株） */
+.dandelion::before{content:"";position:absolute;left:70px;bottom:10px;width:1.5px;height:132px;background:linear-gradient(to top,#a8865f,rgba(168,134,95,.45));border-radius:2px}
+/* 小蒲公英花球（左株，28px，短放射线） */
+.smalldan{position:absolute;left:46px;bottom:138px;width:26px;height:26px;border-radius:50%;
+  background:
+    radial-gradient(circle,#b8956a 0 1.5px,transparent 2px),
+    repeating-conic-gradient(from 0deg,rgba(184,149,106,.55) 0deg 2deg,transparent 2deg 24deg),
+    repeating-conic-gradient(from 6deg,rgba(184,149,106,.95) 0deg 2deg,transparent 2deg 32deg);
+  animation:zhijiDanBreath 4s ease-in-out infinite}
+/* 小株斜枝 */
+.smalldan::before{content:"";position:absolute;left:13px;top:25px;width:1.5px;height:20px;background:rgba(168,134,95,.75);transform:rotate(20deg);transform-origin:top}
+/* 大蒲公英花球（右株，38px，长放射线） */
+.bigdan{position:absolute;left:58px;bottom:162px;width:36px;height:36px;border-radius:50%;
+  background:
+    radial-gradient(circle,#b8956a 0 2px,transparent 2.5px),
+    repeating-conic-gradient(from 0deg,rgba(184,149,106,.5) 0deg 1.5deg,transparent 1.5deg 20deg),
+    repeating-conic-gradient(from 4deg,rgba(184,149,106,.95) 0deg 2deg,transparent 2deg 28deg);
+  animation:zhijiDanBreath 4.6s ease-in-out infinite .4s}
+@keyframes zhijiDanBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+/* 左侧布局时镜像：整体镜像使两株朝向对称 */
+.dandelion.pos-left{transform:scaleX(-1)}
+.dandelion.pos-left .smalldan,.dandelion.pos-left .bigdan{animation-direction:alternate}
+@media (max-width:800px){
+  .dandelion{transform-origin:bottom;bottom:6px}
+  .dandelion.pos-right{right:10px;transform:scale(.75)}
+  .dandelion.pos-left{left:10px;transform:scale(.75) scaleX(-1)}
+}

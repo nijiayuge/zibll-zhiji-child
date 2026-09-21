@@ -1242,7 +1242,7 @@ ZHIJI_LOTTERY_CSS;
 
 ZHIJI_LOTTERY_JS;
 	// jQuery 由父主题在 head 稍后加载，本脚本先于其执行时可能未就绪：轮询等待后再运行。
-	echo '<script id="zhiji-lottery-js">(function(){var z_boot = function() {if(typeof window.jQuery==="undefined"){setTimeout(z_boot,80);return;}' . $lottery_js . '}z_boot();})();</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	echo '<script id="zhiji-lottery-js">(function(){function z_boot() {if(typeof window.jQuery==="undefined"){setTimeout(z_boot,80);return;}' . $lottery_js . '}z_boot();})();</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 }
 
 /**

@@ -1087,11 +1087,11 @@ function zhiji_coupon_give_exit_block() {
 			else ref = localStorage.getItem('zhiji_ref') || '';
 		} catch (e) { ref = ''; }
 
-		var setMsg = function(text, ok) {
+		function setMsg(text, ok) {
 			msg.textContent = text || '';
 			msg.className = 'zhiji-exit-give-msg ' + (ok ? 'success' : 'error');
 		}
-		var submit = function() {
+		function submit() {
 			if (busy) return;
 			var email = (input.value || '').trim();
 			if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -1152,15 +1152,15 @@ function zhiji_coupon_give_exit_block() {
 			shareBtn.addEventListener('click', function () {
 				var urlInput = document.getElementById('zhijiExitGiveShareUrl');
 				var url = urlInput.value || '';
-				var showOk = function () {
+				function showOk() {
 					shareBtn.textContent = '已复制';
 					setTimeout(function () { shareBtn.textContent = '复制链接'; }, 1500);
 				};
-				var showFail = function () {
+				function showFail() {
 					shareBtn.textContent = '复制失败，请手动选择复制';
 					setTimeout(function () { shareBtn.textContent = '复制链接'; }, 2200);
 				};
-				var fallbackCopy = function () {
+				function fallbackCopy() {
 					urlInput.focus();
 					urlInput.select();
 					urlInput.setSelectionRange(0, urlInput.value.length);
@@ -1401,9 +1401,9 @@ function zhiji_coupon_copy_script() {
 			if (!t) return;
 			var code = t.getAttribute('data-code') || t.textContent.trim();
 			var ori = t.textContent;
-			var ok = function() { t.textContent = '已复制'; setTimeout(function(){ t.textContent = ori; }, 1200); }
-			var fail = function() { t.textContent = '复制失败，请长按/双击手动选择'; setTimeout(function(){ t.textContent = ori; }, 2200); }
-			var fallback = function() {
+			function ok() { t.textContent = '已复制'; setTimeout(function(){ t.textContent = ori; }, 1200); }
+			function fail() { t.textContent = '复制失败，请长按/双击手动选择'; setTimeout(function(){ t.textContent = ori; }, 2200); }
+			function fallback() {
 				var ta = document.createElement('textarea');
 				ta.value = code;
 				ta.style.position = 'fixed';

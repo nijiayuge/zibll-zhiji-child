@@ -106,7 +106,7 @@ function zhiji_security_scan_file($rel)
  * 管理页
  * ============================================================ */
 add_action('admin_menu', function () {
-    if (!zhiji_is_enabled('security_scanner_enabled')) {
+    if (!zhiji_is_enabled('security_scan_enabled')) {
         return;
     }
     add_management_page(

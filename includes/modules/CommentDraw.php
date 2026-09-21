@@ -132,14 +132,14 @@ add_action('wp_footer', function () {
     var drawing = false;
     var hint = <?php echo wp_json_encode($hint); ?>;
     var cw = 640, ch = 360;
-    var resize=function(){
+    function resize(){
     var wrap = canvas.parentElement;
     var w = wrap.clientWidth;
     if(!w) return;
     var ratio = w / cw;
     canvas.style.height = (ch * ratio) + 'px';
     };
-    var pos=function(e){
+    function pos(e){
     var r = canvas.getBoundingClientRect();
     var t = e.touches ? e.touches[0] : e;
     return { x: (t.clientX - r.left) / r.width * cw, y: (t.clientY - r.top) / r.height * ch };
@@ -152,7 +152,7 @@ add_action('wp_footer', function () {
     canvas.addEventListener('touchend', function(){ drawing = false; });
     ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,cw,ch);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    var applyStyle=function(){ ctx.strokeStyle = cur; ctx.lineWidth = document.getElementById('zhiji-draw-size').value; };
+    function applyStyle(){ ctx.strokeStyle = cur; ctx.lineWidth = document.getElementById('zhiji-draw-size').value; };
     applyStyle();
     document.getElementById('zhiji-draw-size').addEventListener('input', applyStyle);
     var colorsBox = document.getElementById('zhiji-draw-colors');
@@ -164,8 +164,8 @@ add_action('wp_footer', function () {
     b.addEventListener('click', function(){ cur = c; applyStyle(); colorsBox.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-c') === c); }); });
     colorsBox.appendChild(b);
     });
-    var openMask=function(){ mask.classList.add('open'); setTimeout(resize, 50); };
-    var closeMask=function(){ mask.classList.remove('open'); };
+    function openMask(){ mask.classList.add('open'); setTimeout(resize, 50); };
+    function closeMask(){ mask.classList.remove('open'); };
     btn.addEventListener('click', openMask);
     document.getElementById('zhiji-draw-cancel').addEventListener('click', closeMask);
     document.getElementById('zhiji-draw-clear').addEventListener('click', function(){ ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,cw,ch); applyStyle(); });

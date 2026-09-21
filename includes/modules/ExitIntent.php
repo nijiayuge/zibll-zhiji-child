@@ -99,14 +99,14 @@ add_action('wp_footer', function () {
         if(!mask) return;
         var KEY='zhiji_exit_shown';
         var kanbanTrigger=<?php echo $kanban_trigger ? 'true' : 'false'; ?>;
-        var show=function(){
+        function show(){
             try { if(sessionStorage.getItem(KEY)) return; sessionStorage.setItem(KEY,'1'); } catch(err){}
             mask.classList.add('open');
             if(kanbanTrigger && typeof document.dispatchEvent==='function'){
                 try { document.dispatchEvent(new CustomEvent('zhiji_kanban_event',{detail:{type:'404',text:'别走呀，再看看嘛～'}})); } catch(err){}
             }
         }
-        var hide=function(){ mask.classList.remove('open'); }
+        function hide(){ mask.classList.remove('open'); }
         document.addEventListener('mouseout',function(e){
             if(e.clientY<=0 && !e.relatedTarget && !e.toElement){ show(); }
         });

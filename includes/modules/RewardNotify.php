@@ -387,13 +387,13 @@ function zhiji_reward_notify_frontend_highlight() {
 	(function(){
 		var HL_COLOR = (getComputedStyle(document.documentElement).getPropertyValue('--zhiji-brand') || '#2e7cf6').trim();
 		var HL_RE = /【([^】]{1,50})】/g;
-		var makeSpan = function(text) {
+		function makeSpan(text) {
 			var s = document.createElement('span');
 			s.style.cssText = 'display:inline-block;padding:3px 12px;margin:0 3px;border-radius:8px;background:#f0f7ff;color:'+HL_COLOR+';font-weight:700;border:1px dashed #c9a;font-size:14px;';
 			s.textContent = text;
 			return s;
 		}
-		var highlightTextNode = function(node) {
+		function highlightTextNode(node) {
 			if(!node.nodeValue || node.nodeValue.indexOf('【') < 0) return;
 			var frag = document.createDocumentFragment();
 			var last = 0;
@@ -406,7 +406,7 @@ function zhiji_reward_notify_frontend_highlight() {
 			if(last < node.nodeValue.length) frag.appendChild(document.createTextNode(node.nodeValue.slice(last)));
 			node.parentNode.replaceChild(frag, node);
 		}
-		var doHighlight = function(root) {
+		function doHighlight(root) {
 			if(!root) root = document;
 			var selectors = '.msg-center-content, .message-content, .zib-msg-content, .msg-detail, [class*=message] [class*=content]';
 			root.querySelectorAll(selectors).forEach(function(box){
@@ -422,7 +422,7 @@ function zhiji_reward_notify_frontend_highlight() {
 				nodes.forEach(highlightTextNode);
 			});
 		}
-		var highlightRewards = function() { doHighlight(document); }
+		function highlightRewards() { doHighlight(document); }
 		if (document.readyState === 'loading') {
 			document.addEventListener('DOMContentLoaded', highlightRewards);
 		} else {

@@ -1,0 +1,62 @@
+/*弹幕*/
+#danmu>*{
+
+    box-sizing:content-box;
+}
+#danmu {
+position:fixed;
+z-index:999;
+max-width:300px;
+right:10px;
+bottom:40px;
+}
+#danmu li {
+white-space: nowrap;
+display:flex;
+opacity:0;
+border-radius:20px;
+color:#fff;
+padding:3px 10px 3px 3px;
+clear:both;
+font-size:13px;
+height:26px;
+float:right;
+line-height:26px
+}
+#danmu li a.img {
+width:26px;
+height:26px
+}
+#danmu li a:hover {
+color:var(--theme-color)!important
+}
+#danmu li a:first-child {
+margin-right:4px;
+width:26px
+}
+#danmu li a:last-child,#danmu li a:last-child font {
+color:#fff
+}
+#danmu li a:last-child n {
+text-decoration:underline;
+margin:0 5px
+}
+#danmu li img {
+width:26px;
+height:26px;
+border-radius:100%;
+vertical-align:inherit
+}
+#danmu li a.altitle {
+max-width:150px;
+white-space:nowrap;
+text-overflow:ellipsis;
+overflow:hidden;
+word-break:break-all;
+}
+
+@media screen and (max-width:900px) {
+#danmu {
+display:none
+}
+}

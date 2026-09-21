@@ -204,7 +204,7 @@ function zhiji_email_subscribe_inject() {
     </style>
     <script>
     (function(){
-        var inject = function() {
+        function inject() {
             var pwd = document.querySelector('input[name="password2"]');
             if (!pwd) return false;
             var form = pwd.closest('form');
@@ -221,7 +221,7 @@ function zhiji_email_subscribe_inject() {
             }
             return true;
         }
-        var tryInject = function() {
+        function tryInject() {
             if (inject()) return;
             var t = setInterval(function(){
                 if (inject()) { clearInterval(t); }
@@ -568,7 +568,7 @@ function zhiji_email_subscribe_user_center_card() {
 	</style>
 	<script>
 	(function(){
-		var inject = function() {
+		function inject() {
 			var box = document.querySelector('.user-center-sidebar');
 			if (!box) return false;
 			if (document.getElementById('zhiji-sub-card')) return true;
@@ -605,7 +605,7 @@ function zhiji_email_subscribe_user_center_card() {
 			});
 			return true;
 		}
-		var tryInject = function() {
+		function tryInject() {
 			if (inject()) return;
 			var t = setInterval(function(){ if (inject()) clearInterval(t); }, 500);
 			setTimeout(function(){ clearInterval(t); }, 15000);

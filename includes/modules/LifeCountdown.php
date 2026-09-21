@@ -66,12 +66,12 @@ function zhiji_countdown_script()
 
     return '<script id="zhiji-countdown-js">'
         . '(function(){
-var pct=function(el,val){
+function pct(el,val){
 var v=Math.min(100,Math.max(0,val));
 el.querySelector(".zhiji-countdown-bar").style.width=v.toFixed(1)+"%";
 el.querySelector(".zhiji-countdown-pct").textContent=v.toFixed(1)+"%";
 };
-var run=function(){
+function run(){
 var box=document.querySelector(".zhiji-countdown[data-render=\"1\"]");
 if(!box) return;
 var now=new Date();

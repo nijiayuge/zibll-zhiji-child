@@ -334,6 +334,6 @@ ZHIJI_LIVE_FEED_CSS;
 	zhijiLiveFeedBoot();
 })();
 ZHIJI_LIVE_FEED_JS;
-	echo '<script id="zhiji-live-feed-js">(function(){var z_boot = function() {if(typeof window.jQuery==="undefined"){setTimeout(z_boot,80);return;}' . $js . '}z_boot();})();</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	echo '<script id="zhiji-live-feed-js">(function(){function z_boot() {if(typeof window.jQuery==="undefined"){setTimeout(z_boot,80);return;}' . $js . '}z_boot();})();</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 }
 add_action( 'wp_enqueue_scripts', 'zhiji_live_feed_enqueue', 98 );
