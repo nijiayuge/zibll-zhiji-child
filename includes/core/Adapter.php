@@ -234,4 +234,24 @@ class Zhiji_Adapter
         zibpay_update_user_balance($user_id, $args);
         return true;
     }
+
+    /**
+     * 发送 HTML 邮件（模块内统一入口，禁止业务模块直调 wp_mail）
+     *
+     * @param string $to      收件人
+     * @param string $subject 主题
+     * @param string $body    HTML 正文
+     * @param array  $headers 附加头
+     * @return bool
+     */
+    public static function mail_raw($to, $subject, $body, array $headers = array())
+    {
+        if (!is_email($to)) {
+            return false;
+        }
+        if (empty($headers)) {
+            $headers = array('Content-Type: text/html; charset=UTF-8');
+        }
+        return (bool) wp_mail($to, $subject, $body, $headers);
+    }
 }
