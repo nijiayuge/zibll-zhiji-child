@@ -122,4 +122,21 @@ class Zhiji_Registry
             'fields'   => $fields,
         ));
     }
+
+    /**
+     * 兼容 v1 迁移：接收 v1 风格的完整 section 数组（含 title/parent/priority/fields），
+     * 只取 fields，分节元信息以 register_module 注册表为准。
+     *
+     * 用途：v1 模块的 `CSF::createSection( ZHIJI_CHILD_OPTION_KEY, array( ... ) )`
+     * 只需替换函数名即可完成迁移，无需改动括号结构（避免大文件手术风险）。
+     *
+     * @param string $key     模块 key
+     * @param array  $section v1 风格 section 定义
+     * @return void
+     */
+    public static function csf_section_for_legacy($key, array $section)
+    {
+        $fields = isset($section['fields']) ? (array) $section['fields'] : array();
+        self::csf_section_for($key, $fields);
+    }
 }

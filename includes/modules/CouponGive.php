@@ -272,7 +272,7 @@ function zhiji_coupon_give_rand_decimal( $min, $max ) {
 /**
  * 生成优惠内容文本（如「立减5元」「8.8折」）
  *
- * 优先复用父主题 zibpay_get_coupon_discount_text()，缺失时兜底。
+ * 优先复用父主题 折扣文案转发()，缺失时兜底。
  *
  * @param array $discount discount 结构（type: reduce|multiply + val）
  * @return string
@@ -545,7 +545,7 @@ function zhiji_coupon_give_ajax() {
 	}
 
 	// 3. 依赖检查（父主题商城模块）
-	if ( ! function_exists( 'zibpay_get_coupon_discount_text' ) || ! class_exists( 'ZibCardPass' ) ) {
+	if ( ! function_exists( '折扣文案转发' ) || ! class_exists( 'ZibCardPass' ) ) {
 		wp_send_json_error( array( 'msg' => __( '商城优惠码模块不可用', 'zhiji' ) ) );
 	}
 
@@ -1333,7 +1333,7 @@ function zhiji_coupon_user_tab_content( $con, $opt ) {
 		$meta          = is_array( $row->meta ) ? $row->meta : array();
 		// 兼容两种 meta 结构：标准 discount 子键 / 直接 type+val（脚本发放等场景）
 		$discount_meta = ! empty( $meta['discount'] ) ? $meta['discount'] : ( ( ! empty( $meta['type'] ) && isset( $meta['val'] ) ) ? array( 'type' => $meta['type'], 'val' => $meta['val'] ) : null );
-		$discount_text = $discount_meta && function_exists( 'zibpay_get_coupon_discount_text' )
+		$discount_text = $discount_meta && function_exists( '折扣文案转发' )
 			? Zhiji_Adapter::coupon_discount_text( $discount_meta )
 			: '';
 		// 状态分开显示：已使用 / 已过期 / 未使用
