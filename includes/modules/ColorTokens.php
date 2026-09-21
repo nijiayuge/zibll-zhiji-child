@@ -48,6 +48,36 @@ function zhiji_color_darken($hex, $pct = 0.3)
     return sprintf('#%02x%02x%02x', $r, $g, $b);
 }
 
+/**
+ * PHP 端获取令牌色值（邮件模板等不支持 CSS 变量的场景用）。
+ * 邮件客户端不支持 var()，邮件模板通过本函数在 PHP 侧注入色值，
+ * 后台改品牌主色后邮件同样跟随。
+ *
+ * @param string $name 令牌名：brand / brand_deep / brand_light / surface_soft / border / danger / success / gold / gold_light / gold_deep / gold_cream
+ * @return string 色值
+ */
+function zhiji_token_color($name = 'brand')
+{
+    $brand = (string) zhiji_get_option('zhiji_brand_color', '#2e7cf6');
+    if ('' === $brand) {
+        $brand = '#2e7cf6';
+    }
+    $map = array(
+        'brand'        => $brand,
+        'brand_deep'   => zhiji_color_darken($brand, 0.38),
+        'brand_light'  => '#5ea2ff',
+        'surface_soft' => '#eaf2fe',
+        'border'       => '#dce6f5',
+        'danger'       => '#e24b4a',
+        'success'      => '#22b573',
+        'gold'         => '#a9803f',
+        'gold_light'   => '#c9a96a',
+        'gold_deep'    => '#3d3a2e',
+        'gold_cream'   => '#f5edd8',
+    );
+    return isset($map[$name]) ? $map[$name] : $brand;
+}
+
 /* ============================================================
  * 令牌输出（钩子常注册，回调内判开关）
  * ============================================================ */

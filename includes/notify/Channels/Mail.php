@@ -26,9 +26,14 @@ class Zhiji_Notify_Mail
 
         $tpl     = !empty($cfg['mail']) ? $cfg['mail'] : 'ticket';
         $subject = (string) $args['title'];
-        $body    = ('plain' === $tpl)
-            ? self::plain($user, $args)
-            : self::ticket($user, $args);
+        if ('plain' === $tpl) {
+            $body = self::plain($user, $args);
+        } elseif (function_exists('zhiji_mail_template_render')) {
+            // 优先使用 MailTemplate 模块的品牌票据模板（Logo/徽章/票据卡片/CTA）
+            $body = self::ticket_brand($user, $args);
+        } else {
+            $body = self::ticket($user, $args); // 回退：内置简化票据
+        }
 
         $headers = array('Content-Type: text/html; charset=UTF-8');
 
@@ -41,6 +46,53 @@ class Zhiji_Notify_Mail
             zhiji_log('邮件发送失败', array('event' => $event, 'user' => $uid));
         }
         return (bool) $ok;
+    }
+
+    /**
+     * 品牌票据正文（复用 MailTemplate 模块；data 前两行映射为票据左右卡片）
+     *
+     * @param WP_User $user
+     * @param array   $args
+     * @return string
+     */
+    private static function ticket_brand($user, array $args)
+    {
+        $name = $user->display_name ? $user->display_name : $user->user_login;
+        $rows = array();
+        if (!empty($args['data']) && is_array($args['data'])) {
+            foreach ($args['data'] as $k => $v) {
+                if (is_array($v)) {
+                    $v = implode('、', array_map('strval', $v));
+                }
+                $rows[] = array('k' => (string) $k, 'v' => (string) $v);
+            }
+        }
+
+        // 票据卡片：取前两行数据，其余并入正文
+        $left  = isset($rows[0]) ? $rows[0] : null;
+        $right = isset($rows[1]) ? $rows[1] : null;
+
+        $body_html = wpautop((string) $args['content']);
+        for ($i = 2; $i < count($rows); $i++) {
+            $body_html .= '<p style="margin:6px 0"><span style="color:#888">' . esc_html($rows[$i]['k'])
+                . '：</span>' . esc_html($rows[$i]['v']) . '</p>';
+        }
+
+        $params = array(
+            'name'                 => $name,
+            'headline'             => (string) $args['title'],
+            'subline'              => '',
+            'ticket_left_label'    => $left ? $left['k'] : '',
+            'ticket_left_content'  => $left ? $left['v'] : '',
+            'ticket_right_label'   => $right ? $right['k'] : '',
+            'ticket_right_content' => $right ? $right['v'] : '',
+            'body_html'            => $body_html,
+        );
+        if (!empty($args['link'])) {
+            $params['body_html'] .= '<p style="margin:18px 0 0"><a href="' . esc_url($args['link'])
+                . '" style="display:inline-block;padding:10px 22px;border-radius:8px;text-decoration:none">查看详情</a></p>';
+        }
+        return (string) zhiji_mail_template_render($params);
     }
 
     /**

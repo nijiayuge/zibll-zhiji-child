@@ -23,7 +23,11 @@ function zhiji_bing_bulk_submit()
         exit();
     }
 
-    // 调用之前定义的函数进行提交
+    // 调用之前定义的函数进行提交（必应推送模块迁入前防御：缺失时明确报错而非 fatal）
+    if (!function_exists('zhiji_bing_resource_submission')) {
+        echo (json_encode(array('error' => 1, 'ys' => 'danger', 'msg' => '必应推送模块尚未启用或未迁移')));
+        exit();
+    }
     $result = zhiji_bing_resource_submission($urls);
 
     // 根据提交结果返回JSON响应
