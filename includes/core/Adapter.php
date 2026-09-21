@@ -219,4 +219,19 @@ class Zhiji_Adapter
         }
         return (string) zib_get_ajax_ajaxpager_one_centent($html);
     }
+    /**
+     * 用户余额变动（父主题 zibpay；缺失时静默返回 false）
+     *
+     * @param int   $user_id
+     * @param array $args value/type/desc
+     * @return bool
+     */
+    public static function update_user_balance($user_id, array $args)
+    {
+        if (!function_exists('zibpay_update_user_balance')) {
+            return false;
+        }
+        zibpay_update_user_balance($user_id, $args);
+        return true;
+    }
 }
