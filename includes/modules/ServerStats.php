@@ -277,7 +277,7 @@ function zhiji_bt_enqueue_script( $initial = array() ) {
   var cfg = {$json};
   var boxes = document.querySelectorAll('.zhiji-bt-widget[data-zhiji-bt="1"]');
   if(!boxes.length) return;
-  var paint=(s){
+  var paint = function(s) {
     boxes.forEach(function(box){
       var items = box.querySelectorAll('.zhiji-bt-item');
       var map = {cpu:0, mem:0, disk:0};
@@ -295,7 +295,7 @@ function zhiji_bt_enqueue_script( $initial = array() ) {
       if(net && typeof s.net_up === 'number'){ net.textContent = '↑ ' + fmt(s.net_up) + '　↓ ' + fmt(s.net_down); }
     });
   }
-  var fmt=(b){ b = b||0; if(b>=1073741824) return (b/1073741824).toFixed(2)+' GB'; if(b>=1048576) return (b/1048576).toFixed(1)+' MB'; if(b>=1024) return (b/1024).toFixed(1)+' KB'; return Math.round(b)+' B'; }
+  var fmt = function(b) { b = b||0; if(b>=1073741824) return (b/1073741824).toFixed(2)+' GB'; if(b>=1048576) return (b/1048576).toFixed(1)+' MB'; if(b>=1024) return (b/1024).toFixed(1)+' KB'; return Math.round(b)+' B'; }
   if(cfg.initial && cfg.initial.cpu !== undefined){ paint(cfg.initial); }
   setInterval(function(){
     var fd = new FormData();

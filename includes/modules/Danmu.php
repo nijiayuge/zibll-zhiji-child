@@ -611,7 +611,7 @@ ZHIJI_DANMU_JS;
 	// 轮询间隔（毫秒）由后端配置注入
 	$poll_ms = max( 5000, (int) zhiji_get_option( 'danmu_poll', 30 ) * 1000 );
 	echo '<script>window.ZHIJI_DANMU_POLL=' . (int) $poll_ms . ';</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-	echo '<script id="zhiji-danmu-js">(function(){var z_boot=(){if(typeof window.jQuery==="undefined"){setTimeout(z_boot,80);return;}' . $danmu_js . '}z_boot();})();</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	echo '<script id="zhiji-danmu-js">(function(){var z_boot = function() {if(typeof window.jQuery==="undefined"){setTimeout(z_boot,80);return;}' . $danmu_js . '}z_boot();})();</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 }
 add_action( 'wp_enqueue_scripts', 'zhiji_danmu_enqueue' );
 

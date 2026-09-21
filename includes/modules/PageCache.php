@@ -104,6 +104,12 @@ class Zhiji_PageCache
         if ((defined('DOING_CRON') && DOING_CRON) || (defined('WP_CLI') && WP_CLI)) {
             return false;
         }
+        // ⚠️ 联调发现：php -r / php script.php 不定义 WP_CLI 常量，会漏进缓存逻辑，
+        // 导致 CLI 脚本输出被当作页面缓存写盘（Chrome 访问首页拿到脚本输出）。
+        // 故直接按 SAPI 排除所有命令行环境。
+        if ('cli' === PHP_SAPI || 'phpdbg' === PHP_SAPI) {
+            return false;
+        }
         $uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
         if (false !== strpos($uri, 'wp-json') || false !== strpos($uri, 'rest_route') || false !== strpos($uri, 'admin-ajax')) {
             return false;

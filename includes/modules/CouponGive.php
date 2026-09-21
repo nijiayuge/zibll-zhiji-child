@@ -1087,11 +1087,11 @@ function zhiji_coupon_give_exit_block() {
 			else ref = localStorage.getItem('zhiji_ref') || '';
 		} catch (e) { ref = ''; }
 
-		var setMsg=(text, ok) {
+		var setMsg = function(text, ok) {
 			msg.textContent = text || '';
 			msg.className = 'zhiji-exit-give-msg ' + (ok ? 'success' : 'error');
 		}
-		var submit=() {
+		var submit = function() {
 			if (busy) return;
 			var email = (input.value || '').trim();
 			if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -1401,9 +1401,9 @@ function zhiji_coupon_copy_script() {
 			if (!t) return;
 			var code = t.getAttribute('data-code') || t.textContent.trim();
 			var ori = t.textContent;
-			var ok=(){ t.textContent = '已复制'; setTimeout(function(){ t.textContent = ori; }, 1200); }
-			var fail=(){ t.textContent = '复制失败，请长按/双击手动选择'; setTimeout(function(){ t.textContent = ori; }, 2200); }
-			var fallback=(){
+			var ok = function() { t.textContent = '已复制'; setTimeout(function(){ t.textContent = ori; }, 1200); }
+			var fail = function() { t.textContent = '复制失败，请长按/双击手动选择'; setTimeout(function(){ t.textContent = ori; }, 2200); }
+			var fallback = function() {
 				var ta = document.createElement('textarea');
 				ta.value = code;
 				ta.style.position = 'fixed';

@@ -382,7 +382,7 @@ if ( zhiji_credit_tasks_is_enabled() ) {
 			<?php endif; ?>
 		</div>
 		<script>
-		var zhiji_claim_share_reward=(btn) {
+		var zhiji_claim_share_reward = function(btn) {
 			btn.disabled = true;
 			btn.textContent = '领取中...';
 			fetch('<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>', {

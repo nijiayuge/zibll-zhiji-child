@@ -387,13 +387,13 @@ function zhiji_reward_notify_frontend_highlight() {
 	(function(){
 		var HL_COLOR = (getComputedStyle(document.documentElement).getPropertyValue('--zhiji-brand') || '#2e7cf6').trim();
 		var HL_RE = /【([^】]{1,50})】/g;
-		var makeSpan=(text){
+		var makeSpan = function(text) {
 			var s = document.createElement('span');
 			s.style.cssText = 'display:inline-block;padding:3px 12px;margin:0 3px;border-radius:8px;background:#f0f7ff;color:'+HL_COLOR+';font-weight:700;border:1px dashed #c9a;font-size:14px;';
 			s.textContent = text;
 			return s;
 		}
-		var highlightTextNode=(node){
+		var highlightTextNode = function(node) {
 			if(!node.nodeValue || node.nodeValue.indexOf('【') < 0) return;
 			var frag = document.createDocumentFragment();
 			var last = 0;
@@ -406,7 +406,7 @@ function zhiji_reward_notify_frontend_highlight() {
 			if(last < node.nodeValue.length) frag.appendChild(document.createTextNode(node.nodeValue.slice(last)));
 			node.parentNode.replaceChild(frag, node);
 		}
-		var doHighlight=(root){
+		var doHighlight = function(root) {
 			if(!root) root = document;
 			var selectors = '.msg-center-content, .message-content, .zib-msg-content, .msg-detail, [class*=message] [class*=content]';
 			root.querySelectorAll(selectors).forEach(function(box){
@@ -422,7 +422,7 @@ function zhiji_reward_notify_frontend_highlight() {
 				nodes.forEach(highlightTextNode);
 			});
 		}
-		var highlightRewards=(){ doHighlight(document); }
+		var highlightRewards = function() { doHighlight(document); }
 		if (document.readyState === 'loading') {
 			document.addEventListener('DOMContentLoaded', highlightRewards);
 		} else {
