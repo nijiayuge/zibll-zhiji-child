@@ -190,4 +190,33 @@ class Zhiji_Adapter
     {
         return function_exists('zibpay_get_coupon_discount_text') ? (string) zibpay_get_coupon_discount_text($discount) : '';
     }
+    /**
+     * 用户积分变动（父主题 zibpay；缺失时静默返回 false）
+     *
+     * @param int   $user_id
+     * @param array $args value/type/desc
+     * @return bool
+     */
+    public static function update_user_points($user_id, array $args)
+    {
+        if (!function_exists('zibpay_update_user_points')) {
+            return false;
+        }
+        zibpay_update_user_points($user_id, $args);
+        return true;
+    }
+
+    /**
+     * AJAX 分页容器（父主题 zibll 用户中心列表分页；缺失时返回原 HTML）
+     *
+     * @param string $html
+     * @return string
+     */
+    public static function ajaxpager_one_centent($html)
+    {
+        if (!function_exists('zib_get_ajax_ajaxpager_one_centent')) {
+            return (string) $html;
+        }
+        return (string) zib_get_ajax_ajaxpager_one_centent($html);
+    }
 }
