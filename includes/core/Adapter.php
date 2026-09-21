@@ -254,4 +254,78 @@ class Zhiji_Adapter
         }
         return (bool) wp_mail($to, $subject, $body, $headers);
     }
+    /**
+     * 用户等级经验变动（父主题 zib_add_user_level_integral）
+     *
+     * @param int    $user_id
+     * @param int    $value
+     * @param string $key
+     * @param bool   $no_limit_day_max
+     * @return void
+     */
+    public static function user_level_integral_add($user_id = 0, $value = 0, $key = '', $no_limit_day_max = false)
+    {
+        if (function_exists('zib_add_user_level_integral')) {
+            zib_add_user_level_integral($user_id, $value, $key, $no_limit_day_max);
+        }
+    }
+
+    /**
+     * 积分来源列表（父主题 zib_get_integral_add_lists）
+     *
+     * @return array
+     */
+    public static function integral_add_lists()
+    {
+        return function_exists('zib_get_integral_add_lists') ? (array) zib_get_integral_add_lists() : array();
+    }
+
+    /**
+     * 用户等级（父主题 zib_get_user_level）
+     *
+     * @param int $user_id
+     * @return int
+     */
+    public static function user_level($user_id = 0)
+    {
+        return function_exists('zib_get_user_level') ? (int) zib_get_user_level($user_id) : 0;
+    }
+
+    /**
+     * 用户余额（父主题 zibpay_get_user_balance）
+     *
+     * @param int $user_id
+     * @return float
+     */
+    public static function get_user_balance($user_id)
+    {
+        return function_exists('zibpay_get_user_balance') ? (float) zibpay_get_user_balance($user_id) : 0.0;
+    }
+
+    /**
+     * 用户积分（父主题 zibpay_get_user_points，个人中心口径）
+     *
+     * @param int $user_id
+     * @return int
+     */
+    public static function get_user_points($user_id = 0)
+    {
+        return function_exists('zibpay_get_user_points') ? (int) zibpay_get_user_points($user_id) : 0;
+    }
+
+    /**
+     * 更新用户会员（父主题 zibpay_update_user_vip）
+     *
+     * @param int   $user_id
+     * @param array $data
+     * @return bool
+     */
+    public static function update_user_vip($user_id, array $data)
+    {
+        if (!function_exists('zibpay_update_user_vip')) {
+            return false;
+        }
+        zibpay_update_user_vip($user_id, $data);
+        return true;
+    }
 }
