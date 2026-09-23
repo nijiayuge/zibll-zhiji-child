@@ -47,6 +47,7 @@ zib_require(array(
     'core/Helpers',
     'core/Adapter',
     'core/Registry',
+    'core/Assets',
 ), true, 'includes/');
 
 // ② 通知层：统一通知中心（事件表 → 分发 → 渠道），业务模块只允许通过 zhiji_notify() 发通知
