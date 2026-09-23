@@ -47,6 +47,15 @@ function zhiji_reward_notify( $uid, $reward, $source = '' ) {
 	if ( isset( $reward['value'] ) && ! isset( $reward['val'] ) ) {
 		$reward['val'] = $reward['value'];
 	}
+	// zhiji 修复（2026-09-23）：各调用方习惯把来源写在 $reward['source'] 里（如 DailyTask/CreditTasks），
+	// 而本函数读的是第三参数 $source → 导致通知里「奖励来源」永远为空。此处做兼容取值。
+	if ( '' === $source && ! empty( $reward['source'] ) ) {
+		$source = (string) $reward['source'];
+	}
+	// 同理兼容 'desc' 作为奖励名称（desc_text 的 default 分支读 'name'）
+	if ( ! isset( $reward['name'] ) && ! empty( $reward['desc'] ) ) {
+		$reward['name'] = (string) $reward['desc'];
+	}
 	$ok = false;
 
 	// 1. 站内系统通知（仅登录用户）
@@ -72,9 +81,14 @@ function zhiji_reward_notify( $uid, $reward, $source = '' ) {
  * @return string
  */
 function zhiji_reward_notify_desc_text( $reward ) {
+	// 防御：本函数也可能被邮件模板等处直接调用，这里同样做一次 value→val 归一化
+	if ( is_array( $reward ) && isset( $reward['value'] ) && ! isset( $reward['val'] ) ) {
+		$reward['val'] = $reward['value'];
+	}
 	$type = isset( $reward['type'] ) ? $reward['type'] : '';
 	$val  = isset( $reward['val'] ) ? $reward['val'] : '';
-	$name = isset( $reward['name'] ) ? $reward['name'] : '';
+	$name = isset( $reward['name'] ) ? $reward['name'] : ( isset( $reward['desc'] ) ? $reward['desc'] : '' );
+	$unit = isset( $reward['unit'] ) ? (string) $reward['unit'] : '';
 	switch ( $type ) {
 		case 'points':
 			if ( '' === $val || null === $val ) {
@@ -98,7 +112,19 @@ function zhiji_reward_notify_desc_text( $reward ) {
 			}
 			return sprintf( __( '经验 +%s', 'zhiji' ), $val );
 		default:
-			return sprintf( __( '%s：%s', 'zhiji' ), $name, $val );
+			// zhiji 修复（2026-09-23）：原实现只输出「name：val」，调用方若只传 unit/desc
+			// 或未传 name，会渲染成「：5」这类残缺文案（用户反馈「奖励了什么？没有」）。
+			// 这里按 unit → name → val → 兜底 依次降级，保证永不出现空奖励文案。
+			if ( '' !== $unit ) {
+				return '' !== $val ? sprintf( __( '%s +%s', 'zhiji' ), $unit, $val ) : $unit;
+			}
+			if ( '' !== $name ) {
+				return '' !== $val ? sprintf( __( '%s：%s', 'zhiji' ), $name, $val ) : $name;
+			}
+			if ( '' !== $val ) {
+				return (string) $val;
+			}
+			return __( '奖励', 'zhiji' );
 	}
 }
 
@@ -118,7 +144,6 @@ function zhiji_reward_notify_msg( $uid, $reward, $source = '' ) {
 	$src_text = '';
 	if ( $source ) {
 		$src_text = zhiji_reward_notify_source_text( $source );
-	$mail_brand = zhiji_token_color( 'brand' ); // 邮件品牌色（PHP 注入）
 	}
 	$src_prefix = $src_text ? '【' . $src_text . '】' : '';
 
