@@ -214,8 +214,10 @@ function zhiji_email_subscribe_inject() {
             lab.className = 'zhiji-subscribe-line muted-color';
             lab.innerHTML = '<input type="checkbox" name="zhiji_email_subscribe" value="1" checked> ' + <?php echo $label_js; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>;
             var btn = form.querySelector('button.signsubmit-loader');
-            if (btn) {
-                form.insertBefore(lab, btn);
+            if (btn && btn.parentNode) {
+                // zhiji 修复（2026-09-23）：btn 常嵌在 form 内的 div 中，不是 form 的直接子节点，
+                // 直接 form.insertBefore 会抛 NotFoundError 导致订阅框注入中断
+                btn.parentNode.insertBefore(lab, btn);
             } else {
                 form.appendChild(lab);
             }
