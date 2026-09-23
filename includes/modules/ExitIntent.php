@@ -107,6 +107,13 @@ add_action('wp_footer', function () {
             }
         }
         function hide(){ mask.classList.remove('open'); }
+        // 验收测试通道（2026-09-23 新增）：URL 带 ?zhiji_exit_test=1 时直接弹出，
+        // 绕过 sessionStorage 去重，便于配置后立即验收弹窗效果
+        try {
+            if (new URLSearchParams(location.search).get('zhiji_exit_test') === '1') {
+                setTimeout(function () { mask.classList.add('open'); }, 600);
+            }
+        } catch (err) {}
         document.addEventListener('mouseout',function(e){
             if(e.clientY<=0 && !e.relatedTarget && !e.toElement){ show(); }
         });
