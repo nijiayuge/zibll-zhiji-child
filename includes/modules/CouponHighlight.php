@@ -86,12 +86,23 @@ while (walker.nextNode()) { nodes.push(walker.currentNode); }
 nodes.forEach(function (node) {
 var parent = node.parentElement;
 if (!parent || parent.closest('.zhiji-cp')) return;
+// 2026-09-23 修复：跳过脚本/样式/代码块/链接等容器内的文本节点，
+// 防止 JS 源码里的字符串与文件名被误高亮（实测 l2d+'live2dcubismcore.min.js' 被误判）。
+// 注意排除时放行本站的券码容器 .zhiji-copy-code。
+if (parent.closest('script, style, pre, a, textarea, noscript, svg, iframe')) return;
+if (parent.closest('code') && !parent.closest('.zhiji-copy-code')) return;
 var text = node.nodeValue;
 if (!text || !/[A-Za-z0-9]{12,}/.test(text)) return;
 var re = /\b([A-Za-z0-9]{12,64})\b/g, m, out = null, last = 0;
 while ((m = re.exec(text))) {
 var code = m[1];
 if (!isCoupon(code)) continue;
+// 2026-09-23 修复（用户反馈）：订单号等编号被误判为优惠码并高亮（如「订单号【TEST1789904754】」）
+// ① 上下文排除：紧邻前方出现订单/编号类关键词时跳过
+var ctxPrev = text.slice(Math.max(0, m.index - 16), m.index);
+if (/(订单|单号|编号|序号|流水|凭证|ID|id)/i.test(ctxPrev)) continue;
+// ② 前缀排除：常见订单号/测试编号前缀（真优惠码由 ZibCardPass::rand_password 生成，无此类前缀）
+if (/^(TEST|ORD|ORDER|NO|ID|TMP|DEMO|PAY)/i.test(code)) continue;
 if (!out) out = document.createDocumentFragment();
 out.appendChild(document.createTextNode(text.slice(last, m.index)));
 var span = document.createElement('span');
