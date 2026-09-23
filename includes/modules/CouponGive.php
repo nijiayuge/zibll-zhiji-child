@@ -1368,7 +1368,9 @@ function zhiji_coupon_user_tab_content( $con, $opt ) {
 		}
 
 		$html .= '<tr>';
-		$html .= '<td><code style="letter-spacing:1px;cursor:pointer;user-select:all;" class="zhiji-copy-code" data-code="' . esc_attr( $row->password ) . '" title="' . esc_attr__( '点击复制', 'zhiji' ) . '">' . esc_html( $row->password ) . '</code></td>';
+		// 优惠码高亮样式与 CouponHighlight 的 .zhiji-cp 统一（2026-09-23）；
+		// 用内联样式保证任何情况下都可见（不依赖其它模块是否输出 CSS）
+		$html .= '<td><code class="zhiji-copy-code" data-code="' . esc_attr( $row->password ) . '" title="' . esc_attr__( '点击复制', 'zhiji' ) . '" style="display:inline-block;background:#fff6ec;border:1px dashed #ffb366;color:#e8590c;font-weight:600;border-radius:6px;padding:0 7px;letter-spacing:.5px;cursor:pointer;user-select:all;transition:all .15s ease">' . esc_html( $row->password ) . '</code></td>';
 		$html .= '<td>' . esc_html( $discount_text ) . '</td>';
 		$html .= '<td>' . esc_html( $source_text ) . '</td>';
 		$html .= '<td>' . esc_html( $status ) . '</td>';
@@ -1399,13 +1401,37 @@ function zhiji_coupon_copy_script() {
 	?>
 	<script>
 	(function(){
+		// 角标浮层提示（2026-09-23 新增：与 CouponHighlight 的 .zhiji-cp-tip 体验统一；
+		// 用内联样式实现，不依赖其它模块是否输出 CSS）
+		var tip = null;
+		function showTip(x, y, msg) {
+			if (!tip) {
+				tip = document.createElement('div');
+				tip.style.cssText = 'position:fixed;z-index:99999;background:#333;color:#fff;font-size:12px;padding:5px 12px;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .2s;box-shadow:0 4px 12px rgba(0,0,0,.2)';
+				document.body.appendChild(tip);
+			}
+			tip.textContent = msg;
+			tip.style.left = (x + 10) + 'px';
+			tip.style.top = (y - 30) + 'px';
+			tip.style.opacity = '1';
+			clearTimeout(tip._t);
+			tip._t = setTimeout(function () { tip.style.opacity = '0'; }, 1400);
+		}
 		document.addEventListener('click', function(e){
 			var t = e.target && e.target.closest ? e.target.closest('.zhiji-copy-code') : null;
 			if (!t) return;
 			var code = t.getAttribute('data-code') || t.textContent.trim();
 			var ori = t.textContent;
-			function ok() { t.textContent = '已复制'; setTimeout(function(){ t.textContent = ori; }, 1200); }
-			function fail() { t.textContent = '复制失败，请长按/双击手动选择'; setTimeout(function(){ t.textContent = ori; }, 2200); }
+			function ok() {
+				t.textContent = '已复制';
+				showTip(e.clientX, e.clientY, '✅ 优惠码已复制：' + code);
+				setTimeout(function(){ t.textContent = ori; }, 1200);
+			}
+			function fail() {
+				t.textContent = '复制失败，请长按/双击手动选择';
+				showTip(e.clientX, e.clientY, '复制失败，请长按/双击手动选择');
+				setTimeout(function(){ t.textContent = ori; }, 2200);
+			}
 			function fallback() {
 				var ta = document.createElement('textarea');
 				ta.value = code;
