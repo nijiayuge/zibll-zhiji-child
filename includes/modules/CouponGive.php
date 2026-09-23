@@ -1370,7 +1370,7 @@ function zhiji_coupon_user_tab_content( $con, $opt ) {
 		$html .= '<tr>';
 		// 优惠码高亮样式与 CouponHighlight 的 .zhiji-cp 统一（2026-09-23）；
 		// 用内联样式保证任何情况下都可见（不依赖其它模块是否输出 CSS）
-		$html .= '<td><code class="zhiji-copy-code" data-code="' . esc_attr( $row->password ) . '" title="' . esc_attr__( '点击复制', 'zhiji' ) . '" style="display:inline-block;background:#fff6ec;border:1px dashed #ffb366;color:#e8590c;font-weight:600;border-radius:6px;padding:0 7px;letter-spacing:.5px;cursor:pointer;user-select:all;transition:all .15s ease">' . esc_html( $row->password ) . '</code></td>';
+		$html .= '<td><span class="zhiji-copy-code" data-code="' . esc_attr( $row->password ) . '" title="' . esc_attr__( '点击复制', 'zhiji' ) . '" style="display:inline-block;background:#fff6ec;border:1px dashed #ffb366;color:#e8590c;font-weight:600;border-radius:6px;padding:0 7px;letter-spacing:.5px;cursor:pointer;user-select:all;transition:all .15s ease">' . esc_html( $row->password ) . '</span></td>';
 		$html .= '<td>' . esc_html( $discount_text ) . '</td>';
 		$html .= '<td>' . esc_html( $source_text ) . '</td>';
 		$html .= '<td>' . esc_html( $status ) . '</td>';
@@ -1400,12 +1400,18 @@ function zhiji_coupon_copy_script() {
 	$done = true;
 	?>
 	<style id="zhiji-copy-code-css">
-	/* 优惠码高亮（2026-09-23）：覆盖父主题 <code> 的 hover 白底（用户反馈暗色下鼠标悬停变白） */
-	.zhiji-copy-code{display:inline-block!important;background:#fff6ec!important;border:1px dashed #ffb366!important;color:#e8590c!important;font-weight:600!important;border-radius:6px!important;padding:0 7px!important;letter-spacing:.5px;cursor:pointer;user-select:all;transition:all .15s ease}
-	.zhiji-copy-code:hover{background:#ffe3c7!important;color:#d9480f!important;border-color:#ff9f40!important}
-	/* 暗色主题适配（zibll 主题类挂在 body / html） */
-	body.dark-theme .zhiji-copy-code,html.dark-theme .zhiji-copy-code{background:rgba(255,159,64,.14)!important;border-color:rgba(255,159,64,.55)!important;color:#ffc078!important}
-	body.dark-theme .zhiji-copy-code:hover,html.dark-theme .zhiji-copy-code:hover{background:rgba(255,159,64,.28)!important;color:#ffd8a8!important}
+	/* 优惠码高亮（2026-09-23 强化版）
+	   目标：无论父主题/暗色主题/浏览器 UA 样式如何，hover 都不出现白底。
+	   手法：① 高特异性前缀 html body ② 覆盖 background / background-image /
+	   background-color / color / border ③ 同时防御 :hover 与 :focus ④ 暗色用深底。 */
+	html body .zhiji-copy-code{display:inline-block!important;background:#fff6ec!important;background-color:#fff6ec!important;background-image:none!important;border:1px dashed #ffb366!important;color:#e8590c!important;font-weight:600!important;border-radius:6px!important;padding:0 7px!important;letter-spacing:.5px;cursor:pointer;user-select:all;-webkit-user-select:all;transition:background-color .15s ease,color .15s ease}
+	html body .zhiji-copy-code:hover,html body .zhiji-copy-code:focus,html body .zhiji-copy-code:active{background:#ffe3c7!important;background-color:#ffe3c7!important;background-image:none!important;color:#d9480f!important;border-color:#ff9f40!important;text-shadow:none!important}
+	html body.dark-theme .zhiji-copy-code,html.dark-theme body .zhiji-copy-code{background:#3d2c14!important;background-color:#3d2c14!important;background-image:none!important;border-color:rgba(255,159,64,.55)!important;color:#ffc078!important}
+	html body.dark-theme .zhiji-copy-code:hover,html body.dark-theme .zhiji-copy-code:focus,html.dark-theme body .zhiji-copy-code:hover{background:#4d3a1c!important;background-color:#4d3a1c!important;background-image:none!important;color:#ffd8a8!important;border-color:rgba(255,180,90,.8)!important}
+	/* 关键：券码带 user-select:all，点击会整段选中，浏览器默认选中高亮呈白/蓝色 —— 看起来就是「鼠标放上去变白」。
+	   这里自定义选中配色，选中态也保持暖色，视觉不再跳白。 */
+	html body .zhiji-copy-code::selection,html body .zhiji-copy-code *::selection{background:#ffd8a8!important;color:#7a3d00!important}
+	html body.dark-theme .zhiji-copy-code::selection,html.dark-theme body .zhiji-copy-code::selection{background:#7a5a2a!important;color:#ffe8cc!important}
 	</style>
 	<script>
 	(function(){
