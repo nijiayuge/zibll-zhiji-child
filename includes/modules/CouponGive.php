@@ -1329,7 +1329,7 @@ function zhiji_coupon_user_tab_content( $con, $opt ) {
 	$html  = '<div class="ajax-item"><div class="zib-widget">';
 	$html .= '<div class="box-body notop"><div class="title-theme"><b>' . esc_html__( '我的优惠码', 'zhiji' ) . '</b></div></div>';
 	$html .= '<div class="box-body">';
-	$html .= '<div class="table-responsive"><table class="table table-hover">';
+	$html .= '<div class="table-responsive"><table class="table table-hover zhiji-coupon-table">';
 	$html .= '<thead><tr><th>' . esc_html__( '优惠码', 'zhiji' ) . '</th><th>' . esc_html__( '优惠内容', 'zhiji' ) . '</th><th>' . esc_html__( '来源', 'zhiji' ) . '</th><th>' . esc_html__( '状态', 'zhiji' ) . '</th><th>' . esc_html__( '领取时间', 'zhiji' ) . '</th></tr></thead><tbody>';
 
 	foreach ( $coupons as $row ) {
@@ -1412,6 +1412,15 @@ function zhiji_coupon_copy_script() {
 	   这里自定义选中配色，选中态也保持暖色，视觉不再跳白。 */
 	html body .zhiji-copy-code::selection,html body .zhiji-copy-code *::selection{background:#ffd8a8!important;color:#7a3d00!important}
 	html body.dark-theme .zhiji-copy-code::selection,html.dark-theme body .zhiji-copy-code::selection{background:#7a5a2a!important;color:#ffe8cc!important}
+	/* 2026-09-23：父主题 bootstrap.css 的
+	   .table td,.table th{background-color:#fff!important} 与
+	   .table-hover>tbody>tr:hover{background-color:#f5f5f5} 会让暗色主题下的
+	   「我的优惠码」表格出现白色横条（用户截图反馈）。此处仅对本模块表格生效地改回透明，
+	   让底色跟随主题变量，亮/暗色都正常。 */
+	html body .zhiji-coupon-table>thead>tr>th,html body .zhiji-coupon-table>tbody>tr>td{background-color:transparent!important}
+	html body .zhiji-coupon-table>tbody>tr:hover,html body .zhiji-coupon-table>tbody>tr:hover>td,
+	html body .zhiji-coupon-table>tbody>tr:hover>th{background-color:transparent!important}
+	html body.dark-theme .zhiji-coupon-table>tbody>tr:hover>td,html.dark-theme body .zhiji-coupon-table>tbody>tr:hover>td{background-color:transparent!important}
 	</style>
 	<script>
 	(function(){
