@@ -1399,6 +1399,14 @@ function zhiji_coupon_copy_script() {
 	}
 	$done = true;
 	?>
+	<style id="zhiji-copy-code-css">
+	/* 优惠码高亮（2026-09-23）：覆盖父主题 <code> 的 hover 白底（用户反馈暗色下鼠标悬停变白） */
+	.zhiji-copy-code{display:inline-block!important;background:#fff6ec!important;border:1px dashed #ffb366!important;color:#e8590c!important;font-weight:600!important;border-radius:6px!important;padding:0 7px!important;letter-spacing:.5px;cursor:pointer;user-select:all;transition:all .15s ease}
+	.zhiji-copy-code:hover{background:#ffe3c7!important;color:#d9480f!important;border-color:#ff9f40!important}
+	/* 暗色主题适配（zibll 主题类挂在 body / html） */
+	body.dark-theme .zhiji-copy-code,html.dark-theme .zhiji-copy-code{background:rgba(255,159,64,.14)!important;border-color:rgba(255,159,64,.55)!important;color:#ffc078!important}
+	body.dark-theme .zhiji-copy-code:hover,html.dark-theme .zhiji-copy-code:hover{background:rgba(255,159,64,.28)!important;color:#ffd8a8!important}
+	</style>
 	<script>
 	(function(){
 		// 角标浮层提示（2026-09-23 新增：与 CouponHighlight 的 .zhiji-cp-tip 体验统一；

@@ -50,11 +50,34 @@ ZHIJI_CP_CSS;
 /* 优惠码高亮点击复制（消息中心，MutationObserver 处理异步内容） */
 (function () {
 function zhijiCpBoot() {
-var isMsgPage = !!document.querySelector('.msg-center, .msg-box, [class*="msg-center"]') ||
-/\/message(\/|$)/.test(window.location.pathname) ||
-(window.location.href.indexOf('user_center=msg') !== -1);
-if (!isMsgPage) return;
-function isCoupon(s) { return /[A-Za-z]/.test(s) && /[0-9]/.test(s); }
+  // 2026-09-23 改造：原实现「初始页面没有 .msg-center 就直接 return」，导致
+  // 用户中心用 AJAX 切 tab / 异步加载消息内容时，高亮永不启动（用户反馈"消息里优惠码没高亮"）。
+  // 现改为：识别到消息页 → 启动；否则轮询等待容器出现（最多 20s），并对后续 DOM 变化保持监听。
+  var started = false;
+  var mo = null;
+  var timer = null;
+  function isMsgPage() {
+      return !!document.querySelector('.msg-center, .msg-content, .msg-box, .msg-list, [class*="msg-center"]') ||
+          /\/message(\/|$)/.test(window.location.pathname) ||
+          (window.location.href.indexOf('user_center=msg') !== -1);
+  }
+  function start() {
+      if (started) return true;
+      if (!isMsgPage()) return false;
+      started = true;
+      decorate(document.querySelector('.msg-center, .msg-content') || document.documentElement);
+      timer = null;
+      mo = new MutationObserver(function () {
+          clearTimeout(timer);
+          timer = setTimeout(function () {
+              var c = document.querySelector('.msg-center, .msg-content') || document.body;
+              decorate(c);
+          }, 300);
+      });
+      mo.observe(document.documentElement, { childList: true, subtree: true });
+      return true;
+  }
+  function isCoupon(s) { return /[A-Za-z]/.test(s) && /[0-9]/.test(s); }
 function decorate(root) {
 if (!root) return;
 var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
@@ -111,18 +134,19 @@ try { document.execCommand('copy'); ok(); } catch (err) { showTip(e.clientX, e.c
 document.body.removeChild(ta);
 }
 });
-decorate(document.body);
-var timer = null;
-var mo = new MutationObserver(function () {
-clearTimeout(timer);
-timer = setTimeout(function () {
-var c = document.querySelector('.msg-center') || document.body;
-decorate(c);
-}, 300);
-});
-mo.observe(document.body, { childList: true, subtree: true });
-}
-zhijiCpBoot();
+  if (!start()) {
+      // 容器尚未出现（用户中心 AJAX 切 tab / 消息异步加载）→ 轮询等待，最多 20 秒
+      var wt = setInterval(function () { if (start()) { clearInterval(wt); } }, 500);
+      setTimeout(function () { clearInterval(wt); }, 20000);
+  }
+  }
+  // 脚本在 <head> 输出，此时 DOM 未就绪 → 等 DOMContentLoaded 再启动
+  // （2026-09-23 修复：原先直接执行导致 document.body 为 null，observe 抛 TypeError，高亮永不启动）
+  if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', zhijiCpBoot);
+  } else {
+      zhijiCpBoot();
+  }
 })();
 ZHIJI_CP_JS;
 
