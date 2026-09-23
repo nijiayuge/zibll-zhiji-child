@@ -1,13 +1,20 @@
 /* ============================================================
- * zhiji 淇锛歱io_sdk4.js 渚濊禆 DOMContentLoaded 鍒濆鍖?PIXI app锛? * 浣嗙湅鏉垮鑴氭湰涓哄欢杩熸敞鍏ワ紙window.load 鍚庯級锛岃浜嬩欢宸茶Е鍙戣繃锛? * 瀵艰嚧 app 姘镐笉涓?undefined 鈫?妯″瀷鍔犺浇鎴愬姛鍗翠笉娓叉煋銆? * 鍦?pio_sdk4 涔嬪悗鎵嬪姩琛ヨЕ鍙戯紝骞剁Щ闄ゅ叾鐢熸垚鐨勬棤 canvas 绌哄３瀹瑰櫒銆? * ============================================================ */
-if (typeof app === 'undefined' && typeof _pio_initialize_pixi === 'function') {
-	_pio_initialize_pixi();
-	document.querySelectorAll('.pio-container').forEach(function (c) {
-		if (!c.querySelector('#pio')) { c.parentNode && c.parentNode.removeChild(c); }
-	});
-}
+ * zhiji 看板娘初始化（Paul_Pio · Live2D Cubism 4）
+ * ------------------------------------------------------------
+ * 来源：Paul_Pio 官方配置（https://cdnjs.hoarfall.cn/live2d/load.js，
+ *       程序 GPL-2.0 / 模型二创版权归原作者）
+ * 本地化改造（zhiji v2，2026-09-22）：
+ *   1. 模型路径改走 window.__zhiji_live2d_base（Kanban 模块注入），
+ *      默认 /wp-content/themes/zhiji/assets/zhiji/live2d/
+ *   2. pio_alignment 由 window.__zhiji_pio_alignment 控制（后台可切左右）
+ *   3. 增加延迟注入兜底 boot：脚本在 window.load 后注入时，
+ *      pio_sdk4.js 依赖的 DOMContentLoaded 已触发，需手动再初始化
+ *
+ * ⚠️ v1 的 load.js 因编码损坏（UTF-8 被误存为 GBK）导致全文件 JS 语法错误，
+ *    看板娘一直不显示；本文件为官方干净版重写，编码统一 UTF-8 无 BOM。
+ * ============================================================ */
 
-var 寮曟祦 = [
+var 引流 = [
   "https://space.bilibili.com/672328094",
   "https://www.bilibili.com/video/BV1FZ4y1F7HH",
   "https://www.bilibili.com/video/BV1FX4y1g7u8",
@@ -33,10 +40,10 @@ const initConfig = {
   mode: "fixed",
   hidden: true,
   content: {
-    link: 寮曟祦[Math.floor(Math.random() * 寮曟祦.length)],
+    link: 引流[Math.floor(Math.random() * 引流.length)],
     welcome: ["Hi!"],
     touch: "",
-    skin: ["璇讹紝鎯崇湅鐪嬪叾浠栧洟鍛樺悧锛?, "鏇挎崲鍚庡叆鍦烘枃鏈?],
+    skin: ["诶，想看看其他团员吗？", "替换后入场文本"],
     custom: [
       { "selector": ".comment-form", "text": "Content Tooltip" },
       { "selector": ".home-social a:last-child", "text": "Blog Tooltip" },
@@ -46,14 +53,14 @@ const initConfig = {
   },
   night: "toggleNightMode()",
   model: [
-    "https://zhiji.bbroot.com/wp-content/themes/zhiji-child/assets/zhiji/live2d/Diana/Diana.model3.json",
-    "https://zhiji.bbroot.com/wp-content/themes/zhiji-child/assets/zhiji/live2d/Ava/Ava.model3.json",
+    (window.__zhiji_live2d_base || "/wp-content/themes/zhiji/assets/zhiji/live2d/") + "Diana/Diana.model3.json",
+    (window.__zhiji_live2d_base || "/wp-content/themes/zhiji/assets/zhiji/live2d/") + "Ava/Ava.model3.json",
   ],
   tips: true,
   onModelLoad: onModelLoad
 }
 
-function 鍔犺浇鍦Ｂ峰槈鐒?) {
+function 加载圣·嘉然() {
   pio_reference = new Paul_Pio(initConfig)
 
   pio_alignment = (window.__zhiji_pio_alignment || "left")
@@ -63,7 +70,8 @@ function 鍔犺浇鍦Ｂ峰槈鐒?) {
 }
 
 function onModelLoad(model) {
-  const container = document.getElementById("pio-container")
+  // 容器 id 兼容：官方模板用 pio-container，zhiji 模块输出的是 zhiji-pio-container
+  const container = document.getElementById("pio-container") || document.getElementById("zhiji-pio-container")
   const canvas = document.getElementById("pio")
   const modelNmae = model.internalModel.settings.name
   const coreModel = model.internalModel.coreModel
@@ -71,11 +79,11 @@ function onModelLoad(model) {
 
   let touchList = [
     {
-      text: "鐐瑰嚮灞曠ず鏂囨湰1",
+      text: "点击展示文本1",
       motion: "Idle"
     },
     {
-      text: "鐐瑰嚮灞曠ず鏂囨湰2",
+      text: "点击展示文本2",
       motion: "Idle"
     }
   ]
@@ -110,53 +118,53 @@ function onModelLoad(model) {
 
   if (modelNmae === "Diana") {
     container.dataset.model = "Diana"
-    initConfig.content.skin[1] = ["鎴戞槸鍚冭揣鎷呭綋 鍢夌劧 Diana~"]
-    playAction({ motion: "Tap鎶遍樋鑽?宸︽墜" })
+    initConfig.content.skin[1] = ["我是吃货担当 嘉然 Diana~"]
+    playAction({ motion: "Tap抱阿草-左手" })
 
     touchList = [
       {
-        text: "鍢夊績绯栧眮鐢ㄦ病鏈?,
-        motion: "Tap鐢熸皵 -棰嗙粨"
+        text: "嘉心糖屁用没有",
+        motion: "Tap生气 -领结"
       },
       {
-        text: "鏈変汉鎬ヤ簡锛屼絾鎴戜笉璇存槸璋亊",
-        motion: "Tap= =  宸﹁澊铦剁粨"
+        text: "有人急了，但我不说是谁~",
+        motion: "Tap= =  左蝴蝶结"
       },
       {
-        text: "鍛滃憸...鍛滃憸鍛?...",
-        motion: "Tap鍝?-鐪艰"
+        text: "呜呜...呜呜呜....",
+        motion: "Tap哭 -眼角"
       },
       {
-        text: "鎯崇劧鐒朵簡娌℃湁鍛€~",
-        motion: "Tap瀹崇緸-涓棿鍒樻捣"
+        text: "想然然了没有呀~",
+        motion: "Tap害羞-中间刘海"
       },
       {
-        text: "闃胯崏濂借蒋鍛€~",
-        motion: "Tap鎶遍樋鑽?宸︽墜"
+        text: "阿草好软呀~",
+        motion: "Tap抱阿草-左手"
       },
       {
-        text: "涓嶈鍐嶆埑鍟︼紒濂界棐锛?,
-        motion: "Tap鎽囧ご- 韬綋"
+        text: "不要再戳啦！好痒！",
+        motion: "Tap摇头- 身体"
       },
       {
-        text: "鍡峰憸~~~",
-        motion: "Tap鑰虫湹-鍙戝崱"
+        text: "嗷呜~~~",
+        motion: "Tap耳朵-发卡"
       },
       {
-        text: "zzZ銆傘€傘€?,
+        text: "zzZ。。。",
         motion: "Leave"
       },
       {
-        text: "鍝囷紒濂藉悆鐨勶紒",
-        motion: "Tap鍙冲ご鍙?
+        text: "哇！好吃的！",
+        motion: "Tap右头发"
       },
     ]
 
   } else if (modelNmae === "Ava") {
     container.dataset.model = "Ava"
-    initConfig.content.skin[1] = ["鎴戞槸<s>鎷夎儻</s>Gamer鎷呭綋 鍚戞櫄 AvA~"]
+    initConfig.content.skin[1] = ["我是<s>拉胯</s>Gamer担当 向晚 AvA~"]
     playAction({
-      motion: "Tap宸︾溂",
+      motion: "Tap左眼",
       from: {
         "Part15": 1
       },
@@ -167,12 +175,12 @@ function onModelLoad(model) {
 
     touchList = [
       {
-        text: "姘存瘝 姘存瘝~ 鍙槸鏅€氱殑鐢熺墿",
-        motion: "Tap鍙虫墜"
+        text: "水母 水母~ 只是普通的生物",
+        motion: "Tap右手"
       },
       {
-        text: "鍙埍鐨勯附瀛愰附瀛悀鎴戝枩娆綘~",
-        motion: "Tap鑳稿彛椤归摼",
+        text: "可爱的鸽子鸽子~我喜欢你~",
+        motion: "Tap胸口项链",
         from: {
           "Part12": 1
         },
@@ -181,8 +189,8 @@ function onModelLoad(model) {
         }
       },
       {
-        text: "濂?..濂藉厔寮熶箣闂村枩娆㈠緢姝ｅ父鍟?,
-        motion: "Tap涓棿鍒樻捣",
+        text: "好...好兄弟之间喜欢很正常啦",
+        motion: "Tap中间刘海",
         from: {
           "Part12": 1
         },
@@ -191,8 +199,8 @@ function onModelLoad(model) {
         }
       },
       {
-        text: "鍟婂晩鍟婏紒鎬庝箞鎺ㄦ祦杈?,
-        motion: "Tap鍙崇溂",
+        text: "啊啊啊！怎么推流辣",
+        motion: "Tap右眼",
         from: {
           "Part16": 1
         },
@@ -201,12 +209,12 @@ function onModelLoad(model) {
         }
       },
       {
-        text: "浣犳€庝箞鑰佹懜鎴戯紝鎴戠殑韬綋鏄笉鏄彲鏈夐瓍鍔?,
-        motion: "Tap鍢?
+        text: "你怎么老摸我，我的身体是不是可有魅力",
+        motion: "Tap嘴"
       },
       {
-        text: "AAAAAAAAAAvvvvAAA 鍚戞櫄锛?,
-        motion: "Tap宸︾溂",
+        text: "AAAAAAAAAAvvvvAAA 向晚！",
+        motion: "Tap左眼",
         from: {
           "Part15": 1
         },
@@ -217,13 +225,16 @@ function onModelLoad(model) {
     ]
     canvas.width = model.width * 1.2
     const hideParts = [
-      "Part5", // 鏅?      "neko", // 鍠靛柕鎷?      "game", // 宸︽墜娓告垙鎵嬫焺
-      "Part15", // 澧ㄩ暅
-      "Part21", // 鍙虫墜灏忚噦
-      "Part22", // 宸︽墜鍨備笅
-      "Part", // 鍙屾墜鎶辨嫵
-      "Part16", // 鎯婅鐗规晥
-      "Part12" // 灏忓績蹇?    ]
+      "Part5", // 晕
+      "neko", // 喵喵拳
+      "game", // 左手游戏手柄
+      "Part15", // 墨镜
+      "Part21", // 右手小臂
+      "Part22", // 左手垂下
+      "Part", // 双手抱拳
+      "Part16", // 惊讶特效
+      "Part12" // 小心心
+    ]
     const hidePartsIndex = hideParts.map(id => coreModel._partIds.indexOf(id))
     hidePartsIndex.forEach(idx => {
       coreModel._partOpacities[idx] = 0
@@ -233,7 +244,8 @@ function onModelLoad(model) {
 
 
 var pio_reference
-var __zhijiBoot = 鍔犺浇鍦Ｂ峰槈鐒?
+var __zhijiBoot = 加载圣·嘉然
 var __zhiji_pio_boot = function(){ __zhijiBoot(); };
 if (window.addEventListener) { window.addEventListener("load", __zhiji_pio_boot); } else { window.onload = __zhiji_pio_boot; }
+// 兜底：脚本若在 load 之后才注入，addEventListener 不会再触发 → 3 秒后未初始化则手动 boot
 setTimeout(function(){ if (!window.pio_reference) { __zhiji_pio_boot(); } }, 3000);

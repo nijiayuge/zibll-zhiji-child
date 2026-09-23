@@ -69,11 +69,11 @@ add_action('wp_footer', function () {
                 var st=document.createElement('style');
                 st.textContent='#zhiji-pio-container #pio{width:240px !important;height:240px !important}@media (max-width:768px){#zhiji-pio-container #pio{width:8em !important;height:8em !important}}';
                 head.appendChild(st);
-                var a=document.createElement('script');
-                a.text="window.__zhiji_pio_alignment=<?php echo wp_json_encode($alignment); ?>;";
-                head.appendChild(a);
-                var m=document.createElement('script');
-                m.src=l2d+'load.js?v=1.8.2';
+                  var a=document.createElement('script');
+                  a.text="window.__zhiji_pio_alignment='<?php echo esc_js( $alignment ); ?>';window.__zhiji_live2d_base="+JSON.stringify(l2d)+";";
+                  head.appendChild(a);
+                  var m=document.createElement('script');
+                  m.src=l2d+'load.js?v=1.8.3';
                 head.appendChild(m);
             }
             next();

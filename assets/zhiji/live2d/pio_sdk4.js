@@ -146,4 +146,10 @@ let pio_alignment = "right"
 
 
 let app
-window.addEventListener("DOMContentLoaded", _pio_initialize_pixi)
+// zhiji 修复（2026-09-22）：脚本为动态延迟注入时 DOMContentLoaded 已触发过，
+// 原写法会导致 _pio_initialize_pixi 永不执行 → PIXI app 未初始化 → 看板娘不显示
+if (document.readyState === "loading") {
+    window.addEventListener("DOMContentLoaded", _pio_initialize_pixi)
+} else {
+    _pio_initialize_pixi()
+}
