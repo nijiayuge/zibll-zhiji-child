@@ -118,8 +118,12 @@ add_action('wp_footer', function () {
         . '.zhiji-draw-tools{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}'
         . '.zhiji-draw-color{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0}'
         . '.zhiji-draw-color.on{border-color:var(--focus-color,#3b82f6)}'
-        . '.zhiji-draw-size{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted-color,#8a919f)}'
-        . '.zhiji-draw-size input{width:60px}'
+        // （2026-09-24）粗细选择器改为档位按钮，与颜色圆点同风格
+        . '.zhiji-draw-sizes{display:flex;align-items:center;gap:6px}'
+        . '.zhiji-draw-size-btn{width:30px;height:30px;border-radius:50%;border:2px solid transparent;background:rgba(127,127,127,.14);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:all .15s ease}'
+        . '.zhiji-draw-size-btn i{display:block;border-radius:50%;background:var(--muted-color,#8a919f)}'
+        . '.zhiji-draw-size-btn.on{border-color:var(--focus-color,#3b82f6);background:rgba(59,130,246,.12)}'
+        . '.zhiji-draw-size-btn.on i{background:var(--focus-color,#3b82f6)}'
         . '.zhiji-draw-actions{display:flex;gap:8px;margin-top:12px;justify-content:flex-end}'
         . '.zhiji-draw-actions button{padding:7px 18px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid var(--main-border-color,#e5e7eb);background:var(--main-bg-color,#fff)}'
         . '.zhiji-draw-save{background:var(--focus-color,#3b82f6)!important;color:#fff;border-color:transparent!important}'
@@ -136,7 +140,7 @@ add_action('wp_footer', function () {
                 <canvas id="zhiji-draw-canvas" width="640" height="360"></canvas>
             </div>
             <div class="zhiji-draw-tools">
-                <span class="zhiji-draw-size">粗细 <input type="range" id="zhiji-draw-size" min="1" max="12" value="3"></span>
+                <span class="zhiji-draw-sizes" id="zhiji-draw-sizes"></span>
                 <span id="zhiji-draw-colors"></span>
             </div>
             <div class="zhiji-draw-actions">
@@ -200,9 +204,32 @@ add_action('wp_footer', function () {
     canvas.addEventListener('touchend', function(){ drawing = false; });
     ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,cw,ch);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    function applyStyle(){ ctx.strokeStyle = cur; ctx.lineWidth = document.getElementById('zhiji-draw-size').value; };
+    var curSize = 4;
+    function applyStyle(){ ctx.strokeStyle = cur; ctx.lineWidth = curSize; };
     applyStyle();
-    document.getElementById('zhiji-draw-size').addEventListener('input', applyStyle);
+    // 粗细档位（替代原生 range 滑块）
+    var sizeVals = [2, 4, 7, 11];
+    var sizeNames = ['细', '中', '粗', '特粗'];
+    var sizesBox = document.getElementById('zhiji-draw-sizes');
+    if (sizesBox) {
+        sizeVals.forEach(function (sv, i) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'zhiji-draw-size-btn' + (sv === curSize ? ' on' : '');
+            b.setAttribute('data-size', sv);
+            b.title = sizeNames[i];
+            b.setAttribute('aria-label', sizeNames[i] + '笔触');
+            b.innerHTML = '<i style="width:' + sv + 'px;height:' + sv + 'px"></i>';
+            b.addEventListener('click', function () {
+                curSize = sv;
+                applyStyle();
+                sizesBox.querySelectorAll('button').forEach(function (x) {
+                    x.classList.toggle('on', +x.getAttribute('data-size') === sv);
+                });
+            });
+            sizesBox.appendChild(b);
+        });
+    }
     var colorsBox = document.getElementById('zhiji-draw-colors');
     colors.forEach(function(c){
     var b = document.createElement('button');
@@ -226,6 +253,22 @@ add_action('wp_footer', function () {
     if(t) t.textContent = '已添加配图';
     });
     window.addEventListener('resize', resize);
+    // 2026-09-24：评论提交后重置画板状态。zibll 评论走 AJAX 提交、页面不刷新，
+    // 否则「已添加配图」会一直保留（用户反馈）。延迟 900ms 等请求发出后再清理。
+    if (host) {
+        host.addEventListener('submit', function () {
+            setTimeout(function () {
+                dataEl.value = '';
+                if (btn) {
+                    btn.classList.remove('is-done');
+                    var bt = btn.querySelector('.zhiji-draw-btn-text');
+                    if (bt) { bt.textContent = '画图'; }
+                }
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, cw, ch);
+            }, 900);
+        });
+    }
     })();
     </script>
     <?php
