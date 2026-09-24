@@ -35,10 +35,14 @@ add_action('wp_insert_comment', function ($comment_id, $comment) {
     $base64 = (string) wp_unslash($_POST['zhiji_draw']);
     // 去掉 data URI 前缀
     $base64 = preg_replace('#^data:image/[a-z]+;base64,#i', '', $base64);
-    if (!preg_match('/^[A-Za-z0-9+\/]+={0,2}$/', $base64)) {
+    // zhiji 加固（2026-09-24）：base64 里的 + 经表单解码可能变成空格 → 先还原；
+    // 再用 base64_decode 严格校验（比正则更可靠），并放宽尺寸上限到 1MB（原点 300KB 易丢大图）
+    $base64 = str_replace(' ', '+', trim($base64));
+    $decoded = base64_decode($base64, true);
+    if (false === $decoded || strlen($decoded) < 100) {
         return;
     }
-    if (strlen($base64) > 300 * 1024) {
+    if (strlen($base64) > 1024 * 1024) {
         return;
     }
     update_comment_meta($comment_id, '_zhiji_draw', $base64);
