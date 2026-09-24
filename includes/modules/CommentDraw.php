@@ -55,14 +55,25 @@ add_action('wp_insert_comment', function ($comment_id, $comment) {
 /* ============================================================
  * 展示（评论正文后追加配图）
  * ============================================================ */
-add_filter('comment_text', function ($text, $comment = null) {
+/**
+ * 在评论正文后追加手绘配图
+ *
+ * ⚠️ WP 6.7+ 起 get_comment_text() 改为只触发 `get_comment_text` 过滤器
+ * （源码：apply_filters( 'get_comment_text', $comment_text, $comment, $args )），
+ * 而 zibll 渲染评论走的是 zib_comment_filters(get_comment_text($comment)) ——
+ * 只挂 comment_text 会导致配图永不显示（2026-09-24 实测定位）。
+ * 因此两个钩子都要挂：comment_text（旧版 / 直接显示）+ get_comment_text（新版 / zibll 调用链）。
+ *
+ * @param string     $text    评论正文
+ * @param WP_Comment $comment 评论对象（WP 5.5+ 会传入）
+ * @param array      $args    额外参数
+ * @return string
+ */
+function zhiji_comment_draw_append($text, $comment = null, $args = array())
+{
     if (!zhiji_is_enabled('comment_draw_enabled')) {
         return $text;
     }
-    // zhiji 修复（2026-09-24）：原实现只用 get_comment_ID()，但 zibll 渲染时是
-    // zib_comment_filters(get_comment_text($comment)) —— 直接传对象、全局评论 ID 为空，
-    // 导致取不到 comment_id 直接返回原文 → 评论配图永远不显示。
-    // WP 5.5+ 的 comment_text 过滤器会传入 $comment（第二参数），优先用它，再兜底全局。
     $comment_id = 0;
     if ($comment instanceof WP_Comment) {
         $comment_id = (int) $comment->comment_ID;
@@ -76,11 +87,13 @@ add_filter('comment_text', function ($text, $comment = null) {
         return $text;
     }
     $base64 = get_comment_meta($comment_id, '_zhiji_draw', true);
-    if (!$base64 || !preg_match('/^[A-Za-z0-9+\/]+={0,2}$/', $base64)) {
+    if (!$base64 || !preg_match('/^[A-Za-z0-9+\/]+={0,2}$/', (string) $base64)) {
         return $text;
     }
     return $text . '<img class="zhiji-draw-img" src="data:image/webp;base64,' . $base64 . '" alt="评论配图" loading="lazy">';
-}, 20, 3);
+}
+add_filter('comment_text', 'zhiji_comment_draw_append', 20, 3);
+add_filter('get_comment_text', 'zhiji_comment_draw_append', 20, 3);
 
 /* ============================================================
  * 前台画板
