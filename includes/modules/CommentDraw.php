@@ -47,11 +47,23 @@ add_action('wp_insert_comment', function ($comment_id, $comment) {
 /* ============================================================
  * 展示（评论正文后追加配图）
  * ============================================================ */
-add_filter('comment_text', function ($text) {
+add_filter('comment_text', function ($text, $comment = null) {
     if (!zhiji_is_enabled('comment_draw_enabled')) {
         return $text;
     }
-    $comment_id = get_comment_ID();
+    // zhiji 修复（2026-09-24）：原实现只用 get_comment_ID()，但 zibll 渲染时是
+    // zib_comment_filters(get_comment_text($comment)) —— 直接传对象、全局评论 ID 为空，
+    // 导致取不到 comment_id 直接返回原文 → 评论配图永远不显示。
+    // WP 5.5+ 的 comment_text 过滤器会传入 $comment（第二参数），优先用它，再兜底全局。
+    $comment_id = 0;
+    if ($comment instanceof WP_Comment) {
+        $comment_id = (int) $comment->comment_ID;
+    } elseif (isset($GLOBALS['comment']) && $GLOBALS['comment'] instanceof WP_Comment) {
+        $comment_id = (int) $GLOBALS['comment']->comment_ID;
+    }
+    if (!$comment_id) {
+        $comment_id = (int) get_comment_ID();
+    }
     if (!$comment_id) {
         return $text;
     }
@@ -60,7 +72,7 @@ add_filter('comment_text', function ($text) {
         return $text;
     }
     return $text . '<img class="zhiji-draw-img" src="data:image/webp;base64,' . $base64 . '" alt="评论配图" loading="lazy">';
-}, 20);
+}, 20, 3);
 
 /* ============================================================
  * 前台画板
@@ -93,7 +105,7 @@ add_action('wp_footer', function () {
         . '.zhiji-draw-img{max-width:260px;border-radius:8px;margin-top:8px;display:block}'
         . '</style>';
     ?>
-    <button type="button" class="zhiji-draw-btn" id="zhiji-draw-open">
+    <button type="button" class="but btn-input-expand zhiji-draw-btn" id="zhiji-draw-open">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
         <span class="zhiji-draw-btn-text">画图</span>
     </button>
@@ -124,12 +136,20 @@ add_action('wp_footer', function () {
     dataEl.type = 'hidden'; dataEl.name = 'zhiji_draw'; dataEl.id = 'zhiji-draw-data'; dataEl.value = '';
     host.appendChild(dataEl);
     if(btn) {
-        // zhiji 修复（2026-09-24）：box.nextSibling 常不是 host(form) 的直接子节点
-        // （zibll 把 textarea 包在内层 div 中）→ insertBefore 抛 NotFoundError，
-        // 按钮插入中断 → 「画图」按钮不显示。改为插到 box 实际父节点下，并兜底。
-        var _host = box.parentNode || host;
-        try { _host.insertBefore(btn, box.nextSibling); }
-        catch(e) { try { host.appendChild(btn); } catch(e2) {} }
+        // zhiji 修复（2026-09-24 v2）：
+        // ① 原写法 host.insertBefore(btn, box.nextSibling) 会抛 NotFoundError
+        //    （box.nextSibling 不是 form 的直接子节点）→ 按钮插入中断不显示；
+        // ② 即使插成功也会单独占一行（zibll 的工具栏在 .comt-ctrl > .comt-tips-left）。
+        // 现改为优先追加进工具栏左侧按钮区，与「表情/代码/图片/快捷回复」同排；
+        // 找不到工具栏时再退化为插到评论框后（带 try/catch 兜底）。
+        var toolbar = document.querySelector('.comt-tips-left');
+        if (toolbar) {
+            toolbar.appendChild(btn);
+        } else {
+            var _host = box.parentNode || host;
+            try { _host.insertBefore(btn, box.nextSibling); }
+            catch(e) { try { host.appendChild(btn); } catch(e2) {} }
+        }
     }
     var mask = document.getElementById('zhiji-draw-mask');
     var canvas = document.getElementById('zhiji-draw-canvas');
