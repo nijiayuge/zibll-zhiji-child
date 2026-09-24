@@ -168,7 +168,7 @@ function zhiji_email_subscribe_grant_reward( $user_id ) {
     } else {
         Zhiji_Adapter::update_user_points( $user_id, array(
             'value' => $points,
-            'type'  => 'increase',
+            'type'  => '订阅奖励',
             'desc'  => '邮件订阅奖励',
         ) );
     }

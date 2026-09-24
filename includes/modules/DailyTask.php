@@ -148,7 +148,7 @@ function zhiji_daily_task_complete( $user_id, $task_id ) {
 	if ( $reward > 0 ) {
 		Zhiji_Adapter::update_user_points( $user_id, array(
 			'value' => $reward,
-			'type'  => 'increase',
+			'type'  => '任务奖励',
 			'desc'  => '每日任务-' . $task['name'],
 		) );
 	}
@@ -198,7 +198,7 @@ function zhiji_daily_task_check_all_completed( $user_id ) {
 	if ( $chest_reward > 0 ) {
 		Zhiji_Adapter::update_user_points( $user_id, array(
 			'value' => $chest_reward,
-			'type'  => 'increase',
+			'type'  => '任务奖励',
 			'desc'  => '每日任务-全部完成宝箱',
 		) );
 	}

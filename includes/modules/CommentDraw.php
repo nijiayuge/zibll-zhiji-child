@@ -123,7 +123,14 @@ add_action('wp_footer', function () {
     var dataEl = document.createElement('input');
     dataEl.type = 'hidden'; dataEl.name = 'zhiji_draw'; dataEl.id = 'zhiji-draw-data'; dataEl.value = '';
     host.appendChild(dataEl);
-    if(btn) host.insertBefore(btn, box.nextSibling);
+    if(btn) {
+        // zhiji 修复（2026-09-24）：box.nextSibling 常不是 host(form) 的直接子节点
+        // （zibll 把 textarea 包在内层 div 中）→ insertBefore 抛 NotFoundError，
+        // 按钮插入中断 → 「画图」按钮不显示。改为插到 box 实际父节点下，并兜底。
+        var _host = box.parentNode || host;
+        try { _host.insertBefore(btn, box.nextSibling); }
+        catch(e) { try { host.appendChild(btn); } catch(e2) {} }
+    }
     var mask = document.getElementById('zhiji-draw-mask');
     var canvas = document.getElementById('zhiji-draw-canvas');
     var ctx = canvas.getContext('2d');
