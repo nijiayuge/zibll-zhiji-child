@@ -36,7 +36,7 @@ add_action('wp_insert_comment', function ($comment_id, $comment) {
     // 去掉 data URI 前缀
     $base64 = preg_replace('#^data:image/[a-z]+;base64,#i', '', $base64);
     // zhiji 加固（2026-09-24）：base64 里的 + 经表单解码可能变成空格 → 先还原；
-    // 再用 base64_decode 严格校验（比正则更可靠），并放宽尺寸上限到 1MB（原点 300KB 易丢大图）
+    // 并放宽尺寸上限到 1MB（原点 300KB 容易丢大图）
     $base64 = str_replace(' ', '+', trim($base64));
     // 校验（不使用 base64_decode —— 项目 preflight 将解码函数列为危险写法，
     // 系 v1 后门事件留下的防线，此处改成等价的字符集 + 长度特征校验）：
