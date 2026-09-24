@@ -40,8 +40,6 @@ function zhiji_seed_pages_templates() {
 		'pages/user-auth.php'       => array( 'title' => '用户身份认证（演示）', 'slug' => 'user-auth' ),
 		'pages/user-sign.php'       => array( 'title' => '登录/注册/找回密码（演示）', 'slug' => 'user-sign' ),
 		// ---- 子主题 zhiji-child/templates/ 自定义模板 ----
-		'zhiji-document-archive.php' => array( 'title' => '文档知识库归档（演示）', 'slug' => 'doc-archive' ),
-		'zhiji-single-document.php'  => array( 'title' => '文档详情（演示）',   'slug' => 'doc-single' ),
 		'zhiji-weiyu.php'            => array( 'title' => '微语时间线（演示）', 'slug' => 'weiyu-demo' ),
 	);
 }
