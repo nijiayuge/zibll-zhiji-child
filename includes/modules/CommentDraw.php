@@ -38,11 +38,15 @@ add_action('wp_insert_comment', function ($comment_id, $comment) {
     // zhiji 加固（2026-09-24）：base64 里的 + 经表单解码可能变成空格 → 先还原；
     // 再用 base64_decode 严格校验（比正则更可靠），并放宽尺寸上限到 1MB（原点 300KB 易丢大图）
     $base64 = str_replace(' ', '+', trim($base64));
-    $decoded = base64_decode($base64, true);
-    if (false === $decoded || strlen($decoded) < 100) {
+    // 校验（不使用 base64_decode —— 项目 preflight 将解码函数列为危险写法，
+    // 系 v1 后门事件留下的防线，此处改成等价的字符集 + 长度特征校验）：
+    // ① 仅允许 base64 字符集与至多 2 个尾部 =
+    // ② 标准 base64 长度必为 4 的倍数；③ 尺寸区间（≥100 字节数据、≤1MB）
+    $len = strlen($base64);
+    if (!preg_match('#^[A-Za-z0-9+/]+={0,2}$#', $base64) || 0 !== $len % 4) {
         return;
     }
-    if (strlen($base64) > 1024 * 1024) {
+    if ($len < 136 || $len > 1024 * 1024) {
         return;
     }
     update_comment_meta($comment_id, '_zhiji_draw', $base64);
