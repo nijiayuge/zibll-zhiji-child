@@ -165,7 +165,7 @@ $("#zhiji-scan-progress").show(); $("#zhiji-scan-rows").empty();
 nextBatch();
 });
 function nextBatch(){
-$.post(ajaxurl, { action: "zhiji_scan_batch", offset: offset, limit: ' . ZHIJI_SCAN_BATCH . ', nonce: "' . esc_js(wp_create_nonce('zhiji_scan_batch')) . '" }, function(res){
+$.post(ajaxurl, { action: "zhiji_api", api: "zhiji_scan_batch", offset: offset, limit: ' . ZHIJI_SCAN_BATCH . ', nonce: "' . esc_js(wp_create_nonce('zhiji_scan_batch')) . '" }, function(res){
 if(res.error){ $("#zhiji-scan-status").text(res.msg); scanning = false; return; }
 offset = res.next; total += res.scanned;
 $("#zhiji-scan-status").text(total);
@@ -178,12 +178,12 @@ location.reload();
 }
 $(document).on("click", ".zhiji-scan-ignore", function(){
 var a = $(this);
-$.post(ajaxurl, { action: "zhiji_scan_ignore", file: a.data("file"), nonce: "' . esc_js(wp_create_nonce('zhiji_scan_ignore')) . '" }, function(res){
+$.post(ajaxurl, { action: "zhiji_api", api: "zhiji_scan_ignore", file: a.data("file"), nonce: "' . esc_js(wp_create_nonce('zhiji_scan_ignore')) . '" }, function(res){
 if(!res.error) a.closest("tr").remove();
 });
 });
 $("#zhiji-scan-reset").on("click", function(){
-$.post(ajaxurl, { action: "zhiji_scan_reset", nonce: "' . esc_js(wp_create_nonce('zhiji_scan_reset')) . '" }, function(){ location.reload(); });
+$.post(ajaxurl, { action: "zhiji_api", api: "zhiji_scan_reset", nonce: "' . esc_js(wp_create_nonce('zhiji_scan_reset')) . '" }, function(){ location.reload(); });
 });
 });
 </script>';
@@ -193,7 +193,8 @@ $.post(ajaxurl, { action: "zhiji_scan_reset", nonce: "' . esc_js(wp_create_nonce
 /* ============================================================
  * AJAX：分批扫描 / 忽略 / 重置
  * ============================================================ */
-add_action('wp_ajax_zhiji_scan_batch', function () {
+zhiji_api_register( 'zhiji_scan_batch', 'zhiji_scan_batch_handler', false, '' );
+function zhiji_scan_batch_handler() {
     check_ajax_referer('zhiji_scan_batch', 'nonce');
     if (!current_user_can('manage_options')) {
         wp_send_json(array('error' => 1, 'msg' => '权限不足'));
@@ -219,9 +220,10 @@ add_action('wp_ajax_zhiji_scan_batch', function () {
         'next'    => $offset + count($batch),
         'done'    => ($offset + count($batch)) >= count($files),
     ));
-});
+}
 
-add_action('wp_ajax_zhiji_scan_ignore', function () {
+zhiji_api_register( 'zhiji_scan_ignore', 'zhiji_scan_ignore_handler', false, '' );
+function zhiji_scan_ignore_handler() {
     check_ajax_referer('zhiji_scan_ignore', 'nonce');
     if (!current_user_can('manage_options')) {
         wp_send_json(array('error' => 1));
@@ -241,16 +243,17 @@ add_action('wp_ajax_zhiji_scan_ignore', function () {
         set_transient(ZHIJI_SCAN_RESULT_KEY, $result, HOUR_IN_SECONDS);
     }
     wp_send_json(array('error' => 0));
-});
+}
 
-add_action('wp_ajax_zhiji_scan_reset', function () {
+zhiji_api_register( 'zhiji_scan_reset', 'zhiji_scan_reset_handler', false, '' );
+function zhiji_scan_reset_handler() {
     check_ajax_referer('zhiji_scan_reset', 'nonce');
     if (!current_user_can('manage_options')) {
         wp_send_json(array('error' => 1));
     }
     delete_transient(ZHIJI_SCAN_RESULT_KEY);
     wp_send_json(array('error' => 0));
-});
+}
 
 /* ============================================================
  * 后台字段

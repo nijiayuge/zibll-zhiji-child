@@ -663,7 +663,6 @@ function zhiji_coupon_give_ajax() {
 }
 // 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
 zhiji_api_register( 'zhiji_coupon_give', 'zhiji_coupon_give_ajax', true, '' );
-add_action( 'wp_ajax_zhiji_coupon_give', 'zhiji_api_legacy_forward' );
 add_action( 'wp_ajax_nopriv_zhiji_coupon_give', 'zhiji_coupon_give_ajax' );
 
 /**
@@ -1127,7 +1126,8 @@ function zhiji_coupon_give_exit_block() {
 			btn.textContent = '发送中...';
 			setMsg('', true);
 			var fd = new FormData();
-			fd.append('action', 'zhiji_coupon_give');
+			fd.append('action', 'zhiji_api');
+    append('api', 'zhiji_coupon_give');
 			fd.append('nonce', nonce);
 			fd.append('email', email);
 			if (refEnabled && ref) fd.append('ref', ref);

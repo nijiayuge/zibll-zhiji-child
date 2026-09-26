@@ -392,7 +392,8 @@ function zhiji_link_apply_shortcode() {
 			btn.textContent = '提交中...';
 
 			var formData = new FormData(form);
-			formData.append('action', 'zhiji_link_apply_submit');
+			formData.append('action', 'zhiji_api');
+			formData.append('api', 'zhiji_link_apply_submit');
 			formData.append('nonce', '<?php echo wp_create_nonce( 'zhiji_link_apply_nonce' ); ?>');
 
 			fetch('<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>', {
@@ -499,7 +500,6 @@ function zhiji_link_apply_ajax_handler() {
 }
 // 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
 zhiji_api_register( 'zhiji_link_apply_submit', 'zhiji_link_apply_ajax_handler', true, '' );
-add_action( 'wp_ajax_zhiji_link_apply_submit', 'zhiji_api_legacy_forward' );
 add_action( 'wp_ajax_nopriv_zhiji_link_apply_submit', 'zhiji_link_apply_ajax_handler' );
 
 /**

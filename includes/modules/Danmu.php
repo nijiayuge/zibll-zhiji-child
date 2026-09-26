@@ -334,7 +334,6 @@ function zhiji_danmu_ajax_notice() {
 }
 // 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
 zhiji_api_register( 'zhiji_danmu_notice', 'zhiji_danmu_ajax_notice', false, '' );
-add_action( 'wp_ajax_zhiji_danmu_notice', 'zhiji_api_legacy_forward' );
 
 /**
  * AJAX 前端拉取弹幕数据（JSON）。
@@ -393,7 +392,6 @@ function zhiji_danmu_fetch() {
 }
 // 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
 zhiji_api_register( 'zhiji_danmu_fetch', 'zhiji_danmu_fetch', true, '' );
-add_action( 'wp_ajax_zhiji_danmu_fetch', 'zhiji_api_legacy_forward' );
 add_action( 'wp_ajax_nopriv_zhiji_danmu_fetch', 'zhiji_danmu_fetch' );
 
 /* ===================== 前端资源（head 内联） ===================== */
@@ -578,7 +576,7 @@ ZHIJI_DANMU_CSS;
 				$.ajax({
 					url: window.ZHIJI_DANMU_AJAX,
 					method: 'POST',
-					data: { action: 'zhiji_danmu_fetch' },
+					data: { action: 'zhiji_api', api: 'zhiji_danmu_fetch' },
 					dataType: 'json',
 					success: function (res) {
 						if (!res || !res.length) return;

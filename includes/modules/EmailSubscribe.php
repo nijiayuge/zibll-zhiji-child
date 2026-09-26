@@ -584,7 +584,8 @@ function zhiji_email_subscribe_user_center_card() {
 			box.insertBefore(div, box.firstChild);
 			div.querySelector('.zhiji-sub-btn').addEventListener('click', function(){
 				var btn = this, fd = new FormData();
-				fd.append('action', 'zhiji_email_subscribe_toggle');
+				fd.append('action', 'zhiji_api');
+				fd.append('api', 'zhiji_email_subscribe_toggle');
 				fd.append('op', btn.getAttribute('data-op'));
 				fd.append('nonce', btn.getAttribute('data-nonce'));
 				fetch(btn.getAttribute('data-url'), {method:'POST', credentials:'same-origin', body: fd})
@@ -621,7 +622,6 @@ function zhiji_email_subscribe_user_center_card() {
  */
 // 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
 zhiji_api_register( 'zhiji_email_subscribe_toggle', 'zhiji_email_subscribe_ajax_toggle', false, '' );
-add_action( 'wp_ajax_zhiji_email_subscribe_toggle', 'zhiji_api_legacy_forward' );
 function zhiji_email_subscribe_ajax_toggle() {
 	check_ajax_referer( 'zhiji_email_subscribe_toggle', 'nonce' );
 	$uid = get_current_user_id();

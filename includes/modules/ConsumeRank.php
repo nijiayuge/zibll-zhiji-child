@@ -108,7 +108,6 @@ function zhiji_consume_rank_mask_name($name)
 add_action('wp_ajax_nopriv_zhiji_consume_rank', 'zhiji_consume_rank_fetch');
 // 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
 zhiji_api_register( 'zhiji_consume_rank', 'zhiji_consume_rank_fetch', true, '' );
-add_action( 'wp_ajax_zhiji_consume_rank', 'zhiji_api_legacy_forward' );
 
 /**
  * 前台拉取榜单数据
@@ -192,7 +191,7 @@ add_shortcode('zhiji_consume_rank', function () {
     $.ajax({
     url: <?php echo wp_json_encode(admin_url('admin-ajax.php')); ?>,
     method:'POST',
-    data:{action:'zhiji_consume_rank', nonce:<?php echo wp_json_encode(wp_create_nonce('zhiji_consume_rank')); ?>},
+    data:{action:'zhiji_api', api:'zhiji_consume_rank', nonce:<?php echo wp_json_encode(wp_create_nonce('zhiji_consume_rank')); ?>},
     dataType:'json',
     success:function(res){
     var data=(res && res.success && res.data) ? res.data : [];

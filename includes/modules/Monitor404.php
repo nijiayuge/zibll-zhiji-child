@@ -275,7 +275,7 @@ function zhiji_monitor_404_render_page() {
 jQuery(function($){
 	$(document).on("click", ".zhiji-404-ignore", function(){
 		var a = $(this);
-		$.post(ajaxurl, { action: "zhiji_404_ignore", key: a.data("key"), nonce: "' . esc_js( wp_create_nonce( 'zhiji_404_ignore' ) ) . '" }, function(res){
+		$.post(ajaxurl, { action: "zhiji_api", api: "zhiji_404_ignore", key: a.data("key"), nonce: "' . esc_js( wp_create_nonce( 'zhiji_404_ignore' ) ) . '" }, function(res){
 			if(!res.error) a.closest("tr").remove();
 		});
 	});
@@ -286,7 +286,8 @@ jQuery(function($){
 /* ============================================================
  * AJAX：忽略404记录
  * ============================================================ */
-add_action( 'wp_ajax_zhiji_404_ignore', function () {
+zhiji_api_register( 'zhiji_404_ignore', 'zhiji_404_ignore_handler', false, '' );
+function zhiji_404_ignore_handler() {
 	check_ajax_referer( 'zhiji_404_ignore', 'nonce' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_send_json( array( 'error' => 1 ) );
@@ -297,7 +298,7 @@ add_action( 'wp_ajax_zhiji_404_ignore', function () {
 		$wpdb->delete( $wpdb->prefix . ZHIJI_404_TABLE, array( 'url_key' => $key ) );
 	}
 	wp_send_json( array( 'error' => 0 ) );
-} );
+}
 
 /**
  * 每日定时清理 30 天前的 404 日志（行业标准：日志定期归档清理，防止表无限增长）

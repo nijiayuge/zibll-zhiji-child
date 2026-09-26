@@ -240,21 +240,17 @@ function zhiji_lottery_init() {
 	// 抽奖 / 分享 AJAX（未登录拒绝）
 	// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口，前端调用点不变
 	zhiji_api_register( 'zhiji_lottery_draw', 'zhiji_lottery_ajax_draw', false, '' );
-	add_action( 'wp_ajax_zhiji_lottery_draw', 'zhiji_api_legacy_forward' );
 	add_action( 'wp_ajax_nopriv_zhiji_lottery_draw', 'zhiji_lottery_ajax_require_login' );
 	// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口，前端调用点不变
 	zhiji_api_register( 'zhiji_lottery_share', 'zhiji_lottery_ajax_share', false, '' );
-	add_action( 'wp_ajax_zhiji_lottery_share', 'zhiji_api_legacy_forward' );
 	add_action( 'wp_ajax_nopriv_zhiji_lottery_share', 'zhiji_lottery_ajax_require_login' );
 	// 中奖邮件即时发送（前端特效播完后触发，保证送达不依赖下次访问；见 zhiji_lottery_ajax_send_mail）
 	// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口，前端调用点不变
 	zhiji_api_register( 'zhiji_lottery_send_mail', 'zhiji_lottery_ajax_send_mail', false, '' );
-	add_action( 'wp_ajax_zhiji_lottery_send_mail', 'zhiji_api_legacy_forward' );
 	add_action( 'wp_ajax_nopriv_zhiji_lottery_send_mail', 'zhiji_lottery_ajax_require_login' );
 	// 消息角标刷新：业务 AJAX 产生站内消息后由前端主动拉取未读数（父主题无全局刷新接口）
 	// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口，前端调用点不变
 	zhiji_api_register( 'zhiji_msg_counts', 'zhiji_lottery_ajax_msg_counts', false, '' );
-	add_action( 'wp_ajax_zhiji_msg_counts', 'zhiji_api_legacy_forward' );
 	add_action( 'wp_ajax_nopriv_zhiji_msg_counts', 'zhiji_lottery_ajax_require_login' );
 	// 前台资源
 	add_action( 'wp_enqueue_scripts', 'zhiji_lottery_enqueue' );
@@ -1130,7 +1126,7 @@ ZHIJI_LOTTERY_CSS;
 				$.ajax({
 					url: window.ZHIJI_LOTTERY_AJAX,
 					type: 'POST',
-					data: { action: 'zhiji_lottery_send_mail', nonce: mailNonce, key: res.mail_key },
+					data: { action: 'zhiji_api', api: 'zhiji_lottery_send_mail', nonce: mailNonce, key: res.mail_key },
 					dataType: 'json'
 				});
 			}, 3500);
@@ -1208,7 +1204,7 @@ ZHIJI_LOTTERY_CSS;
 			type: 'POST',
 			dataType: 'json',
 			data: {
-				action: 'zhiji_lottery_draw',
+				action: 'zhiji_api', api: 'zhiji_lottery_draw',
 				nonce: $btn.attr('data-nonce'),
 				extra: extra ? 1 : 0
 			}
@@ -1240,7 +1236,7 @@ ZHIJI_LOTTERY_CSS;
 				url: ZHIJI_LOTTERY_AJAX,
 				type: 'POST',
 				dataType: 'json',
-				data: { action: 'zhiji_lottery_share', nonce: $btn.attr('data-nonce') }
+				data: { action: 'zhiji_api', api: 'zhiji_lottery_share', nonce: $btn.attr('data-nonce') }
 			}).done(function (r) {
 				$m.find('.zhiji-lottery-msg').text(r && r.msg ? r.msg : '分享成功');
 				if (!r || r.error) { $btn.removeClass('is-drawing'); return; }
