@@ -26,7 +26,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-add_action( 'after_setup_theme', 'zhiji_reward_notify_register_options', 20 );
 
 /**
  * 统一奖励通知入口。
@@ -342,13 +341,7 @@ function zhiji_reward_notify_register_options() {
 	if ( ! class_exists( 'CSF' ) || ! is_admin() ) {
 		return;
 	}
-	Zhiji_Registry::csf_section_for_legacy( 'reward_notify',
-		array(
-			'parent' => 'zhiji_user',
-			'priority' => 30,
-			'title'  => __( '奖励通知', 'zhiji' ),
-			'icon'   => 'fa fa-fw fa-bell',
-			'fields' => array(
+	Zhiji_Registry::register_options( 'reward_notify', array(
 				array(
 					'id'      => 'reward_notify_enabled',
 					'type'    => 'switcher',
@@ -394,10 +387,11 @@ function zhiji_reward_notify_register_options() {
 					'type'    => 'content',
 					'content' => __( '说明：本模块为全站奖励通知的统一入口；评论福袋、砍价等已接入；抽奖、挽留弹窗/裂变奖励沿用各自已有的站内通知+邮件。', 'zhiji' ),
 				),
-			),
-		)
-	);
+			), 30 );
 }
+// 2026-09-26：改为 Registry 统一登记（P3-⑨），此处直接调用替代钩子
+zhiji_reward_notify_register_options();
+
 
 /**
  * 前端：消息中心奖励数值高亮（ZibMsg 过滤 HTML，故用 JS 把【...】替换成高亮 span）。

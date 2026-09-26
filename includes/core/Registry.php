@@ -186,6 +186,11 @@ class Zhiji_Registry
      */
     public static function boot_sections()
     {
+        // 懒构建：与前实现保持一致 —— 仅在本主题设置页或 CSF 自身 ajax 时才落字段。
+        // （CSF 在非 admin 上下文调用 createSection 无意义，且会增加前台开销。）
+        if (!is_admin()) {
+            return;
+        }
         $list = self::$pending_sections;
         usort($list, function ($a, $b) {
             return $a['priority'] - $b['priority'];

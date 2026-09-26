@@ -28,19 +28,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * 1. 后台 CSF 分区：用户&互动 → 奖励中心
  * ============================================================ */
 
-add_action( 'after_setup_theme', 'zhiji_reward_center_register_options', 20 );
 function zhiji_reward_center_register_options() {
 	if ( ! class_exists( 'CSF' ) || ! is_admin() ) {
 		return;
 	}
 
-	Zhiji_Registry::csf_section_for_legacy( 'reward_center',
-		array(
-			'parent' => 'zhiji_user',
-			'priority' => 20,
-			'title'  => __( '奖励中心', 'zhiji' ),
-			'icon'   => 'fa fa-fw fa-gift',
-			'fields' => array(
+	Zhiji_Registry::register_options( 'reward_center', array(
 
 				array(
 					'type'    => 'subheading',
@@ -213,10 +206,11 @@ function zhiji_reward_center_register_options() {
 					'desc'    => __( '免单券（multiply=0 全免）价值较高，建议谨慎开启。', 'zhiji' ),
 				),
 
-			),
-		)
-	);
+			), 20 );
 }
+// 2026-09-26：改为 Registry 统一登记（P3-⑨），此处直接调用替代钩子
+zhiji_reward_center_register_options();
+
 
 /* ============================================================
  * 2. 统一发放入口

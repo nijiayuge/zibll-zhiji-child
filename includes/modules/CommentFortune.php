@@ -32,7 +32,6 @@ add_action( 'comment_post', 'zhiji_comment_fortune_on_comment', 10, 3 );
 add_action( 'wp_footer', 'zhiji_comment_fortune_footer' );
 // 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
 zhiji_api_register( 'zhiji_comment_fortune_check', 'zhiji_comment_fortune_ajax_check', false, '' );
-add_action( 'after_setup_theme', 'zhiji_comment_fortune_register_options', 20 );
 
 /**
  * 评论落库后：若命中福袋位且作者已登录，随机发放奖励并写入一次性标记。
@@ -302,13 +301,7 @@ function zhiji_comment_fortune_register_options() {
 	if ( ! class_exists( 'CSF' ) || ! is_admin() ) {
 		return;
 	}
-	Zhiji_Registry::csf_section_for_legacy( 'comment_fortune',
-		array(
-			'parent' => 'zhiji_comment',
-			'priority' => 110,
-			'title'  => __( '评论福袋', 'zhiji' ),
-			'icon'   => 'fa fa-fw fa-gift',
-			'fields' => array(
+	Zhiji_Registry::register_options( 'comment_fortune', array(
 				array(
 					'id'      => 'comment_fortune_enabled',
 					'type'    => 'switcher',
@@ -455,7 +448,8 @@ function zhiji_comment_fortune_register_options() {
 					'type'    => 'content',
 					'content' => __( '说明：计数含全部评论，但发奖与弹窗仅对「登录用户」生效；标记 2 小时有效，展示一次即消失；锦鲤必有奖励（无「谢谢参与」，权重全 0 时保底积分）；优惠码/免单券走 CouponGive 体系（来源标记 comment_fortune / comment_fortune_free）；发奖后自动发站内系统通知 + 邮件。', 'zhiji' ),
 				),
-			),
-		)
-	);
+			), 110 );
 }
+// 2026-09-26：改为 Registry 统一登记（P3-⑨），此处直接调用替代钩子
+zhiji_comment_fortune_register_options();
+
