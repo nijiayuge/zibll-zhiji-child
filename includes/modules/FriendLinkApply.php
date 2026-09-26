@@ -28,6 +28,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * 注册「友链申请」自定义文章类型
  */
 function zhiji_link_apply_register_post_type() {
+	// 开关守卫（模块契约：关闭即零开销）——原先无论开关与否都会注册，违反契约。
+	// 后台仍放行：该 CPT 承载用户已提交的数据，关闭开关后仍需在后台查看/审核历史申请。
+	if ( ! is_admin() && ! zhiji_is_enabled( 'link_apply_enabled', true ) ) {
+		return;
+	}
+
 	$labels = array(
 		'name'               => _x( '友链申请', 'post type general name', 'zhiji' ),
 		'singular_name'      => _x( '友链申请', 'post type singular name', 'zhiji' ),

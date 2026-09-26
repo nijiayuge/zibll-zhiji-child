@@ -27,6 +27,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * 注册「系列」自定义分类法
  */
 function zhiji_series_register_taxonomy() {
+	// 开关守卫（模块契约：关闭即零开销）——原先无论开关与否都会注册，违反契约。
+	// 后台仍放行：已建系列与文章关联关系需在后台可见、可维护。
+	if ( ! is_admin() && ! zhiji_is_enabled( 'series_enabled', true ) ) {
+		return;
+	}
+
 	$labels = array(
 		'name'              => _x( '系列', 'taxonomy general name', 'zhiji' ),
 		'singular_name'     => _x( '系列', 'taxonomy singular name', 'zhiji' ),
