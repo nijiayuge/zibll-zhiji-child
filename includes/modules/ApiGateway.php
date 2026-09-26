@@ -24,39 +24,11 @@ Zhiji_Registry::register_module('api_gateway', array(
 
 /* ============================================================
  * 处理器注册表
+ *
+ * ⚠️ 2026-09-26：注册表与转发入口已迁至 **core/ApiRegistry.php**
+ *    （基础设施层，保证任何模块都能安全调用，不受加载顺序影响）。
+ *    本文件只保留：参数校验辅助 + 网关端点。
  * ============================================================ */
-
-/**
- * 注册一个网关处理器
- *
- * @param string   $name    接口名（api 参数值）
- * @param callable $handler 处理器（入参 $_REQUEST 数组，自行输出 JSON）
- * @param bool     $public  是否允许游客访问
- * @return void
- */
-function zhiji_api_register($name, $handler, $public = true)
-{
-    if (empty($GLOBALS['__zhiji_api_handlers']) || !is_array($GLOBALS['__zhiji_api_handlers'])) {
-        $GLOBALS['__zhiji_api_handlers'] = array();
-    }
-    $GLOBALS['__zhiji_api_handlers'][(string) $name] = array(
-        'cb'     => $handler,
-        'public' => (bool) $public,
-    );
-}
-
-/**
- * 取全部处理器
- *
- * @return array
- */
-function zhiji_api_get_handlers()
-{
-    if (empty($GLOBALS['__zhiji_api_handlers']) || !is_array($GLOBALS['__zhiji_api_handlers'])) {
-        $GLOBALS['__zhiji_api_handlers'] = array();
-    }
-    return $GLOBALS['__zhiji_api_handlers'];
-}
 
 /* ============================================================
  * 参数校验辅助（白名单式，拒绝一切未预期的输入形态）
@@ -131,11 +103,6 @@ function zhiji_api_gateway()
     if (!zhiji_is_enabled('api_gateway_enabled', true)) {
         wp_send_json_error(array('msg' => 'API 网关未启用'), 403);
     }
-    // 统一 nonce 校验（与前端 ZHIJI_CONFIG.nonce 对应）
-    $nonce = isset($_REQUEST['nonce']) ? sanitize_text_field(wp_unslash($_REQUEST['nonce'])) : '';
-    if (!wp_verify_nonce($nonce, 'zhiji_nonce')) {
-        wp_send_json_error(array('msg' => '安全校验失败，请刷新页面重试'), 403);
-    }
     $name = zhiji_api_str($_REQUEST, 'api', 64);
     if ('' === $name) {
         wp_send_json_error(array('msg' => '缺少 api 参数'), 400);
@@ -144,11 +111,23 @@ function zhiji_api_gateway()
     if (!isset($handlers[$name])) {
         wp_send_json_error(array('msg' => '未知接口'), 404);
     }
+    $handler = $handlers[$name];
+    // nonce 校验（2026-09-26）：
+    //  · 传 'zhiji_nonce'（默认）→ 网关统一校验；
+    //  · 传 ''（空串）→ 跳过网关校验，由处理器自行校验（存量端点迁移时使用，
+    //    其内部已有 check_ajax_referer，行为与迁移前完全一致）。
+    $nonce_action = isset($handler['nonce']) ? (string) $handler['nonce'] : 'zhiji_nonce';
+    if ('' !== $nonce_action) {
+        $nonce = isset($_REQUEST['nonce']) ? sanitize_text_field(wp_unslash($_REQUEST['nonce'])) : '';
+        if (!wp_verify_nonce($nonce, $nonce_action)) {
+            wp_send_json_error(array('msg' => '安全校验失败，请刷新页面重试'), 403);
+        }
+    }
     // 登录要求
-    if (!$handlers[$name]['public'] && !is_user_logged_in()) {
+    if (!$handler['public'] && !is_user_logged_in()) {
         wp_send_json_error(array('msg' => '请先登录'), 401);
     }
-    call_user_func($handlers[$name]['cb'], $_REQUEST);
+    call_user_func($handler['cb'], $_REQUEST);
     // 处理器自行输出并 exit；未输出的按服务器错误兜底
     wp_send_json_error(array('msg' => '接口无响应'), 500);
 }

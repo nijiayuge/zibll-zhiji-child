@@ -246,15 +246,23 @@ function zhiji_lottery_init() {
 	// 短代码 [zhiji_lottery] 输出触发按钮 + 预渲染弹窗
 	add_shortcode( 'zhiji_lottery', 'zhiji_lottery_shortcode' );
 	// 抽奖 / 分享 AJAX（未登录拒绝）
-	add_action( 'wp_ajax_zhiji_lottery_draw',  'zhiji_lottery_ajax_draw' );
+	// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口，前端调用点不变
+	zhiji_api_register( 'zhiji_lottery_draw', 'zhiji_lottery_ajax_draw', false, '' );
+	add_action( 'wp_ajax_zhiji_lottery_draw', 'zhiji_api_legacy_forward' );
 	add_action( 'wp_ajax_nopriv_zhiji_lottery_draw', 'zhiji_lottery_ajax_require_login' );
-	add_action( 'wp_ajax_zhiji_lottery_share', 'zhiji_lottery_ajax_share' );
+	// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口，前端调用点不变
+	zhiji_api_register( 'zhiji_lottery_share', 'zhiji_lottery_ajax_share', false, '' );
+	add_action( 'wp_ajax_zhiji_lottery_share', 'zhiji_api_legacy_forward' );
 	add_action( 'wp_ajax_nopriv_zhiji_lottery_share', 'zhiji_lottery_ajax_require_login' );
 	// 中奖邮件即时发送（前端特效播完后触发，保证送达不依赖下次访问；见 zhiji_lottery_ajax_send_mail）
-	add_action( 'wp_ajax_zhiji_lottery_send_mail', 'zhiji_lottery_ajax_send_mail' );
+	// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口，前端调用点不变
+	zhiji_api_register( 'zhiji_lottery_send_mail', 'zhiji_lottery_ajax_send_mail', false, '' );
+	add_action( 'wp_ajax_zhiji_lottery_send_mail', 'zhiji_api_legacy_forward' );
 	add_action( 'wp_ajax_nopriv_zhiji_lottery_send_mail', 'zhiji_lottery_ajax_require_login' );
 	// 消息角标刷新：业务 AJAX 产生站内消息后由前端主动拉取未读数（父主题无全局刷新接口）
-	add_action( 'wp_ajax_zhiji_msg_counts', 'zhiji_lottery_ajax_msg_counts' );
+	// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口，前端调用点不变
+	zhiji_api_register( 'zhiji_msg_counts', 'zhiji_lottery_ajax_msg_counts', false, '' );
+	add_action( 'wp_ajax_zhiji_msg_counts', 'zhiji_api_legacy_forward' );
 	add_action( 'wp_ajax_nopriv_zhiji_msg_counts', 'zhiji_lottery_ajax_require_login' );
 	// 前台资源
 	add_action( 'wp_enqueue_scripts', 'zhiji_lottery_enqueue' );
