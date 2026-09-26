@@ -494,9 +494,10 @@ function zhiji_danmu_enqueue() {
 	#zhiji-danmu { display: none; }
 }
 ZHIJI_DANMU_CSS;
-	echo '<style id="zhiji-danmu-css">' . $danmu_css . '</style>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	// 2026-09-26：改走统一内联资源服务（Assets.php）
+	zhiji_asset_add_css( 'danmu', $danmu_css );
 
-	echo '<script>window.ZHIJI_DANMU_AJAX=' . wp_json_encode( admin_url( 'admin-ajax.php' ) ) . ';</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	zhiji_asset_add_js( 'danmu-ajax', 'window.ZHIJI_DANMU_AJAX=' . wp_json_encode( admin_url( 'admin-ajax.php' ) ) . ';' );
 
 	$danmu_js = <<<'ZHIJI_DANMU_JS'
 /* 知集 · 弹幕前端（jQuery 实现，右下角逐条淡入） */
@@ -618,7 +619,8 @@ ZHIJI_DANMU_JS;
 	// 轮询间隔（毫秒）由后端配置注入
 	$poll_ms = max( 5000, (int) zhiji_get_option( 'danmu_poll', 30 ) * 1000 );
 	echo '<script>window.ZHIJI_DANMU_POLL=' . (int) $poll_ms . ';</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-	echo '<script id="zhiji-danmu-js">(function(){function z_boot() {if(typeof window.jQuery==="undefined"){setTimeout(z_boot,80);return;}' . $danmu_js . '}z_boot();})();</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	// 2026-09-26：改走统一内联资源服务（保留原有外层 IIFE 包装，语义不变）
+	zhiji_asset_add_js( 'danmu', '(function(){function z_boot() {if(typeof window.jQuery==="undefined"){setTimeout(z_boot,80);return;}' . $danmu_js . '}z_boot();})();' );
 }
 add_action( 'wp_enqueue_scripts', 'zhiji_danmu_enqueue' );
 

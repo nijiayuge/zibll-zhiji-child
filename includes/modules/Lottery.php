@@ -919,10 +919,11 @@ body.dark-theme .zhiji-lottery-grid {
 }
 
 ZHIJI_LOTTERY_CSS;
-	echo '<style id="zhiji-lottery-css">' . $lottery_css . '</style>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	// 2026-09-26：改走统一内联资源服务（Assets.php，head 内联策略不变）
+	zhiji_asset_add_css( 'lottery', $lottery_css );
 
 	// AJAX 地址全局变量 + 完整 JS（jQuery 由父主题在 head 加载，先于本脚本执行）
-	echo '<script>window.ZHIJI_LOTTERY_AJAX=' . wp_json_encode( admin_url( 'admin-ajax.php' ) ) . ';</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	zhiji_asset_add_js( 'lottery-ajax', 'window.ZHIJI_LOTTERY_AJAX=' . wp_json_encode( admin_url( 'admin-ajax.php' ) ) . ';' );
 	$lottery_js = <<<'ZHIJI_LOTTERY_JS'
 /* ============================================================
  * 知集·大抽奖 前端交互层（jQuery 适配，IIFE 包裹避免命名污染）
@@ -1254,7 +1255,8 @@ ZHIJI_LOTTERY_CSS;
 
 ZHIJI_LOTTERY_JS;
 	// jQuery 由父主题在 head 稍后加载，本脚本先于其执行时可能未就绪：轮询等待后再运行。
-	echo '<script id="zhiji-lottery-js">(function(){function z_boot() {if(typeof window.jQuery==="undefined"){setTimeout(z_boot,80);return;}' . $lottery_js . '}z_boot();})();</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	// 保留原有外层 IIFE 包装，语义不变
+	zhiji_asset_add_js( 'lottery', '(function(){function z_boot() {if(typeof window.jQuery==="undefined"){setTimeout(z_boot,80);return;}' . $lottery_js . '}z_boot();})();' );
 }
 
 /**

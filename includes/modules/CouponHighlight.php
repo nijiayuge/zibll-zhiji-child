@@ -162,8 +162,9 @@ document.body.removeChild(ta);
 ZHIJI_CP_JS;
 
     // 两个 heredoc 均为单引号记法（nowdoc），内容不含 PHP 插值，直接输出安全
-    echo '<style id="zhiji-cp-css">' . $css . '</style>' . "\n";
-    echo '<script id="zhiji-cp-js">' . $js . '</script>' . "\n";
+    // 2026-09-26：改走统一内联资源服务（Assets.php），由 wp_head(99) 去重输出
+    zhiji_asset_add_css('coupon-highlight', $css);
+    zhiji_asset_add_js('coupon-highlight', $js);
 }
 add_action('wp_enqueue_scripts', 'zhiji_coupon_highlight_assets', 99);
 

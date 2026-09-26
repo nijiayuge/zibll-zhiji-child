@@ -45,3 +45,120 @@ function zhiji_assets_enqueue()
     );
 }
 add_action('wp_enqueue_scripts', 'zhiji_assets_enqueue', 5);
+
+/* ============================================================
+ * 内联资源服务（2026-09-26 新增，配置统一化探查报告 P2-⑦）
+ *
+ * 背景：多个业务模块（CouponHighlight / Danmu / Lottery 等）各自用 nowdoc
+ *       内联输出 CSS/JS，写法重复且缺少统一的去重与顺序控制。
+ *
+ * 策略（与既有结论一致，不更改）：
+ *   1) **全部在 head 内联输出** —— 本站点实测 wp_footer 输出曾在线上被环境干扰
+ *      （脚本丢失 / 500），head 内联最稳；
+ *   2) 不依赖任何外部资源文件（自包含）；
+ *   3) 按 id 去重：同一 id 重复登记只输出一次；
+ *   4) 登记顺序即输出顺序，便于控制依赖关系。
+ *
+ * 用法：
+ *   zhiji_asset_add_css('lottery', $css_string);
+ *   zhiji_asset_add_js('lottery', $js_string);
+ * ============================================================ */
+
+/**
+ * 已登记的 CSS / JS 片段
+ *
+ * @return array 引用返回：array('css' => [id => code], 'js' => [id => code], 'printed' => bool)
+ */
+function &zhiji_asset_inline_store()
+{
+    static $store = array('css' => array(), 'js' => array(), 'printed' => false);
+    return $store;
+}
+
+/**
+ * 登记一段内联 CSS（head 输出，按 id 去重）
+ *
+ * @param string $id  唯一标识（重复登记将被忽略）
+ * @param string $css CSS 代码
+ * @return void
+ */
+function zhiji_asset_add_css($id, $css)
+{
+    if ('' === (string) $css) {
+        return;
+    }
+    $store = &zhiji_asset_inline_store();
+    $id    = (string) $id;
+    if (!isset($store['css'][$id])) {
+        $store['css'][$id] = (string) $css;
+    }
+}
+
+/**
+ * 登记一段内联 JS（head 输出，按 id 去重）
+ *
+ * @param string $id 唯一标识（重复登记将被忽略）
+ * @param string $js JS 代码
+ * @return void
+ */
+function zhiji_asset_add_js($id, $js)
+{
+    if ('' === (string) $js) {
+        return;
+    }
+    $store = &zhiji_asset_inline_store();
+    $id    = (string) $id;
+    if (!isset($store['js'][$id])) {
+        $store['js'][$id] = (string) $js;
+    }
+}
+
+/**
+ * 统一输出已登记的内联资源（wp_head 末尾，保证在业务模块登记之后执行）
+ *
+ * @return void
+ */
+function zhiji_asset_print_inline()
+{
+    if (is_admin()) {
+        return;
+    }
+    $store = &zhiji_asset_inline_store();
+    if ($store['printed']) {
+        return;
+    }
+    $store['printed'] = true;
+
+    if (!empty($store['css'])) {
+        echo "<style id=\"zhiji-inline-css\">\n";
+        foreach ($store['css'] as $code) {
+            echo $code . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput -- 模块自产 CSS，非用户输入
+        }
+        echo "</style>\n";
+    }
+
+    if (!empty($store['js'])) {
+        // 注意：**不包裹 IIFE** —— 模块的 JS 可能定义全局变量（window.ZHIJI_XXX）
+        // 或依赖外部作用域，包裹会改变语义。此处按登记顺序原样拼接，与改造前行为一致。
+        echo "<script id=\"zhiji-inline-js\">\n";
+        foreach ($store['js'] as $code) {
+            echo $code . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput -- 模块自产 JS，非用户输入
+        }
+        echo "</script>\n";
+    }
+}
+add_action('wp_head', 'zhiji_asset_print_inline', 99);
+
+/**
+ * 查询某 id 是否已登记（供模块避免重复登记时判断）
+ *
+ * @param string $id
+ * @param string $type css|js
+ * @return bool
+ */
+function zhiji_asset_has($id, $type = 'css')
+{
+    $store = &zhiji_asset_inline_store();
+    $type  = ('js' === $type) ? 'js' : 'css';
+    return isset($store[$type][(string) $id]);
+}
