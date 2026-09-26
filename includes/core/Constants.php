@@ -54,3 +54,11 @@ if (!defined('ZHIJI_OPTION_KEY')) {
 if (!defined('ZHIJI_BACKUP_KEY')) {
     define('ZHIJI_BACKUP_KEY', 'zhiji_options_backup');
 }
+
+/**
+ * 模块清单缓存的 transient key（见 Zhiji_Registry::scan_module_files）
+ * 存 {fp: 目录 mtime, files: [...] }；无过期时间，靠目录 mtime 指纹失效。
+ */
+if (!defined('ZHIJI_MODULE_LIST_TRANSIENT')) {
+    define('ZHIJI_MODULE_LIST_TRANSIENT', 'zhiji_module_files');
+}
