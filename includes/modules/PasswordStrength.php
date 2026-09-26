@@ -26,14 +26,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /* ============================================================
  * 后台 CSF 设置：用户&互动 → 密码强度校验
  * ============================================================ */
-add_action( 'after_setup_theme', function () {
-	
-	Zhiji_Registry::csf_section_for_legacy( 'password_strength', array(
-		'title'  => '密码强度校验',
-		'icon'   => 'fa fa-lock',
-		'parent' => 'zhiji_user',
-		'priority' => 160,
-		'fields' => array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('password_strength', array(
 			array(
 				'id'      => 'password_strength_enabled',
 				'type'    => 'switcher',
@@ -59,9 +53,7 @@ add_action( 'after_setup_theme', function () {
 				'desc'       => '开启：必须含大小写字母 + 数字（或特殊字符）。关闭：仅校验长度。',
 				'dependency' => array( 'password_strength_enabled', '==', '1' ),
 			),
-		),
-	) );
-}, 20 );
+		), 20);
 
 /**
  * 判断密码强度校验是否启用。

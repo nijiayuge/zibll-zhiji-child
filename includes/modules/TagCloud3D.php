@@ -110,8 +110,8 @@ add_shortcode('zhiji_tag_cloud_3d', 'zhiji_tag3d_shortcode');
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('tag_cloud_3d', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('tag_cloud_3d', array(
         array(
             'id'      => 'tag3d_enabled',
             'type'    => 'switcher',
@@ -139,5 +139,4 @@ add_action('after_setup_theme', function () {
             'max'        => 260,
             'dependency' => array('tag3d_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

@@ -96,24 +96,8 @@ function zhiji_monitor_404_migrate_legacy() {
 /* ============================================================
  * 后台 CSF 设置：扩展&增强 → 404监控
  * ============================================================ */
-add_action( 'after_setup_theme', function () {
-			// P0 合并 404 监控：一次性迁移旧 NotFoundMonitor 开关值（不覆盖新设置）
-		// v1.8.6 加固：CSF 关闭态可能存空串 ''，按未设置处理，避免开关值歧义
-		$legacy_notfound = zhiji_get_option( 'notfound_enabled', null );
-		$cur_404          = zhiji_get_option( 'monitor_404_enabled', null );
-		if ( null !== $legacy_notfound && ( null === $cur_404 || '' === $cur_404 ) ) {
-			zhiji_update_option( 'monitor_404_enabled', filter_var( $legacy_notfound, FILTER_VALIDATE_BOOLEAN ) ? '1' : '0' );
-		} elseif ( '' === $cur_404 ) {
-			// 无旧值但存在空串：归一化为显式关闭 '0'
-			zhiji_update_option( 'monitor_404_enabled', '0' );
-		}
-
-	Zhiji_Registry::csf_section_for_legacy( 'monitor_404', array(
-		'title'  => '404监控',
-		'icon'   => 'fa fa-exclamation-triangle',
-		'parent' => 'zhiji_over',
-		'priority' => 60,
-		'fields' => array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('monitor_404', array(
 			array(
 				'id'      => 'monitor_404_enabled',
 				'type'    => 'switcher',
@@ -129,9 +113,7 @@ add_action( 'after_setup_theme', function () {
 				'dependency' => array( 'monitor_404_enabled', '==', '1' ),
 				'desc'       => '默认不统计登录用户的404请求，开启后也会统计。',
 			),
-		),
-	) );
-}, 20 );
+		), 20);
 
 /**
  * 判断404监控是否启用。

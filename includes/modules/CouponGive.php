@@ -28,8 +28,8 @@ Zhiji_Registry::register_module('coupon_give', array(
     'option'   => 'coupon_give_enabled',
 ));
 
-add_action( 'after_setup_theme', function () {
-	Zhiji_Registry::csf_section_for( 'coupon_give', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('coupon_give', array(
 			array(
 				'id'      => 'coupon_give_enabled',
 				'type'    => 'switcher',
@@ -266,8 +266,7 @@ add_action( 'after_setup_theme', function () {
 				'default'    => true,
 				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
 			),
-) );
-}, 20 );
+), 20);
 
 /* =====================================================================
  * 一、工具函数

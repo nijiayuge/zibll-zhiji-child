@@ -505,14 +505,8 @@ add_action( 'wp_ajax_nopriv_zhiji_link_apply_submit', 'zhiji_link_apply_ajax_han
 /**
  * 后台配置：友链申请分区
  */
-add_action( 'after_setup_theme', function () {
-	
-	Zhiji_Registry::csf_section_for_legacy( 'friend_link_apply', array(
-		'title'  => '友链申请',
-		'icon'   => 'fa fa-link',
-		'parent' => 'zhiji_page',
-		'priority' => 130,
-		'fields' => array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('friend_link_apply', array(
 			array(
 				'id'      => 'link_apply_enabled',
 				'type'    => 'switcher',
@@ -525,6 +519,4 @@ add_action( 'after_setup_theme', function () {
 				'style'   => 'info',
 				'content' => '使用方法：在任意页面中插入短代码 <code>[zhiji_link_apply]</code>，用户提交后在后台「友链申请」菜单中审核，审核通过后自动添加到 WordPress 链接管理器并发送邮件通知。',
 			),
-		),
-	) );
-}, 20 );
+		), 20);

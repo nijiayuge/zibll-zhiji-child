@@ -86,8 +86,8 @@ add_action('before_delete_post', 'zhiji_auto_delete_attachments', 10, 1);
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('auto_delete_attachments', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('auto_delete_attachments', array(
         array(
             'id'      => 'auto_delete_attachments_enabled',
             'type'    => 'switcher',
@@ -113,5 +113,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '关闭则仅从媒体库删除，保留服务器文件',
             'dependency' => array('auto_delete_attachments_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

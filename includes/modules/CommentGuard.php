@@ -100,8 +100,8 @@ add_action('wp_footer', function () {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('comment_guard', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('comment_guard', array(
         array(
             'id'      => 'comment_guard_enabled',
             'type'    => 'switcher',
@@ -140,5 +140,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '评论框下方显示规则提示，留空不显示',
             'dependency' => array('comment_guard_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

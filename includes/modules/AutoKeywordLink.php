@@ -118,8 +118,8 @@ add_filter('the_content', 'zhiji_auto_keyword_link_process', 20);
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('auto_keyword_link', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('auto_keyword_link', array(
         array(
             'id'      => 'auto_keyword_link_enabled',
             'type'    => 'switcher',
@@ -148,5 +148,4 @@ add_action('after_setup_theme', function () {
                 array('id' => 'url',     'type' => 'text', 'title' => '链接URL'),
             ),
         ),
-    ));
-}, 20);
+    ), 20);

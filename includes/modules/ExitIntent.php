@@ -140,8 +140,8 @@ add_action('wp_footer', function () {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('exit_intent', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('exit_intent', array(
         array(
             'id'      => 'exit_intent_enabled',
             'type'    => 'switcher',
@@ -213,5 +213,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '弹窗出现时让看板娘说一句挽留台词（需启用看板娘模块）。',
             'dependency' => array('exit_intent_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

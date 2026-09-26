@@ -105,8 +105,8 @@ add_filter('comment_footer_info', function ($info, $comment, $depth) {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('comment_beautify', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('comment_beautify', array(
         array(
             'id'      => 'comment_beautify_enabled',
             'type'    => 'switcher',
@@ -131,5 +131,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '0 为不补零；例如 6 位显示 000123',
             'dependency' => array('comment_uid_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

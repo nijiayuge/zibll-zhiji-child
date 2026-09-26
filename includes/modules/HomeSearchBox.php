@@ -107,8 +107,8 @@ add_shortcode('zhiji_search_box', function () {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('home_search_box', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('home_search_box', array(
         array(
             'id'      => 'home_search_enabled',
             'type'    => 'switcher',
@@ -149,5 +149,4 @@ add_action('after_setup_theme', function () {
             'default'    => 'WordPress,子比主题,知集,教程,资源',
             'dependency' => array('home_search_hot', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

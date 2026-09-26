@@ -40,14 +40,8 @@ function zhiji_ticket_status_map() {
 /* ============================================================
  * 后台 CSF 设置：页面&显示 → 工单系统
  * ============================================================ */
-add_action( 'after_setup_theme', function () {
-	
-	Zhiji_Registry::csf_section_for_legacy( 'ticket', array(
-		'title'  => '工单系统',
-		'icon'   => 'fa fa-life-ring',
-		'parent' => 'zhiji_page',
-		'priority' => 160,
-		'fields' => array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('ticket', array(
 			array(
 				'id'      => 'ticket_enabled',
 				'type'    => 'switcher',
@@ -63,9 +57,7 @@ add_action( 'after_setup_theme', function () {
 				'dependency' => array( 'ticket_enabled', '==', '1' ),
 				'desc'       => '工单状态变更时，自动邮件通知提交者。',
 			),
-		),
-	) );
-}, 20 );
+		), 20);
 
 /**
  * 判断工单系统是否启用。

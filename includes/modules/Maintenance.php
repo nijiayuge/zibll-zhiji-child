@@ -115,8 +115,8 @@ add_action('template_redirect', function () {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('maintenance', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('maintenance', array(
         array(
             'id'      => 'maintenance_enabled',
             'type'    => 'switcher',
@@ -156,5 +156,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '多个IP用逗号分隔，白名单内的IP不受维护模式影响。',
             'dependency' => array('maintenance_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

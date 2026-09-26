@@ -29,14 +29,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /* ============================================================
  * 后台 CSF 设置：用户&互动 → 抽奖大转盘
  * ============================================================ */
-add_action( 'after_setup_theme', function () {
-	
-	Zhiji_Registry::csf_section_for_legacy( 'lottery', array(
-		'title'  => '抽奖大转盘',
-		'icon'   => 'fa fa-gift',
-		'parent' => 'zhiji_user',
-		'priority' => 60,
-		'fields' => array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('lottery', array(
 			array(
 				'id'      => 'lottery_enabled',
 				'type'    => 'switcher',
@@ -196,9 +190,7 @@ add_action( 'after_setup_theme', function () {
 				'desc'       => '留空用内置精美模板',
 				'dependency' => array( 'lottery_mail_enabled', '==', '1' ),
 			),
-		),
-	) );
-}, 20 );
+		), 20);
 
 
 /* -------------------------------------------------------------------------

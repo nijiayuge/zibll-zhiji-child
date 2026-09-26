@@ -93,8 +93,8 @@ add_filter('the_content', 'zhiji_article_expire_notice', 5);
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('article_expire', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('article_expire', array(
         array(
             'id'      => 'article_expire_enabled',
             'type'    => 'switcher',
@@ -135,5 +135,4 @@ add_action('after_setup_theme', function () {
             'default'    => '#856404',
             'dependency' => array('article_expire_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

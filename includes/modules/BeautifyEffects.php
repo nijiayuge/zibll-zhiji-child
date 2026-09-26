@@ -24,42 +24,8 @@ defined( 'ABSPATH' ) || exit;
 /* ============================================================
  * 后台 CSF 设置：美化效果 → 视觉特效
  * ============================================================ */
-add_action( 'after_setup_theme', function () {
-			// P0 合并视觉特效：一次性迁移旧框架特效开关值（不覆盖新设置）
-		$legacy_snow = array( 'snow3d', 'xiaxue1', 'xiaxue2', 'xiaxue3', 'Snowfall2lz' );
-		$legacy_particle = array( 'zhiji_baozha', 'zhiji_baozha1' );
-		$legacy_cursor = array( 'zhiji_mouse_cursor', 'zhiji_mouse_cursor2', 'zhiji_mouse_cursor3' );
-		if ( null === zhiji_get_option( 'effect_snow', null ) ) {
-			foreach ( $legacy_snow as $k ) {
-				if ( filter_var( zhiji_get_option( $k, false ), FILTER_VALIDATE_BOOLEAN ) ) {
-					zhiji_update_option( 'effect_snow', '1' );
-					break;
-				}
-			}
-		}
-		if ( null === zhiji_get_option( 'effect_particle', null ) ) {
-			foreach ( $legacy_particle as $k ) {
-				if ( filter_var( zhiji_get_option( $k, false ), FILTER_VALIDATE_BOOLEAN ) ) {
-					zhiji_update_option( 'effect_particle', '1' );
-					break;
-				}
-			}
-		}
-		if ( null === zhiji_get_option( 'effect_cursor', null ) ) {
-			foreach ( $legacy_cursor as $k ) {
-				if ( filter_var( zhiji_get_option( $k, false ), FILTER_VALIDATE_BOOLEAN ) ) {
-					zhiji_update_option( 'effect_cursor', '1' );
-					break;
-				}
-			}
-		}
-
-	Zhiji_Registry::csf_section_for_legacy( 'effects_beautify', array(
-		'title'  => '视觉特效',
-		'icon'   => 'fa fa-magic',
-		'parent' => 'zhiji_beautify',
-		'priority' => 20,
-		'fields' => array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('effects_beautify', array(
 			array(
 				'id'      => 'effects_enabled',
 				'type'    => 'switcher',
@@ -123,9 +89,7 @@ add_action( 'after_setup_theme', function () {
 				'desc'       => '点击时金币旁显示的文字，例如 +1 / +10 / 金币+1。',
 				'dependency' => array( 'effect_coin', '==', '1' ),
 			),
-		),
-	) );
-}, 20 );
+		), 20);
 
 /**
  * 输出特效容器与脚本（全部挂 wp_footer，延迟到页面底部加载）。

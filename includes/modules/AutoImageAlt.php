@@ -125,8 +125,8 @@ add_filter('wp_generate_attachment_metadata', 'zhiji_auto_image_alt_process_atta
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('auto_image_alt', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('auto_image_alt', array(
         array(
             'id'      => 'auto_image_alt_enabled',
             'type'    => 'switcher',
@@ -150,5 +150,4 @@ add_action('after_setup_theme', function () {
             'default'    => '',
             'dependency' => array('auto_image_alt_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

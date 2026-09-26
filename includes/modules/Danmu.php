@@ -26,14 +26,8 @@ defined( 'ABSPATH' ) || exit;
 /* ============================================================
  * 后台 CSF 设置：美化效果 → 弹幕
  * ============================================================ */
-add_action( 'after_setup_theme', function () {
-	
-	Zhiji_Registry::csf_section_for_legacy( 'danmu', array(
-		'title'  => '弹幕',
-		'icon'   => 'fa fa-comments',
-		'parent' => 'zhiji_beautify',
-		'priority' => 70,
-		'fields' => array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('danmu', array(
 			array(
 				'id'      => 'danmu_enabled',
 				'type'    => 'switcher',
@@ -97,9 +91,7 @@ add_action( 'after_setup_theme', function () {
 				'default'    => true,
 				'dependency' => array( 'danmu_enabled', '==', '1' ),
 			),
-		),
-	) );
-}, 20 );
+		), 20);
 
 
 /* ===================== 常量 ===================== */

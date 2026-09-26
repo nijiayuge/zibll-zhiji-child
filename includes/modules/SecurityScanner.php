@@ -255,8 +255,8 @@ add_action('wp_ajax_zhiji_scan_reset', function () {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('security_scanner', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('security_scanner', array(
         array(
             'id'      => 'security_scan_enabled',
             'type'    => 'switcher',
@@ -277,5 +277,4 @@ add_action('after_setup_theme', function () {
             ),
             'dependency' => array('security_scan_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

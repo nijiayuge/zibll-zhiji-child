@@ -26,14 +26,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * 注册CSF设置字段
  */
-add_action( 'after_setup_theme', function () {
-    
-    Zhiji_Registry::csf_section_for_legacy( 'email_subscribe', array(
-        'parent' => 'zhiji_user',
-        'priority' => 50,
-        'title'  => '邮件订阅',
-        'icon'   => 'fa fa-envelope',
-        'fields' => array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('email_subscribe', array(
 
             // 开关
             array(
@@ -107,9 +101,7 @@ add_action( 'after_setup_theme', function () {
                 'dependency' => array( 'email_sub_enabled', '==', '1' ),
             ),
 
-        ),
-    ) );
-}, 20 );
+        ), 20);
 
 /**
  * 检查邮件订阅是否启用

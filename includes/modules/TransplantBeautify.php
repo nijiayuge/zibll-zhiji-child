@@ -87,8 +87,8 @@ add_filter('the_content', function ($content) {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('transplant_beautify', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('transplant_beautify', array(
         array(
             'id'      => 'transplant_enabled',
             'type'    => 'switcher',
@@ -120,5 +120,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '字数和阅读时间显示在文章内容的前面还是后面。',
             'dependency' => array('transplant_enabled', '==', '1', 'transplant_wcr', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

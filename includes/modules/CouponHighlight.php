@@ -171,8 +171,8 @@ add_action('wp_enqueue_scripts', 'zhiji_coupon_highlight_assets', 99);
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('coupon_highlight', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('coupon_highlight', array(
         array(
             'id'      => 'coupon_highlight_enabled',
             'type'    => 'switcher',
@@ -180,5 +180,4 @@ add_action('after_setup_theme', function () {
             'default' => true,
             'desc'    => '消息中心通知正文中的优惠码自动高亮为可点击复制的标签。',
         ),
-    ));
-}, 20);
+    ), 20);

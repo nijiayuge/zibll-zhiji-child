@@ -99,8 +99,8 @@ add_shortcode('zhiji_history_today', 'zhiji_history_today_shortcode');
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('history_today', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('history_today', array(
         array(
             'id'      => 'history_today_enabled',
             'type'    => 'switcher',
@@ -126,5 +126,4 @@ add_action('after_setup_theme', function () {
             'max'        => 50,
             'dependency' => array('history_today_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

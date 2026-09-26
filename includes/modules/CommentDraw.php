@@ -283,8 +283,8 @@ add_action('wp_footer', function () {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('comment_draw', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('comment_draw', array(
         array(
             'id'      => 'comment_draw_enabled',
             'type'    => 'switcher',
@@ -300,5 +300,4 @@ add_action('after_setup_theme', function () {
             'default'    => '手绘一张配图，让评论更生动',
             'dependency' => array('comment_draw_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

@@ -135,8 +135,8 @@ function zhiji_weiyu_like()
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('weiyu', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('weiyu', array(
         array(
             'id'      => 'weiyu_enabled',
             'type'    => 'switcher',
@@ -170,5 +170,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '开启后每条微语显示点赞按钮（同源校验 + IP 限频），支持与弹幕联动。',
             'dependency' => array('weiyu_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

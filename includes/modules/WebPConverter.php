@@ -169,9 +169,8 @@ add_filter('wp_get_attachment_image_src', function ($image) {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    $supported = zhiji_webp_supported();
-    Zhiji_Registry::csf_section_for('webp_converter', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('webp_converter', array(
         array(
             'id'      => 'webp_enabled',
             'type'    => 'switcher',
@@ -205,5 +204,4 @@ add_action('after_setup_theme', function () {
                 ? '服务器支持 WebP 转换（GD 库 + imagewebp 函数）。启用后新上传的 JPG/PNG 图片将自动转换，已上传的图片不会自动转换。'
                 : '服务器不支持 WebP 转换（需要 GD 库 + imagewebp 函数）。请联系主机商启用 GD WebP 支持。',
         ),
-    ));
-}, 20);
+    ), 20);

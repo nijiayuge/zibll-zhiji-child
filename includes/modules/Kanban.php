@@ -94,8 +94,8 @@ add_action('wp_footer', function () {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('kanban', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('kanban', array(
         array(
             'id'      => 'kanban_enabled',
             'type'    => 'switcher',
@@ -112,5 +112,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '看板娘悬浮在页面左下角或右下角。',
             'dependency' => array('kanban_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

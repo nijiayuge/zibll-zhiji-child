@@ -105,8 +105,8 @@ add_filter('template_include', function ($template) {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('infomation', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('infomation', array(
         array(
             'id'      => 'infomation_enabled',
             'type'    => 'switcher',
@@ -122,5 +122,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '修改后需在 设置→固定链接 中保存一次以刷新重写规则。',
             'dependency' => array('infomation_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

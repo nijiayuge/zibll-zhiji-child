@@ -135,8 +135,8 @@ function zhiji_api_gateway()
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('api_gateway', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('api_gateway', array(
         array(
             'id'      => 'api_gateway_enabled',
             'type'    => 'switcher',
@@ -144,5 +144,4 @@ add_action('after_setup_theme', function () {
             'desc'    => '单端点 + nonce 统一校验。关闭后依赖网关的前台交互将不可用。',
             'default' => true,
         ),
-    ));
-}, 20);
+    ), 20);

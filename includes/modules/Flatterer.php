@@ -130,8 +130,8 @@ function zhiji_flatterer_script()
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('flatterer', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('flatterer', array(
         array(
             'id'      => 'flatterer_enabled',
             'type'    => 'switcher',
@@ -146,5 +146,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '每行一条，追加到内置语料池之后。',
             'dependency' => array('flatterer_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

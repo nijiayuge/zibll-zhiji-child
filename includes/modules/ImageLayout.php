@@ -160,16 +160,8 @@ function zhiji_image_layout_css() {
 add_action( 'wp_head', 'zhiji_image_layout_css', 99 );
 
 // ===== 后台开关：文章图片宽度排版（密集墙） =====
-add_action( 'after_setup_theme', function () {
-	if ( ! class_exists( 'CSF' ) || ! defined( 'ZHIJI_OPTION_KEY' ) ) {
-		return;
-	}
-	Zhiji_Registry::csf_section_for_legacy( 'image_layout', array(
-		'parent' => 'zhiji_element',
-		'priority' => 30,
-		'title'  => '图片宽度排版',
-		'icon'   => 'fa fa-columns',
-		'fields' => array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('image_layout', array(
 			array(
 				'id'      => 'image_layout_enabled',
 				'type'    => 'switcher',
@@ -182,6 +174,4 @@ add_action( 'after_setup_theme', function () {
 				'style'   => 'success',
 				'content' => '图片 alt 后缀控制单图宽度：-20 / -25 / -33 / -50 / -75（例如 alt="壁纸-50" 占 50%% 宽）。',
 			),
-		),
-	) );
-} );
+		), 20);

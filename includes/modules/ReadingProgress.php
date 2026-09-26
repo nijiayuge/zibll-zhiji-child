@@ -100,8 +100,8 @@ add_action('wp_footer', function () {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('reading_progress', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('reading_progress', array(
         array(
             'id'      => 'reading_progress_enabled',
             'type'    => 'switcher',
@@ -121,5 +121,4 @@ add_action('after_setup_theme', function () {
             'style'   => 'info',
             'content' => '进度条颜色自动使用主题品牌色（var(--zhiji-brand)），无需单独配置。',
         ),
-    ));
-}, 20);
+    ), 20);

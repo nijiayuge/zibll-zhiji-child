@@ -392,14 +392,8 @@ add_action( 'wp_footer', 'zhiji_series_assets' );
 /**
  * 后台配置：文章系列分区
  */
-add_action( 'after_setup_theme', function () {
-	
-	Zhiji_Registry::csf_section_for_legacy( 'post_series', array(
-		'title'  => '文章系列',
-		'icon'   => 'fa fa-th-large',
-		'parent' => 'zhiji_post',
-		'priority' => 30,
-		'fields' => array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('post_series', array(
 			array(
 				'id'      => 'series_enabled',
 				'type'    => 'switcher',
@@ -423,6 +417,4 @@ add_action( 'after_setup_theme', function () {
 				'style'   => 'info',
 				'content' => '系列分类法地址：<code>/series/系列别名</code>。在后台「文章 → 系列」中添加系列并设置封面图，编辑文章时勾选所属系列即可。',
 			),
-		),
-	) );
-}, 20 );
+		), 20);

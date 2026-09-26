@@ -156,8 +156,8 @@ add_shortcode('zhiji_countdown', 'zhiji_countdown_shortcode');
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('life_countdown', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('life_countdown', array(
         array(
             'id'      => 'countdown_enabled',
             'type'    => 'switcher',
@@ -173,5 +173,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '格式 2026-01-01；留空自动取第一篇已发布文章日期',
             'dependency' => array('countdown_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

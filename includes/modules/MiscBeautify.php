@@ -209,8 +209,8 @@ add_action('zhiji_auto_clean_users_event', function () {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('misc_beautify', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('misc_beautify', array(
         array(
             'id'      => 'misc_mobile_only',
             'type'    => 'switcher',
@@ -240,5 +240,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '超过多少天未登录的用户将被删除（默认 90 天）。',
             'dependency' => array('misc_auto_clean_users', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);

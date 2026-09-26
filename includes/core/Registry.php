@@ -139,4 +139,69 @@ class Zhiji_Registry
         $fields = isset($section['fields']) ? (array) $section['fields'] : array();
         self::csf_section_for($key, $fields);
     }
+
+    /* ============================================================
+     * 设置分节统一登记（2026-09-26，配置统一化探查报告 P3-⑨）
+     *
+     * 背景：44 个模块各自 `add_action('after_setup_theme', function () { ... })`
+     *       注册自己的分节，共 47 处钩子，且写法重复。
+     *
+     * 收口后：模块只需调用 `Zhiji_Registry::register_options()` **登记**，
+     *        由本类在**同一个钩子**中统一落盘 —— 47 个钩子收敛为 1 个。
+     *        （仅收敛挂载点，字段定义与配置 key 完全不变。）
+     * ============================================================ */
+
+    /** @var array 待落盘的设置分节 */
+    private static $pending_sections = array();
+
+    /** @var bool 统一钩子是否已挂载 */
+    private static $boot_hooked = false;
+
+    /**
+     * 登记一个模块的设置分节（替代模块各自 add_action('after_setup_theme', ...)）
+     *
+     * @param string $key      模块 key
+     * @param array  $fields   字段定义
+     * @param int    $priority 落盘优先级（等同原 add_action 的第三参数）
+     * @return void
+     */
+    public static function register_options($key, array $fields, $priority = 20)
+    {
+        self::$pending_sections[] = array(
+            'key'      => (string) $key,
+            'fields'   => $fields,
+            'priority' => (int) $priority,
+        );
+        // 惰性挂载：首次登记时挂一次统一钩子
+        if (!self::$boot_hooked) {
+            self::$boot_hooked = true;
+            add_action('after_setup_theme', array(__CLASS__, 'boot_sections'), 20);
+        }
+    }
+
+    /**
+     * 按优先级顺序统一落盘所有已登记的分节
+     *
+     * @return void
+     */
+    public static function boot_sections()
+    {
+        $list = self::$pending_sections;
+        usort($list, function ($a, $b) {
+            return $a['priority'] - $b['priority'];
+        });
+        foreach ($list as $item) {
+            self::csf_section_for($item['key'], $item['fields']);
+        }
+    }
+
+    /**
+     * 已登记的分节数量（自查 / 调试用）
+     *
+     * @return int
+     */
+    public static function pending_section_count()
+    {
+        return count(self::$pending_sections);
+    }
 }

@@ -217,8 +217,8 @@ add_shortcode('zhiji_consume_rank', function () {
 /* ============================================================
  * 后台字段
  * ============================================================ */
-add_action('after_setup_theme', function () {
-    Zhiji_Registry::csf_section_for('consume_rank', array(
+    // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    Zhiji_Registry::register_options('consume_rank', array(
         array(
             'id'      => 'consume_rank_enabled',
             'type'    => 'switcher',
@@ -242,5 +242,4 @@ add_action('after_setup_theme', function () {
             'desc'       => '默认排除积分兑换订单，开启后计入消费总额。',
             'dependency' => array('consume_rank_enabled', '==', '1'),
         ),
-    ));
-}, 20);
+    ), 20);
