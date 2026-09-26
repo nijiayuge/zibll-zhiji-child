@@ -50,7 +50,8 @@ function zhiji_article_expire_notice($content)
         return $content;
     }
 
-    $days   = max(1, (int) zhiji_get_option('article_expire_days', 180));
+    // 下限与后台字段 article_expire_days 的 min=7 保持一致（原为 max(1, ...)，与字段约束冲突）。
+    $days   = max(7, (int) zhiji_get_option('article_expire_days', 180));
     $passed = floor((current_time('timestamp') - strtotime($post->post_date)) / DAY_IN_SECONDS);
     if ($passed < $days) {
         return $content;
