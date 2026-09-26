@@ -215,6 +215,11 @@ function zhiji_reward_center_register_options() {
  * @return array 奖励数组（单条），失败返回空数组
  */
 function zhiji_reward_center_grant_random( $uid, $source = '', $overrides = array() ) {
+	// 总开关（2026-09-26 补接线）：关闭时返回空数组，
+	// 调用方 CommentFortune / EmailSubscribe 已内置空值兜底，不会中断业务。
+	if ( ! zhiji_is_enabled( 'reward_center_enabled', true ) ) {
+		return array();
+	}
 	if ( ! $uid ) {
 		return array();
 	}
@@ -255,6 +260,11 @@ function zhiji_reward_center_grant_random( $uid, $source = '', $overrides = arra
  * @return array 奖励数组（多条）
  */
 function zhiji_reward_center_grant_all( $uid, $source = '', $overrides = array() ) {
+	// 总开关（2026-09-26 补接线）：关闭时返回空数组，
+	// 调用方 CommentFortune / EmailSubscribe 已内置空值兜底，不会中断业务。
+	if ( ! zhiji_is_enabled( 'reward_center_enabled', true ) ) {
+		return array();
+	}
 	if ( ! $uid ) {
 		return array();
 	}
@@ -290,6 +300,11 @@ function zhiji_reward_center_grant_all( $uid, $source = '', $overrides = array()
  * @return array 单条奖励数组，失败返回空数组
  */
 function zhiji_reward_center_grant_one( $uid, $type, $source = '', $overrides = array() ) {
+	// 总开关（2026-09-26 补接线）：关闭时返回空数组，
+	// 调用方 CommentFortune / EmailSubscribe 已内置空值兜底，不会中断业务。
+	if ( ! zhiji_is_enabled( 'reward_center_enabled', true ) ) {
+		return array();
+	}
 	if ( ! $uid || ! $type ) {
 		return array();
 	}

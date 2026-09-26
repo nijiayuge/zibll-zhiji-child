@@ -53,7 +53,43 @@ if ( ! defined( 'ABSPATH' ) ) {
  * }
  * @return string 完整 HTML 邮件内容
  */
+/**
+ * 朴素邮件模板（品牌模板关闭时的降级输出）
+ *
+ * @param array $params 与 render() 同构的参数
+ * @return string 简约 HTML
+ */
+function zhiji_mail_template_plain( $params = array() ) {
+	$site  = ! empty( $params['site'] ) ? $params['site'] : get_bloginfo( 'name' );
+	$out   = '<div style="font-family:-apple-system,\'PingFang SC\',\'Microsoft YaHei\',sans-serif;font-size:14px;line-height:1.75;color:#333;max-width:560px;margin:0 auto;padding:18px;">';
+	if ( ! empty( $params['headline'] ) ) {
+		$out .= '<h2 style="font-size:17px;font-weight:600;margin:0 0 12px;">' . esc_html( $params['headline'] ) . '</h2>';
+	}
+	if ( ! empty( $params['greeting'] ) ) {
+		$out .= '<p style="margin:0 0 10px;">' . esc_html( $params['greeting'] ) . '</p>';
+	}
+	if ( ! empty( $params['subline'] ) ) {
+		$out .= '<p style="margin:0 0 12px;color:#555;">' . esc_html( $params['subline'] ) . '</p>';
+	}
+	if ( ! empty( $params['body_html'] ) ) {
+		$out .= '<div>' . wp_kses_post( $params['body_html'] ) . '</div>';
+	}
+	if ( ! empty( $params['rule_line'] ) ) {
+		$out .= '<p style="margin:12px 0;color:#666;font-size:13px;">' . esc_html( $params['rule_line'] ) . '</p>';
+	}
+	if ( ! empty( $params['btn_url'] ) && ! empty( $params['btn_text'] ) ) {
+		$out .= '<p style="margin:16px 0;"><a href="' . esc_url( $params['btn_url'] ) . '" style="display:inline-block;padding:9px 18px;background:#3b82f6;color:#fff;border-radius:6px;text-decoration:none;">' . esc_html( $params['btn_text'] ) . '</a></p>';
+	}
+	$out .= '<p style="margin-top:18px;color:#999;font-size:12px;border-top:1px solid #eee;padding-top:10px;">' . esc_html( $site ) . '</p>';
+	return $out . '</div>';
+}
+
 function zhiji_mail_template_render( $params = array() ) {
+	// 总开关（2026-09-26 补接线）：关闭品牌模板时降级为朴素模板，
+	// 保证邮件仍有可读内容（调用方的 elseif 分支不会拿到空 body）。
+	if ( ! zhiji_is_enabled( 'mail_template_enabled', true ) ) {
+		return zhiji_mail_template_plain( $params );
+	}
 	$site = ! empty( $params['site'] ) ? $params['site'] : get_bloginfo( 'name' );
 
 	// 邮件色值（邮件客户端不支持 CSS var，PHP 侧注入品牌令牌；后台改品牌主色邮件同步）
