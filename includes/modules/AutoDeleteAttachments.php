@@ -99,6 +99,7 @@ add_action('after_setup_theme', function () {
             'id'         => 'auto_delete_attachments_mode',
             'type'       => 'radio',
             'title'      => '删除范围',
+            'desc' => __( '删除文章时处理附件的范围。', 'zhiji' ),
             'options'    => array('thumbnail' => '仅特色图片', 'all' => '全部附件'),
             'default'    => 'all',
             'inline'     => true,

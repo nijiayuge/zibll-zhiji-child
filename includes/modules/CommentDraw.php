@@ -296,6 +296,7 @@ add_action('after_setup_theme', function () {
             'id'         => 'comment_draw_hint',
             'type'       => 'text',
             'title'      => '按钮提示文字',
+            'desc' => __( '评论画图按钮旁或画板内的提示文字。', 'zhiji' ),
             'default'    => '手绘一张配图，让评论更生动',
             'dependency' => array('comment_draw_enabled', '==', '1'),
         ),

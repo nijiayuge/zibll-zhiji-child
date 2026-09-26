@@ -268,6 +268,7 @@ add_action('after_setup_theme', function () {
             'id'         => 'security_scan_dirs',
             'type'       => 'checkbox',
             'title'      => '扫描目录',
+            'desc' => __( '需要扫描的目录范围（用于检测可疑文件）。', 'zhiji' ),
             'default'    => array('themes', 'plugins', 'uploads'),
             'options'    => array(
                 'themes'  => '主题目录 (themes)',

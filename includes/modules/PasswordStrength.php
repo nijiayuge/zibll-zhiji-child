@@ -45,6 +45,7 @@ add_action( 'after_setup_theme', function () {
 				'id'         => 'password_min_len',
 				'type'       => 'number',
 				'title'      => '最小长度',
+				'desc' => __( '注册/改密时要求的最小密码长度。', 'zhiji' ),
 				'default'    => 8,
 				'min'        => 6,
 				'max'        => 32,

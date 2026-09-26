@@ -240,6 +240,7 @@ add_action('after_setup_theme', function () {
             'id'         => 'page_cache_ttl',
             'type'       => 'number',
             'title'      => '缓存时长（小时）',
+            'desc' => __( '页面静态缓存的过期时间（小时），过期后重新生成。', 'zhiji' ),
             'label'      => '缓存过期后自动重新生成；发布文章 / 新评论时立即清除全部缓存',
             'default'    => 10,
             'min'        => 1,

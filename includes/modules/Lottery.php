@@ -133,6 +133,7 @@ add_action( 'after_setup_theme', function () {
 				'id'         => 'lottery_float_btn',
 				'type'       => 'switcher',
 				'title'      => '右侧悬浮按钮显示抽奖入口',
+				'desc' => __( '是否在页面右侧悬浮按钮中增加抽奖入口。', 'zhiji' ),
 				'default'    => true,
 				'dependency' => array( 'lottery_enabled', '==', '1' ),
 			),
@@ -140,6 +141,7 @@ add_action( 'after_setup_theme', function () {
 				'id'         => 'lottery_coupon_days',
 				'type'       => 'number',
 				'title'      => '中奖优惠码有效期（天）',
+				'desc' => __( '抽中优惠码奖品时的有效天数。', 'zhiji' ),
 				'default'    => '30',
 				'dependency' => array( 'lottery_enabled', '==', '1' ),
 			),
@@ -155,6 +157,7 @@ add_action( 'after_setup_theme', function () {
 				'id'         => 'lottery_vip_level',
 				'type'       => 'select',
 				'title'      => '中奖会员等级',
+				'desc' => __( '抽中会员奖品时赠送的等级。', 'zhiji' ),
 				'default'    => '1',
 				'options'    => array(
 					'1' => '普通会员',

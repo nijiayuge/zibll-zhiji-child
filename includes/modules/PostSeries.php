@@ -411,6 +411,7 @@ add_action( 'after_setup_theme', function () {
 				'id'      => 'series_position',
 				'type'    => 'button_set',
 				'title'   => '系列卡片显示位置',
+				'desc' => __( '文章系列卡片在页面中的显示位置。', 'zhiji' ),
 				'options' => array(
 					'before' => '文章内容前',
 					'after'  => '文章内容后',
