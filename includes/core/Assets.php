@@ -190,9 +190,9 @@ function zhiji_asset_has($id, $type = 'css')
  */
 function zhiji_footer_add($id, $callback, $priority = 10)
 {
-    if (!is_callable($callback)) {
-        return;
-    }
+    // 注意：不在登记时做 is_callable 判断 —— 模块常在**函数定义之前**调用本函数
+    // （沿用 add_action 的写法），此时函数尚未定义会使检查误判为 false。
+    // 可调用性推迟到 zhiji_footer_run() 执行时再校验。
     if (empty($GLOBALS['__zhiji_footer_items']) || !is_array($GLOBALS['__zhiji_footer_items'])) {
         $GLOBALS['__zhiji_footer_items'] = array();
     }
@@ -226,6 +226,9 @@ function zhiji_footer_run()
         return $a['priority'] - $b['priority'];
     });
     foreach ($items as $item) {
+        if (!is_callable($item['cb'])) {
+            continue; // 回调不可用（如模块被禁用）时静默跳过
+        }
         call_user_func($item['cb']);
     }
 }
