@@ -200,11 +200,36 @@ function zhiji_footer_add($id, $callback, $priority = 10)
         'cb'       => $callback,
         'priority' => (int) $priority,
     );
-    if (empty($GLOBALS['__zhiji_footer_hooked'])) {
-        $GLOBALS['__zhiji_footer_hooked'] = true;
-        // 统一钩子挂在 99 —— 与存量「页脚内容型输出」常用的优先级一致，
-        // 保证执行时机不早于父主题/其它插件的同类输出（行为最接近迁移前）。
-        add_action('wp_footer', 'zhiji_footer_run', 99);
+    if (empty($GLOBALS['__zhiji_footer_hooked'][$priority])) {
+        $GLOBALS['__zhiji_footer_hooked'][$priority] = true;
+        // 按 priority **分组挂独立钩子** —— 完整保留各模块原有执行时机
+        // （不统一压到一个优先级，避免打乱既有的先后依赖关系）。
+        // 同一 priority 只挂一个钩子，故钩子数 = 出现过的优先级种数。
+        add_action('wp_footer', function () use ($priority) {
+            zhiji_footer_run_group($priority);
+        }, $priority);
+    }
+}
+
+/**
+ * 按优先级分组执行（供上面注册的闭包钩子调用）
+ *
+ * @param int $priority
+ * @return void
+ */
+function zhiji_footer_run_group($priority)
+{
+    if (is_admin() || empty($GLOBALS['__zhiji_footer_items'])) {
+        return;
+    }
+    foreach ((array) $GLOBALS['__zhiji_footer_items'] as $item) {
+        if ((int) $item['priority'] !== (int) $priority) {
+            continue;
+        }
+        if (!is_callable($item['cb'])) {
+            continue; // 回调不可用（如模块被禁用）时静默跳过
+        }
+        call_user_func($item['cb']);
     }
 }
 

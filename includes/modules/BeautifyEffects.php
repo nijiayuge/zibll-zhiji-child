@@ -152,7 +152,7 @@ function zhiji_beautify_effects_output() {
 		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput -- 以上已逐段转义
 	}
 }
-add_action( 'wp_footer', 'zhiji_beautify_effects_output', 5 );
+zhiji_footer_add( 'beautify-effects', 'zhiji_beautify_effects_output', 5 );
 
 /**
  * 点击金币脚本（独立挂 wp_head，避免与主题 Pjax/其他脚本的点击拦截冲突）。

@@ -115,7 +115,7 @@ add_filter('comment_footer_info', function ($info, $comment, $depth) {
 /**
  * 徽标样式
  */
-add_action('wp_footer', function () {
+zhiji_footer_add( 'comment-agent', function () {
     if (!zhiji_is_enabled('comment_agent_enabled')) {
         return;
     }
@@ -123,7 +123,7 @@ add_action('wp_footer', function () {
         . '.zhiji-comment-agent{display:inline-block;margin-left:8px;padding:0 8px;font-size:11px;line-height:18px;'
         . 'color:var(--muted-color,#8a919f);background:rgba(127,127,127,.1);border-radius:9px;vertical-align:1px}'
         . '</style>' . "\n";
-}, 98);
+}, 98 );
 
 /* ============================================================
  * 后台字段

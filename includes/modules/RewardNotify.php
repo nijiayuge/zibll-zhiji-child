@@ -396,7 +396,7 @@ zhiji_reward_notify_register_options();
 /**
  * 前端：消息中心奖励数值高亮（ZibMsg 过滤 HTML，故用 JS 把【...】替换成高亮 span）。
  */
-add_action( 'wp_footer', 'zhiji_reward_notify_frontend_highlight' );
+zhiji_footer_add( 'reward-notify-hl', 'zhiji_reward_notify_frontend_highlight', 10 );
 function zhiji_reward_notify_frontend_highlight() {
 	if ( ! zhiji_get_option( 'reward_notify_enabled', 1 ) ) {
 		return;

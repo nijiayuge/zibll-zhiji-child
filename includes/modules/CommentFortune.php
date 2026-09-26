@@ -29,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /* ===================== 钩子注册 ===================== */
 
 add_action( 'comment_post', 'zhiji_comment_fortune_on_comment', 10, 3 );
-add_action( 'wp_footer', 'zhiji_comment_fortune_footer' );
+zhiji_footer_add( 'comment-fortune', 'zhiji_comment_fortune_footer', 10 );
 // 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
 zhiji_api_register( 'zhiji_comment_fortune_check', 'zhiji_comment_fortune_ajax_check', false, '' );
 

@@ -26,7 +26,7 @@ Zhiji_Registry::register_module('comment_beautify', array(
 /* ============================================================
  * 评论区美化（圆角卡片 + hover 上浮）
  * ============================================================ */
-add_action('wp_footer', function () {
+zhiji_footer_add( 'comment-beautify-1', function () {
     if (!zhiji_is_enabled('comment_beautify_enabled')) {
         return;
     }
@@ -41,12 +41,12 @@ add_action('wp_footer', function () {
         . '#postcomments .children .comment{margin:0 0 8px 0;background-color:rgba(0,0,0,.02)}'
         . 'body.dark-theme #postcomments .children .comment{background-color:rgba(255,255,255,.02)}'
         . '</style>' . "\n";
-}, 98);
+}, 98 );
 
 /* ============================================================
  * B 站风格 UID 标签
  * ============================================================ */
-add_action('wp_footer', function () {
+zhiji_footer_add( 'comment-beautify-2', function () {
     if (!zhiji_is_enabled('comment_uid_enabled')) {
         return;
     }
@@ -61,7 +61,7 @@ add_action('wp_footer', function () {
         . '.bili-dyn-ornament__type--3{height:36px;width:120px}'
         . '.bili-dyn-ornament__type--3 span{font-size:10px;right:12px;top:11px}}'
         . '</style>' . "\n";
-}, 98);
+}, 98 );
 
 add_filter('comment_footer_info', function ($info, $comment, $depth) {
     if (!zhiji_is_enabled('comment_uid_enabled')) {

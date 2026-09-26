@@ -79,7 +79,7 @@ add_filter('pre_comment_approved', function ($approved, $commentdata) {
 /* ============================================================
  * 前台提示（评论框下方）
  * ============================================================ */
-add_action('wp_footer', function () {
+zhiji_footer_add( 'comment-guard', function () {
     if (!zhiji_is_enabled('comment_guard_enabled')) {
         return;
     }
@@ -95,7 +95,7 @@ add_action('wp_footer', function () {
         . 'p.className="zhiji-guard-hint";p.style.cssText="margin:6px 0;font-size:12px;color:var(--muted-color,#8a919f);";'
         . 'p.textContent=' . wp_json_encode($hint) . ';t.parentNode.insertBefore(p,t);})();'
         . '</script>';
-}, 96);
+}, 96 );
 
 /* ============================================================
  * 后台字段

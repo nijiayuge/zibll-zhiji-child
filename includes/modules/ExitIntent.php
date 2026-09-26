@@ -33,7 +33,7 @@ Zhiji_Registry::register_module('exit_intent', array(
 /* ============================================================
  * 渲染（钩子常注册，回调内判开关）
  * ============================================================ */
-add_action('wp_footer', function () {
+zhiji_footer_add( 'exit-intent', function () {
     if (!zhiji_is_enabled('exit_intent_enabled')) {
         return;
     }
@@ -135,7 +135,7 @@ add_action('wp_footer', function () {
     })();
     </script>
     <?php
-}, 25);
+}, 25 );
 
 /* ============================================================
  * 后台字段

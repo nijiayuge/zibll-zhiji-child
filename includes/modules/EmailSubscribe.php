@@ -173,7 +173,7 @@ function zhiji_email_subscribe_grant_reward( $user_id ) {
 /**
  * 前端注入勾选框到 zibll 注册表单
  */
-add_action( 'wp_footer', 'zhiji_email_subscribe_inject', 30 );
+zhiji_footer_add( 'email-sub-inject', 'zhiji_email_subscribe_inject', 30 );
 function zhiji_email_subscribe_inject() {
     if ( ! zhiji_email_subscribe_is_enabled() ) {
         return;

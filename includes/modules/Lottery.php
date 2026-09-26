@@ -255,7 +255,7 @@ function zhiji_lottery_init() {
 	// 前台资源
 	add_action( 'wp_enqueue_scripts', 'zhiji_lottery_enqueue' );
 	// 全局弹窗：页面无短码时 wp_footer 自动挂载，保证悬浮按钮可弹出
-	add_action( 'wp_footer', 'zhiji_lottery_global_modal' );
+	zhiji_footer_add( 'lottery-modal', 'zhiji_lottery_global_modal', 10 );
 	// 融入父主题右侧悬浮按钮栏（zibll 的 zib_float_right 过滤器）
 	if ( zhiji_get_option( 'lottery_float_btn', 1 ) ) {
 		add_filter( 'zib_float_right', 'zhiji_lottery_float_right_btn' );

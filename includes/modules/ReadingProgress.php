@@ -45,7 +45,7 @@ function zhiji_reading_progress_active()
 /**
  * 进度条 DOM（wp_footer）
  */
-add_action('wp_footer', function () {
+zhiji_footer_add( 'reading-progress-1', function () {
     if (!zhiji_reading_progress_active()) {
         return;
     }
@@ -58,12 +58,12 @@ add_action('wp_footer', function () {
         echo '<span class="zhiji-reading-progress-text">0%</span>';
     }
     echo '</div>';
-}, 5);
+}, 5 );
 
 /**
  * 进度条样式与脚本（wp_footer 直接输出；量小仅一段）
  */
-add_action('wp_footer', function () {
+zhiji_footer_add( 'reading-progress-2', function () {
     if (!zhiji_reading_progress_active()) {
         return;
     }
@@ -95,7 +95,7 @@ add_action('wp_footer', function () {
         . 'updateProgress();'
         . '})();'
         . '</script>';
-}, 10);
+}, 10 );
 
 /* ============================================================
  * 后台字段

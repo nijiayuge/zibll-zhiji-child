@@ -387,7 +387,7 @@ function zhiji_series_assets() {
 	</script>
 	<?php
 }
-add_action( 'wp_footer', 'zhiji_series_assets' );
+zhiji_footer_add( 'post-series', 'zhiji_series_assets', 10 );
 
 /**
  * 后台配置：文章系列分区

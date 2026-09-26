@@ -98,7 +98,7 @@ add_filter('get_comment_text', 'zhiji_comment_draw_append', 20, 3);
 /* ============================================================
  * 前台画板
  * ============================================================ */
-add_action('wp_footer', function () {
+zhiji_footer_add( 'comment-draw', function () {
     if (!zhiji_is_enabled('comment_draw_enabled')) {
         return;
     }
@@ -278,7 +278,7 @@ add_action('wp_footer', function () {
     })();
     </script>
     <?php
-}, 97);
+}, 97 );
 
 /* ============================================================
  * 后台字段

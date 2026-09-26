@@ -27,7 +27,7 @@ Zhiji_Registry::register_module('kanban', array(
 /* ============================================================
  * 前台输出（钩子常注册，回调内判开关）
  * ============================================================ */
-add_action('wp_footer', function () {
+zhiji_footer_add( 'kanban', function () {
     if (!zhiji_is_enabled('kanban_enabled')) {
         return;
     }
@@ -89,7 +89,7 @@ add_action('wp_footer', function () {
     })();
     </script>
     <?php
-}, 15);
+}, 15 );
 
 /* ============================================================
  * 后台字段
