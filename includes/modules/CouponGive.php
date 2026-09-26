@@ -1412,7 +1412,8 @@ add_filter( 'main_user_tab_content_coupon', 'zhiji_coupon_user_tab_content', 10,
 /**
  * 我的优惠码：点击复制（事件委托，兼容 Tab AJAX 加载内容）
  */
-add_action( 'wp_footer', 'zhiji_coupon_copy_script', 99 );
+	// 2026-09-26：改走页脚统一调度（P3-⑧），原优先级 99 保持
+	zhiji_footer_add( 'coupon-copy-script', 'zhiji_coupon_copy_script', 99 );
 function zhiji_coupon_copy_script() {
 	static $done = false;
 	if ( $done ) {

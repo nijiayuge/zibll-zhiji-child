@@ -541,7 +541,8 @@ function zhiji_email_subscribe_export_csv() {
 /**
  * 用户中心注入邮件订阅管理卡片（不修改父主题：JS 注入 + AJAX 切换）
  */
-add_action( 'wp_footer', 'zhiji_email_subscribe_user_center_card', 99 );
+// 2026-09-26：改走页脚统一调度（P3-⑧），原优先级 99 保持
+zhiji_footer_add( 'email-sub-user-card', 'zhiji_email_subscribe_user_center_card', 99 );
 function zhiji_email_subscribe_user_center_card() {
 	if ( ! zhiji_email_subscribe_is_enabled() || ! is_user_logged_in() ) {
 		return;

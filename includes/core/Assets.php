@@ -162,3 +162,80 @@ function zhiji_asset_has($id, $type = 'css')
     $type  = ('js' === $type) ? 'js' : 'css';
     return isset($store[$type][(string) $id]);
 }
+
+/* ============================================================
+ * 页脚输出调度（2026-09-26，配置统一化探查报告 P3-⑧）
+ *
+ * 背景：18 处 wp_footer 钩子分散在各模块，输出内容各异（弹窗 / 脚本 / 卡片）。
+ *
+ * 本服务提供**统一登记入口**：模块把页脚输出回调登记进来，
+ * 由本服务在唯一一个 wp_footer 钩子中按优先级依次执行 —— 钩子数 18 → 1，
+ * 且输出顺序显式可控。
+ *
+ * ⚠️ 与「内联资源服务」的区别：
+ *   · 内联资源（CSS/JS 片段）→ 走 zhiji_asset_add_css/js（head 输出）
+ *   · 页脚**内容**（弹窗 DOM、卡片 HTML、运行期脚本）→ 走本服务（footer 输出）
+ *
+ * ⚠️ 迁移原则（保守）：存量模块中依赖"执行先后关系"的输出**保持原样**，
+ *   仅迁移**无顺序依赖**（原优先级为最后 99，即"所有 DOM/脚本均已就绪"）的输出。
+ * ============================================================ */
+
+/**
+ * 登记一个页脚输出回调
+ *
+ * @param string   $id       唯一标识（重复登记忽略）
+ * @param callable $callback 输出回调（自行 echo）
+ * @param int      $priority 执行顺序（数字小者先执行）
+ * @return void
+ */
+function zhiji_footer_add($id, $callback, $priority = 10)
+{
+    if (!is_callable($callback)) {
+        return;
+    }
+    if (empty($GLOBALS['__zhiji_footer_items']) || !is_array($GLOBALS['__zhiji_footer_items'])) {
+        $GLOBALS['__zhiji_footer_items'] = array();
+    }
+    $GLOBALS['__zhiji_footer_items'][(string) $id] = array(
+        'cb'       => $callback,
+        'priority' => (int) $priority,
+    );
+    if (empty($GLOBALS['__zhiji_footer_hooked'])) {
+        $GLOBALS['__zhiji_footer_hooked'] = true;
+        // 统一钩子挂在 99 —— 与存量「页脚内容型输出」常用的优先级一致，
+        // 保证执行时机不早于父主题/其它插件的同类输出（行为最接近迁移前）。
+        add_action('wp_footer', 'zhiji_footer_run', 99);
+    }
+}
+
+/**
+ * 统一执行所有已登记的页脚输出（按优先级升序）
+ *
+ * @return void
+ */
+function zhiji_footer_run()
+{
+    if (is_admin()) {
+        return;
+    }
+    $items = isset($GLOBALS['__zhiji_footer_items']) ? (array) $GLOBALS['__zhiji_footer_items'] : array();
+    if (!$items) {
+        return;
+    }
+    uasort($items, function ($a, $b) {
+        return $a['priority'] - $b['priority'];
+    });
+    foreach ($items as $item) {
+        call_user_func($item['cb']);
+    }
+}
+
+/**
+ * 已登记的页脚输出数量（自查 / 调试用）
+ *
+ * @return int
+ */
+function zhiji_footer_count()
+{
+    return isset($GLOBALS['__zhiji_footer_items']) ? count((array) $GLOBALS['__zhiji_footer_items']) : 0;
+}

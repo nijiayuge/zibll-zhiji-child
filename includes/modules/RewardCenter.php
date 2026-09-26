@@ -433,7 +433,8 @@ function zhiji_reward_center_danmu_text( $reward ) {
 /**
  * 用户中心余额/积分记录来源标签前端修正（lottery → 锦鲤福袋，知任务 → 积分商城）
  */
-add_action( 'wp_footer', 'zhiji_balance_source_label_fix', 99 );
+// 2026-09-26：改走页脚统一调度（P3-⑧），原优先级 99 保持
+zhiji_footer_add( 'balance-source-label', 'zhiji_balance_source_label_fix', 99 );
 function zhiji_balance_source_label_fix() {
 	if ( is_admin() || ! is_user_logged_in() ) {
 		return;
