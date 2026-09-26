@@ -16,7 +16,7 @@ defined('ABSPATH') || exit;
  * ============================================================ */
 Zhiji_Registry::register_module('flatterer', array(
     'title'    => '舔狗日记',
-    'parent'   => 'zhiji_page',
+    'parent'   => 'zhiji_element',
     'priority' => 90,
     'option'   => 'flatterer_enabled',
 ));

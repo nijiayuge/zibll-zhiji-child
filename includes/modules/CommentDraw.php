@@ -17,7 +17,7 @@ defined('ABSPATH') || exit;
  * ============================================================ */
 Zhiji_Registry::register_module('comment_draw', array(
     'title'    => '评论画图',
-    'parent'   => 'zhiji_user',
+    'parent'   => 'zhiji_comment',
     'priority' => 120,
     'option'   => 'comment_draw_enabled',
 ));

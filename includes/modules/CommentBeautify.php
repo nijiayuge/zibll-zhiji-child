@@ -18,7 +18,7 @@ defined('ABSPATH') || exit;
  * ============================================================ */
 Zhiji_Registry::register_module('comment_beautify', array(
     'title'    => '评论区美化',
-    'parent'   => 'zhiji_user',
+    'parent'   => 'zhiji_comment',
     'priority' => 130,
     'option'   => 'comment_beautify_enabled',
 ));

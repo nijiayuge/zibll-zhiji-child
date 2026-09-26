@@ -23,7 +23,7 @@ defined('ABSPATH') || exit;
  * ============================================================ */
 Zhiji_Registry::register_module('home_search_box', array(
     'title'    => '首页大搜索框',
-    'parent'   => 'zhiji_page',
+    'parent'   => 'zhiji_element',
     'priority' => 10,
     'option'   => 'home_search_enabled',
 ));

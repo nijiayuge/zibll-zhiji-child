@@ -12,7 +12,7 @@ defined('ABSPATH') || exit;
 
 Zhiji_Registry::register_module('image_layout', array(
     'title'    => '图片宽度排版',
-    'parent'   => 'zhiji_page',
+    'parent'   => 'zhiji_element',
     'priority' => 30,
     'option'   => 'image_layout_enabled',
 ));
@@ -165,7 +165,7 @@ add_action( 'after_setup_theme', function () {
 		return;
 	}
 	Zhiji_Registry::csf_section_for_legacy( 'image_layout', array(
-		'parent' => 'zhiji_page',
+		'parent' => 'zhiji_element',
 		'priority' => 30,
 		'title'  => '图片宽度排版',
 		'icon'   => 'fa fa-columns',

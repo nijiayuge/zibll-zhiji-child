@@ -12,7 +12,7 @@ defined('ABSPATH') || exit;
 
 Zhiji_Registry::register_module('download_quota', array(
     'title'    => '下载额度（辅助类）',
-    'parent'   => 'zhiji_shop',
+    'parent'   => 'zhiji_pay',
     'priority' => 15,
     'option'   => 'download_quota_enabled',
 ));

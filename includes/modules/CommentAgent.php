@@ -15,7 +15,7 @@ defined('ABSPATH') || exit;
  * ============================================================ */
 Zhiji_Registry::register_module('comment_agent', array(
     'title'    => '评论设备显示',
-    'parent'   => 'zhiji_user',
+    'parent'   => 'zhiji_comment',
     'priority' => 140,
     'option'   => 'comment_agent_enabled',
 ));

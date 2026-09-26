@@ -13,7 +13,7 @@ defined('ABSPATH') || exit;
 
 Zhiji_Registry::register_module('stats_widget', array(
     'title'    => '站点统计',
-    'parent'   => 'zhiji_page',
+    'parent'   => 'zhiji_element',
     'priority' => 100,
     'option'   => 'stats_widget_enabled',
 ));

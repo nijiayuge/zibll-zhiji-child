@@ -25,7 +25,7 @@ defined('ABSPATH') || exit;
  * ============================================================ */
 Zhiji_Registry::register_module('exit_intent', array(
     'title'    => '退出挽留弹窗',
-    'parent'   => 'zhiji_page',
+    'parent'   => 'zhiji_element',
     'priority' => 80,
     'option'   => 'exit_intent_enabled',
 ));

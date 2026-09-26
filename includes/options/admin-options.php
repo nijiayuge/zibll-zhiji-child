@@ -31,18 +31,21 @@ function zhiji_csf_admin_options()
     ));
 
     /**
-     * 10 大顶层分类（顺序即后台菜单顺序；分类内分节顺序由各分节的 priority 决定）
+     * 9 大顶层分类（顺序即后台菜单顺序；分类内分节顺序由各分节的 priority 决定）
+     * 2026-09-26 重构：拆分过大的 zhiji_user(12)/zhiji_page(12)，
+     * 新增 zhiji_comment（评论&互动）、zhiji_element（页面元素）；
+     * 合并单模块分类 zhiji_shop → zhiji_pay、zhiji_forum → zhiji_page；
+     * 移除空分类 zhiji_cap。
      */
     $cats = array(
         'zhiji_basic'    => array('全局&功能', 'fa fa-fw fa-bullseye'),
         'zhiji_page'     => array('页面&显示', 'fa fa-fw fa-desktop'),
+        'zhiji_element'  => array('页面元素', 'fa fa-fw fa-th-large'),
         'zhiji_post'     => array('文章&列表', 'fa fa-fw fa-file-text-o'),
         'zhiji_beautify' => array('美化效果', 'fa fa-fw fa-paint-brush'),
-        'zhiji_cap'      => array('功能&权限', 'fa fa-fw fa-lock'),
         'zhiji_user'     => array('用户&互动', 'fa fa-fw fa-users'),
+        'zhiji_comment'  => array('评论&互动', 'fa fa-fw fa-comments-o'),
         'zhiji_pay'      => array('支付&付费', 'fa fa-fw fa-credit-card'),
-        'zhiji_shop'     => array('商城&商品', 'fa fa-fw fa-shopping-cart'),
-        'zhiji_forum'    => array('社区&论坛', 'fa fa-fw fa-comments-o'),
         'zhiji_over'     => array('扩展&增强', 'fa fa-fw fa-cubes'),
     );
     foreach ($cats as $id => $c) {

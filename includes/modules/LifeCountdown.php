@@ -16,7 +16,7 @@ defined('ABSPATH') || exit;
  * ============================================================ */
 Zhiji_Registry::register_module('life_countdown', array(
     'title'    => '人生倒计时',
-    'parent'   => 'zhiji_page',
+    'parent'   => 'zhiji_element',
     'priority' => 100,
     'option'   => 'countdown_enabled',
 ));

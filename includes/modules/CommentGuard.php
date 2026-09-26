@@ -20,7 +20,7 @@ defined('ABSPATH') || exit;
  * ============================================================ */
 Zhiji_Registry::register_module('comment_guard', array(
     'title'    => '评论反垃圾',
-    'parent'   => 'zhiji_user',
+    'parent'   => 'zhiji_comment',
     'priority' => 130,
     'option'   => 'comment_guard_enabled',
 ));

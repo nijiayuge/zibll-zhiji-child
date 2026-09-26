@@ -18,7 +18,7 @@ defined('ABSPATH') || exit;
  * ============================================================ */
 Zhiji_Registry::register_module('weiyu', array(
     'title'    => '微语时间线',
-    'parent'   => 'zhiji_forum',
+    'parent'   => 'zhiji_page',
     'priority' => 20,
     'option'   => 'weiyu_enabled',
 ));

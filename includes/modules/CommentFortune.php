@@ -14,7 +14,7 @@ defined('ABSPATH') || exit;
 
 Zhiji_Registry::register_module('comment_fortune', array(
     'title'    => '评论福袋',
-    'parent'   => 'zhiji_user',
+    'parent'   => 'zhiji_comment',
     'priority' => 110,
     'option'   => 'comment_fortune_enabled',
 ));
@@ -303,7 +303,7 @@ function zhiji_comment_fortune_register_options() {
 	}
 	Zhiji_Registry::csf_section_for_legacy( 'comment_fortune',
 		array(
-			'parent' => 'zhiji_user',
+			'parent' => 'zhiji_comment',
 			'priority' => 110,
 			'title'  => __( '评论福袋', 'zhiji' ),
 			'icon'   => 'fa fa-fw fa-gift',
