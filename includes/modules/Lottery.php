@@ -1900,7 +1900,8 @@ function zhiji_lottery_log_draw( $uid, $prize, $is_extra ) {
 	if ( count( $log ) > 200 ) {
 		$log = array_slice( $log, -200 );
 	}
-	update_option( ZHIJI_LOTTERY_LOG_OPTION, $log );
+	// 抽奖日志仅后台看板使用，不入 autoload（否则最多 200 条 ≈ 30KB 会被每请求加载）。
+	update_option( ZHIJI_LOTTERY_LOG_OPTION, $log, false );
 }
 
 /** 渲染「最近抽奖记录」看板（短码与 AJAX 响应共用，实时更新）。 */
