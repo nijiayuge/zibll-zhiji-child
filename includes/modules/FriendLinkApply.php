@@ -497,7 +497,9 @@ function zhiji_link_apply_ajax_handler() {
 
 	wp_send_json_success( array( 'message' => '提交成功！我们会尽快审核，审核结果会通过邮件通知您。' ) );
 }
-add_action( 'wp_ajax_zhiji_link_apply_submit', 'zhiji_link_apply_ajax_handler' );
+// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
+zhiji_api_register( 'zhiji_link_apply_submit', 'zhiji_link_apply_ajax_handler', true, '' );
+add_action( 'wp_ajax_zhiji_link_apply_submit', 'zhiji_api_legacy_forward' );
 add_action( 'wp_ajax_nopriv_zhiji_link_apply_submit', 'zhiji_link_apply_ajax_handler' );
 
 /**

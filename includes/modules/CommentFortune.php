@@ -30,7 +30,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 add_action( 'comment_post', 'zhiji_comment_fortune_on_comment', 10, 3 );
 add_action( 'wp_footer', 'zhiji_comment_fortune_footer' );
-add_action( 'wp_ajax_zhiji_comment_fortune_check', 'zhiji_comment_fortune_ajax_check' );
+// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
+zhiji_api_register( 'zhiji_comment_fortune_check', 'zhiji_comment_fortune_ajax_check', false, '' );
+add_action( 'wp_ajax_zhiji_comment_fortune_check', 'zhiji_api_legacy_forward' );
 add_action( 'after_setup_theme', 'zhiji_comment_fortune_register_options', 20 );
 
 /**

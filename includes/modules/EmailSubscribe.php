@@ -626,7 +626,9 @@ function zhiji_email_subscribe_user_center_card() {
 /**
  * AJAX 切换邮件订阅状态
  */
-add_action( 'wp_ajax_zhiji_email_subscribe_toggle', 'zhiji_email_subscribe_ajax_toggle' );
+// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
+zhiji_api_register( 'zhiji_email_subscribe_toggle', 'zhiji_email_subscribe_ajax_toggle', false, '' );
+add_action( 'wp_ajax_zhiji_email_subscribe_toggle', 'zhiji_api_legacy_forward' );
 function zhiji_email_subscribe_ajax_toggle() {
 	check_ajax_referer( 'zhiji_email_subscribe_toggle', 'nonce' );
 	$uid = get_current_user_id();

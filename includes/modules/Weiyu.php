@@ -81,7 +81,9 @@ add_filter('template_include', function ($template) {
  * 协议，前端模板随迁、前后端同源可控）
  * 安全：同源 Referer 校验 + 每 IP 每分钟 20 次限频
  * ============================================================ */
-add_action('wp_ajax_zhiji_weiyu_like', 'zhiji_weiyu_like');
+// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
+zhiji_api_register( 'zhiji_weiyu_like', 'zhiji_weiyu_like', true, '' );
+add_action( 'wp_ajax_zhiji_weiyu_like', 'zhiji_api_legacy_forward' );
 add_action('wp_ajax_nopriv_zhiji_weiyu_like', 'zhiji_weiyu_like');
 
 /**

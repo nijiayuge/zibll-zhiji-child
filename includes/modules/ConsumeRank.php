@@ -106,7 +106,9 @@ function zhiji_consume_rank_mask_name($name)
  * AJAX
  * ============================================================ */
 add_action('wp_ajax_nopriv_zhiji_consume_rank', 'zhiji_consume_rank_fetch');
-add_action('wp_ajax_zhiji_consume_rank', 'zhiji_consume_rank_fetch');
+// 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
+zhiji_api_register( 'zhiji_consume_rank', 'zhiji_consume_rank_fetch', true, '' );
+add_action( 'wp_ajax_zhiji_consume_rank', 'zhiji_api_legacy_forward' );
 
 /**
  * 前台拉取榜单数据
