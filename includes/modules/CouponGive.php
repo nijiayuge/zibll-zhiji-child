@@ -313,6 +313,11 @@ function zhiji_coupon_give_discount_text( $discount ) {
 	if ( ! is_array( $discount ) || empty( $discount['type'] ) || ! isset( $discount['val'] ) ) {
 		return '';
 	}
+	// 免单特判（2026-09-28）：multiply/val=0 会被父主题算成「0折」，对用户不友好 → 显示「免单」。
+	// 口径依据：附录 P 观察项（0折 = 免费，父主题 zibpay_get_coupon_discount_text() 无 filter 可挂）。
+	if ( 'multiply' === $discount['type'] && (float) $discount['val'] <= 0 ) {
+		return __( '免单', 'zhiji' );
+	}
     $text = Zhiji_Adapter::coupon_discount_text( $discount );
     if ( is_string( $text ) && '' !== $text ) {
         return $text;
@@ -322,6 +327,46 @@ function zhiji_coupon_give_discount_text( $discount ) {
 	}
 	/* translators: %s: 立减金额 */
 	return sprintf( __( '立减%s元', 'zhiji' ), $discount['val'] );
+}
+
+/**
+ * 前端「0折 → 免单」展示修正（父主题渲染路径兜底）
+ *
+ * 背景：用户中心「我的优惠码」表格与结账页的优惠内容由父主题渲染
+ * （zibpay_get_coupon_discount_text() 无 filter 可挂，见附录 P），multiply/val=0
+ * 的免单券会显示「0折」。此处在前端做文本节点级精确替换：仅当文本恰为「0折」
+ * 才替换（不误伤 10折 / 9.9折），并加悬停说明。子主题自有路径（邮件/通知）已在
+ * zhiji_coupon_give_discount_text() 服务端特判，本函数只兜父主题渲染的页面。
+ */
+// 2026-09-28：走页脚统一调度（P3-⑧）
+zhiji_footer_add( 'coupon-free-label', 'zhiji_coupon_free_label_fix', 99 );
+function zhiji_coupon_free_label_fix() {
+	if ( is_admin() ) {
+		return;
+	}
+	?>
+	<script id="zhiji-coupon-free-label">
+	(function(){
+		function fix(){
+			var w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+			var n;
+			while ((n = w.nextNode())) {
+				var t = n.nodeValue;
+				// 文本恰为「0折」才替换（trim 后全等），绝不误伤「10折」「9.9折」等正常折扣
+				if (t && t.trim() === '0折') {
+					n.nodeValue = t.replace('0折', '免单');
+					if (n.parentElement) { n.parentElement.title = '免单券：本单全额免费'; }
+				}
+			}
+		}
+		if (document.readyState !== 'loading') { fix(); }
+		else { document.addEventListener('DOMContentLoaded', fix); }
+		// 用户中心 tab / 结账页优惠码为异步渲染，间隔重扫确保替换到位（15 秒后停止）
+		var t = setInterval(fix, 800);
+		setTimeout(function(){ clearInterval(t); }, 15000);
+	})();
+	</script>
+	<?php
 }
 
 /**

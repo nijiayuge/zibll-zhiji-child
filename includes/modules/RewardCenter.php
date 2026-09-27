@@ -457,7 +457,11 @@ function zhiji_reward_center_grant_one( $uid, $type, $source = '', $overrides = 
 				);
 				$code = zhiji_coupon_give_create_one( $meta, 0 );
 				if ( $code ) {
-					$dt = ( 'multiply' === $discount['type'] ) ? ( $discount['val'] * 10 ) . __( ' 折', 'zhiji' ) : __( '立减 ¥', 'zhiji' ) . number_format( $discount['val'], 2 );
+					$dt = ( 'multiply' === $discount['type'] )
+					? ( ( (float) $discount['val'] <= 0 )
+						? __( '免单', 'zhiji' ) // 免单特判：与 zhiji_coupon_give_discount_text() 口径一致（0折 → 免单）
+						: ( $discount['val'] * 10 ) . __( ' 折', 'zhiji' ) )
+					: __( '立减 ¥', 'zhiji' ) . number_format( $discount['val'], 2 );
 					return array( 'type' => 'coupon', 'name' => __( '优惠码', 'zhiji' ), 'val' => $code, 'desc' => $dt, 'code' => $code );
 				}
 			}
