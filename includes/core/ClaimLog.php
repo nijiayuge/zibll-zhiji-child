@@ -678,3 +678,64 @@ function zhiji_claim_log_delete_by_object($scene, $object_id)
         array('%s', '%s')
     );
 }
+
+/**
+ * 时间字段展示文本（占位符归一）
+ *
+ * ⚠️ 本表 created/cleared 的默认值是 '1970-01-01 00:00:00'（DATETIME NOT NULL 的 epoch 占位），
+ *    「从未发生」的时间（未放行 / 未领取）都会是这个值 —— 展示层必须归一为占位符，
+ *    不能把 1970 直接甩给用户（2026-09-28 用户反馈）。
+ *
+ * @param string $value DATETIME 字符串
+ * @return string 有效时间原样返回；空值 / epoch 占位返回 '—'
+ */
+function zhiji_claim_log_time_text($value)
+{
+    $value = trim((string) $value);
+    if ('' === $value || '0000-00-00 00:00:00' === $value) {
+        return '—';
+    }
+    // 年份 < 2000 一律视为 epoch 占位（1970-01-01 00:00:00 及各时区变体），业务数据不可能早于 2000
+    if ((int) substr($value, 0, 4) < 2000) {
+        return '—';
+    }
+    return $value;
+}
+
+/**
+ * 来源标识 → 用户可读标签（数据层用内部码，展示层一律走这里，绝不外泄英文码）
+ *
+ * @return array key => label
+ */
+function zhiji_claim_log_source_labels()
+{
+    $labels = array(
+        'direct'               => __('邮箱领取', 'zhiji'),
+        'ref_bonus'            => __('分享奖励', 'zhiji'),
+        'ops_release'          => __('运维放行', 'zhiji'),
+        'selftest'             => __('联调自测', 'zhiji'),
+        'comment_fortune'      => __('评论福袋', 'zhiji'),
+        'comment_fortune_free' => __('评论福袋免单券', 'zhiji'),
+        'zhiji_lottery'        => __('大转盘抽奖', 'zhiji'),
+        'lottery'              => __('大转盘抽奖', 'zhiji'),
+        'manual_test'          => __('后台发放', 'zhiji'),
+        'reward_center'        => __('奖励中心', 'zhiji'),
+    );
+    return apply_filters('zhiji_claim_log_source_labels', $labels);
+}
+
+/**
+ * 单个来源标识的展示标签（未识别的内部码兜底「—」，不外泄）
+ *
+ * @param string $key
+ * @return string
+ */
+function zhiji_claim_log_source_label($key)
+{
+    $key    = (string) $key;
+    $labels = zhiji_claim_log_source_labels();
+    if ('' === $key) {
+        return '—';
+    }
+    return isset($labels[$key]) ? $labels[$key] : '—';
+}

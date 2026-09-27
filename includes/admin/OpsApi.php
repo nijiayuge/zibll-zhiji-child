@@ -49,6 +49,9 @@ function zhiji_ops_api_query($request = array())
         'date_to'   => zhiji_api_str($request, 'date_to', 10),
         'page'      => max(1, zhiji_api_digits($request, 'page', 1)),
         'per_page'  => min(200, max(1, zhiji_api_digits($request, 'per_page', 20))),
+        // 排序（2026-09-28）：与查询层白名单一致，非法值由查询层回退默认
+        'orderby'   => zhiji_api_enum($request, 'orderby', array('id', 'created', 'email', 'status'), 'id'),
+        'order'     => ('asc' === strtolower((string) ($request['order'] ?? ''))) ? 'ASC' : 'DESC',
     ));
 
     wp_send_json_success(array(

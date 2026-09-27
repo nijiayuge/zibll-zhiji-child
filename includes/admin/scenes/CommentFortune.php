@@ -131,11 +131,11 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_FORTUNE, array(
         }),
         array('key' => 'created', 'label' => __('发放时间', 'zhiji'), 'width' => '13%'),
         array('key' => 'cleared', 'label' => __('领取时间', 'zhiji'), 'width' => '13%', 'render' => function ($row) {
-            if (empty($row->cleared) || '0000-00-00 00:00:00' === (string) $row->cleared) {
-                echo '—';
-                return;
-            }
-            echo esc_html($row->cleared);
+            // 2026-09-28 修复 1970-01-01 显示：统一走 ClaimLog 时间归一（epoch 占位 → '—'）
+            $t = zhiji_claim_log_time_text($row->cleared);
+            echo '—' === $t
+                ? '<span class="zhiji-ops-muted">' . esc_html__('—（未领取）', 'zhiji') . '</span>'
+                : esc_html($t);
         }),
     ),
 

@@ -166,10 +166,20 @@ function zhiji_ops_render_scene($id)
     $per_page   = (int) zhiji_get_option('ops_console_per_page', 20);
     $per_page   = ($per_page > 0 && $per_page <= 200) ? $per_page : 20;
     $page       = isset($_GET['paged']) ? max(1, (int) $_GET['paged']) : 1;
+
+    // 表头排序（2026-09-28 新增）：白名单与 ClaimLog 查询层保持一致，非法值静默回退默认
+    $sortable   = array('id', 'created', 'email', 'status');
+    $orderby    = isset($_GET['orderby']) ? sanitize_key(wp_unslash($_GET['orderby'])) : '';
+    $order      = isset($_GET['order']) ? strtoupper(sanitize_key(wp_unslash($_GET['order']))) : '';
+    $orderby    = in_array($orderby, $sortable, true) ? $orderby : 'id';
+    $order      = in_array($order, array('ASC', 'DESC'), true) ? $order : 'DESC';
+
     $query_args = array_merge($filters, array(
         'page'     => $page,
         'per_page' => $per_page,
         'scene'    => $id,
+        'orderby'  => $orderby,
+        'order'    => $order,
     ));
     // 场景可自带 query 回调；未提供时回退到 ClaimLog 的标准查询（记录类场景的通用默认值）
     if (is_callable($scene['query'])) {
@@ -332,12 +342,33 @@ function zhiji_ops_render_scene($id)
                             <td class="manage-column column-cb check-column" style="width:32px">&nbsp;</td>
                         <?php endif; ?>
                         <?php foreach ($scene['columns'] as $col) : ?>
+                            <?php
+                            $sort_key = isset($col['key']) ? (string) $col['key'] : '';
+                            $can_sort = in_array($sort_key, $sortable, true);
+                            ?>
                             <th scope="col" <?php echo !empty($col['width']) ? 'style="width:' . esc_attr($col['width']) . '"' : ''; ?>>
-                                <?php echo esc_html($col['label']); ?>
+                                <?php if ($can_sort) : ?>
+                                    <?php
+                                    // 点击切换排序方向；已排序列显示箭头（DESC ↓ / ASC ↑）
+                                    $next     = ($sort_key === $orderby && 'DESC' === $order) ? 'ASC' : 'DESC';
+                                    $sort_url = zhiji_ops_current_url($id, array_merge($filters, array('orderby' => $sort_key, 'order' => strtolower($next))), $page);
+                                    $arrow    = ($sort_key === $orderby) ? ('ASC' === $order ? '↑' : '↓') : '↕';
+                                    ?>
+                                    <a class="zhiji-ops-sort<?php echo $sort_key === $orderby ? ' is-active' : ''; ?>"
+                                       href="<?php echo esc_url($sort_url); ?>"
+                                       title="<?php echo esc_attr(sprintf(__('按「%s」排序（当前点击切换为 %s）', 'zhiji'), $col['label'], 'ASC' === $next ? __('升序', 'zhiji') : __('降序', 'zhiji'))); ?>">
+                                        <?php echo esc_html($col['label']); ?>
+                                        <span class="zhiji-ops-sort-arrow" aria-hidden="true"><?php echo esc_html($arrow); ?></span>
+                                    </a>
+                                <?php else : ?>
+                                    <?php echo esc_html($col['label']); ?>
+                                <?php endif; ?>
                             </th>
                         <?php endforeach; ?>
                         <?php if ($can_clear && $scene['actions']) : ?>
                             <th scope="col" style="width:220px"><?php esc_html_e('操作', 'zhiji'); ?></th>
+                        <?php else : ?>
+                            <th scope="col" style="width:64px"><?php esc_html_e('操作', 'zhiji'); ?></th>
                         <?php endif; ?>
                     </tr>
                 </thead>
@@ -354,8 +385,12 @@ function zhiji_ops_render_scene($id)
                     </tr>
                 <?php else : ?>
                     <?php foreach ($rows as $row) : ?>
-                        <?php $row_id = isset($row->id) ? (int) $row->id : 0; ?>
-                        <tr>
+                        <?php
+                        $row_id = isset($row->id) ? (int) $row->id : 0;
+                        // 详情数据：服务端完成标签映射/时间归一/meta 美化，前端只负责展示（无需 AJAX）
+                        $detail_json = wp_json_encode(zhiji_ops_build_detail($row, $id), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                        ?>
+                        <tr<?php echo $detail_json ? ' data-zhiji-detail="' . esc_attr($detail_json) . '"' : ''; ?>>
                             <?php if ($can_clear && $scene['actions']) : ?>
                                 <th scope="row" class="check-column">
                                     <input type="checkbox" form="<?php echo esc_attr($bulk_form); ?>" name="ids[]" value="<?php echo esc_attr($row_id); ?>">
@@ -374,9 +409,12 @@ function zhiji_ops_render_scene($id)
                                     ?>
                                 </td>
                             <?php endforeach; ?>
-                            <?php if ($can_clear && $scene['actions']) : ?>
-                                <td>
-                                    <div class="zhiji-ops-rowactions">
+                            <td>
+                                <div class="zhiji-ops-rowactions">
+                                    <button type="button" class="button button-small zhiji-ops-detail-btn" aria-haspopup="dialog">
+                                        <?php esc_html_e('详情', 'zhiji'); ?>
+                                    </button>
+                                    <?php if ($can_clear && $scene['actions']) : ?>
                                         <?php foreach ($scene['actions'] as $act) : ?>
                                             <?php if (empty($act['single'])) { continue; } ?>
                                             <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
@@ -392,9 +430,9 @@ function zhiji_ops_render_scene($id)
                                                 </button>
                                             </form>
                                         <?php endforeach; ?>
-                                    </div>
-                                </td>
-                            <?php endif; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -422,6 +460,91 @@ function zhiji_ops_render_scene($id)
                 <a class="button button-small" href="<?php echo esc_url(zhiji_ops_current_url($id, $filters, $page + 1)); ?>"><?php esc_html_e('下一页', 'zhiji'); ?></a>
             <?php endif; ?>
         </div>
+
+        <!-- 行级详情弹窗（数据已由服务端编码进每行 data-zhiji-detail，纯前端展示） -->
+        <div class="zhiji-ops-modal-mask" id="zhiji-ops-modal" hidden>
+            <div class="zhiji-ops-modal" role="dialog" aria-modal="true" aria-labelledby="zhiji-ops-modal-title">
+                <div class="zhiji-ops-modal-head">
+                    <strong id="zhiji-ops-modal-title"><?php esc_html_e('记录详情', 'zhiji'); ?></strong>
+                    <button type="button" class="zhiji-ops-modal-close" aria-label="<?php esc_attr_e('关闭', 'zhiji'); ?>">&times;</button>
+                </div>
+                <div class="zhiji-ops-modal-body"></div>
+            </div>
+        </div>
+        <script>
+        (function () {
+            'use strict';
+            var mask  = document.getElementById('zhiji-ops-modal');
+            var body  = mask ? mask.querySelector('.zhiji-ops-modal-body') : null;
+            var title = document.getElementById('zhiji-ops-modal-title');
+            var lastFocus = null;
+
+            function esc(s) {
+                var d = document.createElement('div');
+                d.textContent = null === s || undefined === s ? '' : String(s);
+                return d.innerHTML;
+            }
+
+            function render(items) {
+                if (!body) { return; }
+                var html = '';
+                for (var i = 0; i < items.length; i++) {
+                    var it = items[i];
+                    if (!it) { continue; }
+                    if (it.pre) {
+                        html += '<div class="zhiji-ops-kv"><span class="zhiji-ops-kv-k">' + esc(it.k) + '</span>'
+                              + '<pre class="zhiji-ops-pre">' + esc(it.v) + '</pre></div>';
+                    } else {
+                        html += '<div class="zhiji-ops-kv"><span class="zhiji-ops-kv-k">' + esc(it.k) + '</span>'
+                              + '<span class="zhiji-ops-kv-v">' + esc(it.v) + '</span></div>';
+                    }
+                }
+                body.innerHTML = html || '<p class="description">无数据</p>';
+            }
+
+            function open(items) {
+                if (!mask || !items || !items.length) { return; }
+                lastFocus = document.activeElement;
+                render(items);
+                mask.hidden = false;
+                var closeBtn = mask.querySelector('.zhiji-ops-modal-close');
+                if (closeBtn) { closeBtn.focus(); }
+            }
+
+            function close() {
+                if (!mask) { return; }
+                mask.hidden = true;
+                if (body) { body.innerHTML = ''; }
+                if (lastFocus && lastFocus.focus) { lastFocus.focus(); }
+                lastFocus = null;
+            }
+
+            // 事件委托：点击「详情」按钮 → 读取所在行 data-zhiji-detail
+            document.addEventListener('click', function (e) {
+                var btn = e.target.closest ? e.target.closest('.zhiji-ops-detail-btn') : null;
+                if (btn) {
+                    var tr   = btn.closest('tr');
+                    var raw  = tr ? tr.getAttribute('data-zhiji-detail') : '';
+                    var data = null;
+                    try { data = JSON.parse(raw); } catch (err) { data = null; }
+                    if (data && data.length) {
+                        if (title && data[0] && data[0].k) {
+                            // 标题沿用场景名 + 记录 ID（首项固定为记录 ID）
+                            title.textContent = '<?php echo esc_js(__('记录详情 · ID ', 'zhiji')); ?>' + (data[0].v || '—');
+                        }
+                        open(data);
+                    }
+                    return;
+                }
+                if (e.target.closest && e.target.closest('.zhiji-ops-modal-close')) { close(); }
+            });
+
+            // Esc 关闭 + 焦点圈定在弹窗内
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && mask && !mask.hidden) { close(); }
+            });
+        })();
+        </script>
 
         <?php zhiji_ops_section_title(__('最近运维操作', 'zhiji')); ?>
         <?php zhiji_ops_render_activity($id, 8); ?>
@@ -495,4 +618,131 @@ function zhiji_ops_current_url($id, array $filters = array(), $page = 1)
         $args['paged'] = (int) $page;
     }
     return add_query_arg($args, admin_url('admin.php'));
+}
+
+/**
+ * 构建行级「详情弹窗」数据（2026-09-28 新增）
+ *
+ * 设计要点：
+ *  · 服务端完成全部业务归一（时间占位归一 / 来源汉化 / 操作人解析 / meta 美化），
+ *    前端 JS 只做「标签+值」渲染，不承载业务语义；
+ *  · 输出为 array(array('k'=>标签,'v'=>展示值,'pre'=>bool),...)，整体 wp_json_encode
+ *    后挂到 <tr data-zhiji-detail>，点击「详情」纯前端展示，无额外 AJAX 请求；
+ *  · 时间/来源归一复用 ClaimLog 共享帮助函数（与列表列完全同口径）。
+ *
+ * @param object $row      数据行（claim_log 或场景自定义行）
+ * @param string $scene_id 场景 ID（备用，当前用于标题上下文）
+ * @return array
+ */
+function zhiji_ops_build_detail($row, $scene_id = '')
+{
+    $items = array();
+    if (!is_object($row)) {
+        return $items;
+    }
+
+    $labels = array(
+        'id'         => __('记录 ID', 'zhiji'),
+        'scene'      => __('场景', 'zhiji'),
+        'email'      => __('邮箱', 'zhiji'),
+        'user_id'    => __('用户 ID', 'zhiji'),
+        'object_id'  => __('关联券码', 'zhiji'),
+        'source'     => __('来源', 'zhiji'),
+        'status'     => __('状态', 'zhiji'),
+        'note'       => __('备注', 'zhiji'),
+        'created'    => __('创建时间', 'zhiji'),
+        'cleared'    => __('放行/领取时间', 'zhiji'),
+        'cleared_by' => __('放行操作人', 'zhiji'),
+        'ip'         => __('IP 地址', 'zhiji'),
+        'meta'       => __('扩展数据 (meta)', 'zhiji'),
+    );
+
+    $data = (array) $row;
+
+    // meta 先行解析：JSON → 关联数组（展示时 pretty print）；解析失败保留原文
+    $meta_display = null;
+    if (array_key_exists('meta', $data)) {
+        $meta_raw     = (string) $data['meta'];
+        $meta_decoded = json_decode($meta_raw, true);
+        if (is_array($meta_decoded) || is_object($meta_decoded)) {
+            $meta_display = wp_json_encode($meta_decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        } elseif ('' !== $meta_raw) {
+            $meta_display = $meta_raw;
+        }
+    }
+
+    // 值的通用渲染：数组→JSON(pre)；空→—；标量→字符串
+    $render_value = function ($v, &$pre = null) {
+        $pre = false;
+        if (is_array($v) || is_object($v)) {
+            $pre = true;
+            return wp_json_encode($v, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        }
+        $s = (null === $v) ? '' : (string) $v;
+        return ('' === $s) ? '—' : $s;
+    };
+
+    $push = function ($key, $value, $pre = false) use (&$items, $labels) {
+        $label   = isset($labels[$key]) ? $labels[$key] : $key;
+        $items[] = array('k' => $label, 'v' => $value, 'pre' => $pre);
+    };
+
+    // 固定顺序优先，其余键按原顺序追加（自定义场景字段不丢）
+    $ordered = array('id', 'scene', 'email', 'user_id', 'object_id', 'source', 'status', 'note', 'created', 'cleared', 'cleared_by', 'ip');
+    $seen    = array();
+
+    foreach ($ordered as $key) {
+        if (!array_key_exists($key, $data)) {
+            continue;
+        }
+        $seen[$key] = true;
+        switch ($key) {
+            case 'created':
+            case 'cleared':
+                // 时间归一：epoch 占位/空值/异常年份 → '—'（与列表列同口径）
+                $text = function_exists('zhiji_claim_log_time_text')
+                    ? zhiji_claim_log_time_text($data[$key])
+                    : (string) $data[$key];
+                $push($key, $text);
+                break;
+            case 'source':
+                $text = function_exists('zhiji_claim_log_source_label')
+                    ? zhiji_claim_log_source_label($data[$key])
+                    : (string) $data[$key];
+                $push($key, $text);
+                break;
+            case 'cleared_by':
+                $uid = (int) $data[$key];
+                $u   = $uid ? get_userdata($uid) : null;
+                $push($key, $u ? sprintf('%s (#%d)', $u->user_login, $uid) : ($uid ? '#' . $uid : '—'));
+                break;
+            default:
+                $pre = false;
+                $val = $render_value($data[$key], $pre);
+                $push($key, $val, $pre);
+        }
+    }
+
+    // 剩余键（场景自定义字段 / meta 之外的附加列）
+    foreach ($data as $key => $v) {
+        if (isset($seen[$key]) || !is_string($key)) {
+            continue;
+        }
+        if ('meta' === $key) {
+            if (null !== $meta_display) {
+                $push('meta', $meta_display, true);
+            }
+            continue;
+        }
+        $pre = false;
+        $val = $render_value($v, $pre);
+        $push($key, $val, $pre);
+    }
+
+    // meta 若在行里但未进入 data（防御），补在最后
+    if (null !== $meta_display && !isset($seen['meta'])) {
+        $push('meta', $meta_display, true);
+    }
+
+    return $items;
 }

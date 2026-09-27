@@ -73,6 +73,47 @@ function zhiji_ops_scene_claim_coupons_by_email($email)
 }
 
 /**
+ * 读取某张券码的「优惠内容」文本（如「免单」「8.8折」「立减5元」）
+ *
+ * 2026-09-28 新增：运维列表此前只显示券码本身，管理员无法直观看出每张券的力度。
+ * 口径统一走 zhiji_coupon_give_discount_text()（含免单特判：multiply/val<=0 → 免单），
+ * 与用户端邮件/通知显示完全一致。
+ *
+ * @param string $code 券码（claim_log.object_id）
+ * @return string 优惠内容文本，无法解析时返回 ''
+ */
+function zhiji_ops_scene_claim_discount_text($code)
+{
+    static $cache = array();
+    $code = (string) $code;
+    if ('' === $code || !class_exists('ZibCardPass') || !function_exists('zhiji_coupon_give_discount_text')) {
+        return '';
+    }
+    if (array_key_exists($code, $cache)) {
+        return $cache[$code];
+    }
+    $text = '';
+    // password 有索引，按券码精确查一条（type=coupon 限定优惠码，防止撞卡密）
+    $rows = ZibCardPass::get(array('password' => $code, 'type' => 'coupon'), 'id', 0, 1);
+    foreach ((array) $rows as $row) {
+        $meta = maybe_unserialize($row->meta);
+        if (!is_array($meta)) {
+            break;
+        }
+        // 兼容两种 meta 结构：标准 discount 子键 / 直接 type+val（与 CouponGive 1539 行同口径）
+        $discount = !empty($meta['discount'])
+            ? $meta['discount']
+            : ((!empty($meta['type']) && isset($meta['val'])) ? array('type' => $meta['type'], 'val' => $meta['val']) : null);
+        if (is_array($discount)) {
+            $text = (string) zhiji_coupon_give_discount_text($discount);
+        }
+        break;
+    }
+    $cache[$code] = $text;
+    return $text;
+}
+
+/**
  * 场景注册
  */
 zhiji_ops_register_scene(ZHIJI_OPS_SCENE_CLAIM, array(
@@ -109,9 +150,14 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_CLAIM, array(
             'cleared' => __('已放行', 'zhiji'),
         )),
         array('key' => 'source', 'label' => __('来源', 'zhiji'), 'type' => 'select', 'options' => array(
-            ''          => __('全部', 'zhiji'),
-            'direct'    => __('邮箱直接领取', 'zhiji'),
-            'ref_bonus' => __('分享裂变奖励', 'zhiji'),
+            ''                    => __('全部', 'zhiji'),
+            'direct'              => __('邮箱直接领取', 'zhiji'),
+            'ref_bonus'           => __('分享裂变奖励', 'zhiji'),
+            'ops_release'         => __('运维放行', 'zhiji'),
+            'comment_fortune'     => __('评论福袋', 'zhiji'),
+            'comment_fortune_free' => __('评论福袋免单券', 'zhiji'),
+            'lottery'             => __('大转盘抽奖', 'zhiji'),
+            'reward_center'       => __('奖励中心', 'zhiji'),
         )),
         array('key' => 'date_from', 'label' => __('起始日期', 'zhiji'), 'type' => 'date'),
         array('key' => 'date_to', 'label' => __('截止日期', 'zhiji'), 'type' => 'date'),
@@ -123,12 +169,23 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_CLAIM, array(
         array('key' => 'email', 'label' => __('邮箱', 'zhiji'), 'width' => '22%', 'render' => function ($row) {
             echo '<strong>' . esc_html($row->email ? $row->email : '—') . '</strong>';
         }),
-        array('key' => 'object_id', 'label' => __('关联优惠码', 'zhiji'), 'width' => '13%', 'render' => function ($row) {
+        array('key' => 'object_id', 'label' => __('关联优惠码', 'zhiji'), 'width' => '12%', 'render' => function ($row) {
             if (empty($row->object_id)) {
                 echo '—';
                 return;
             }
             echo '<span class="zhiji-ops-code">' . esc_html($row->object_id) . '</span>';
+        }),
+        array('key' => 'discount', 'label' => __('优惠内容', 'zhiji'), 'width' => '11%', 'render' => function ($row) {
+            // 2026-09-28 新增：按券码解析优惠力度（免单/折扣/立减），与用户端口径一致
+            $text = zhiji_ops_scene_claim_discount_text($row->object_id);
+            if ('' === $text) {
+                echo '<span class="zhiji-ops-muted">—</span>';
+                return;
+            }
+            $is_free = __('免单', 'zhiji') === $text;
+            $cls     = $is_free ? 'zhiji-ops-tag cleared' : 'zhiji-ops-tag muted';
+            echo '<span class="' . esc_attr($cls) . '" title="' . esc_attr(sprintf(__('该券优惠内容：%s', 'zhiji'), $text)) . '">' . esc_html($text) . '</span>';
         }),
         array('key' => 'status', 'label' => __('状态', 'zhiji'), 'width' => '9%', 'render' => function ($row) {
             if ('active' === $row->status) {
@@ -138,20 +195,19 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_CLAIM, array(
             }
         }),
         array('key' => 'source', 'label' => __('来源', 'zhiji'), 'width' => '10%', 'render' => function ($row) {
-            $map = array(
-                'direct'    => __('邮箱领取', 'zhiji'),
-                'ref_bonus' => __('分享奖励', 'zhiji'),
-            );
-            $key = (string) $row->source;
-            echo esc_html(isset($map[$key]) ? $map[$key] : ($key ? $key : '—'));
+            // 2026-09-28：改用 ClaimLog 共享映射（9 种来源全量收录），未识别码不外泄英文
+            echo '<span class="zhiji-ops-tag muted">' . esc_html(zhiji_claim_log_source_label($row->source)) . '</span>';
         }),
         array('key' => 'created', 'label' => __('领取时间', 'zhiji'), 'width' => '12%'),
         array('key' => 'cleared', 'label' => __('放行时间', 'zhiji'), 'width' => '12%', 'render' => function ($row) {
-            if ('0000-00-00 00:00:00' === (string) $row->cleared || '' === (string) $row->cleared) {
-                echo '—';
+            // 2026-09-28 修复 1970-01-01 显示：表 schema 默认值为 epoch 占位，统一走时间归一
+            // （'1970-01-01 00:00:00' / 空值 / 年份<2000 → '—'，从未放行的记录不再显示 epoch）
+            $t = zhiji_claim_log_time_text($row->cleared);
+            if ('—' === $t) {
+                echo '<span class="zhiji-ops-muted">' . esc_html__('—（未放行）', 'zhiji') . '</span>';
                 return;
             }
-            echo esc_html($row->cleared);
+            echo esc_html($t);
             if ((int) $row->cleared_by > 0) {
                 $u = get_userdata((int) $row->cleared_by);
                 if ($u) {

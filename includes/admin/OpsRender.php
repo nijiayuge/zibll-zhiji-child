@@ -161,6 +161,41 @@ function zhiji_ops_print_styles()
     /* ---------- 无障碍：键盘焦点可见 ---------- */
     .zhiji-ops a:focus-visible,.zhiji-ops button:focus-visible,.zhiji-ops input:focus-visible,
     .zhiji-ops select:focus-visible{outline:2px solid var(--zhiji-primary);outline-offset:1px;box-shadow:none}
+
+    /* ---------- 弱化占位（2026-09-28：无值时间/优惠内容等） ---------- */
+    .zhiji-ops .zhiji-ops-muted{color:var(--zhiji-faint)}
+
+    /* ---------- 表头排序（2026-09-28 新增） ---------- */
+    .zhiji-ops table.zhiji-ops-table thead a.zhiji-ops-sort{color:var(--zhiji-muted);text-decoration:none;
+      display:inline-flex;align-items:center;gap:3px}
+    .zhiji-ops table.zhiji-ops-table thead a.zhiji-ops-sort:hover{color:var(--zhiji-primary)}
+    .zhiji-ops table.zhiji-ops-table thead a.zhiji-ops-sort.is-active{color:var(--zhiji-primary);font-weight:700}
+    .zhiji-ops table.zhiji-ops-table thead a.zhiji-ops-sort .zhiji-ops-sort-arrow{font-size:11px;line-height:1;opacity:.8}
+
+    /* ---------- 行级详情弹窗（2026-09-28 新增） ---------- */
+    .zhiji-ops .zhiji-ops-modal-mask{position:fixed;inset:0;z-index:100000;background:rgba(16,24,40,.46);
+      display:flex;align-items:center;justify-content:center;padding:24px;animation:zhiji-ops-fade .16s ease}
+    .zhiji-ops .zhiji-ops-modal-mask[hidden]{display:none}
+    .zhiji-ops .zhiji-ops-modal{background:#fff;border-radius:var(--zhiji-radius);box-shadow:0 12px 40px rgba(16,24,40,.22);
+      width:min(640px,94vw);max-height:86vh;display:flex;flex-direction:column;animation:zhiji-ops-pop .18s ease}
+    .zhiji-ops .zhiji-ops-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
+      padding:14px 20px;border-bottom:1px solid var(--zhiji-line-soft)}
+    .zhiji-ops .zhiji-ops-modal-head strong{font-size:15px;color:var(--zhiji-ink)}
+    .zhiji-ops .zhiji-ops-modal-close{background:none;border:1px solid transparent;border-radius:6px;color:var(--zhiji-muted);
+      font-size:20px;line-height:1;width:30px;height:30px;cursor:pointer;padding:0}
+    .zhiji-ops .zhiji-ops-modal-close:hover{background:var(--zhiji-bg-soft);color:var(--zhiji-ink)}
+    .zhiji-ops .zhiji-ops-modal-body{padding:8px 20px 20px;overflow:auto}
+    .zhiji-ops .zhiji-ops-kv{display:grid;grid-template-columns:132px 1fr;gap:8px 14px;padding:8px 0;
+      border-bottom:1px dashed var(--zhiji-line-soft);font-size:13px;align-items:start}
+    .zhiji-ops .zhiji-ops-kv:last-child{border-bottom:none}
+    .zhiji-ops .zhiji-ops-kv .zhiji-ops-kv-k{color:var(--zhiji-muted)}
+    .zhiji-ops .zhiji-ops-kv .zhiji-ops-kv-v{color:var(--zhiji-ink);word-break:break-all;overflow-wrap:anywhere}
+    .zhiji-ops .zhiji-ops-kv pre.zhiji-ops-pre{margin:0;background:var(--zhiji-bg-soft);border:1px solid var(--zhiji-line-soft);
+      border-radius:6px;padding:10px 12px;font-family:Menlo,Consolas,Monaco,monospace;font-size:12px;line-height:1.7;
+      color:var(--zhiji-body);white-space:pre-wrap;word-break:break-all;user-select:all;max-height:260px;overflow:auto}
+    @keyframes zhiji-ops-fade{from{opacity:0}to{opacity:1}}
+    @keyframes zhiji-ops-pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+    @media (prefers-reduced-motion:reduce){.zhiji-ops .zhiji-ops-modal-mask,.zhiji-ops .zhiji-ops-modal{animation:none}}
     </style>
     <?php
 }
