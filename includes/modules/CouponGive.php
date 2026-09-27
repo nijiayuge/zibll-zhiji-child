@@ -1438,6 +1438,59 @@ function zhiji_coupon_sidebar_button_1( $buttons ) {
 add_filter( 'zib_user_center_page_sidebar_button_1_args', 'zhiji_coupon_sidebar_button_1', 20 );
 
 /**
+ * 优惠券「来源」显示文案（唯一实现，禁止在别处重复拼装）
+ *
+ * 语义：来源 = **这张券由哪个业务/活动发放**（挽留弹窗 / 评论福袋 / 分享奖励 …），
+ *       与「优惠内容」「券标题」是两件事。
+ *
+ * 优先级：业务 source 映射 → 已是中文的 source 原样 → 券 title → 「其他」
+ *
+ * 2026-09-27 修正：此前**优先显示 title**，而奖励中心代发的券标题是「奖励中心免单券 / 奖励中心专属优惠码」，
+ * 于是把真实来源整个盖掉（用户看到的全是"奖励中心"，无法分辨是哪个活动给的）。
+ * 现在改为来源优先；给旧数据保留 title 兜底（旧券没有 source 字段）。
+ *
+ * @param array $meta 券 meta
+ * @return string
+ */
+function zhiji_coupon_give_source_label( $meta ) {
+	$meta = is_array( $meta ) ? $meta : array();
+
+	/**
+	 * 来源标识 → 展示文案（新增业务来源时在此追加，或走该 filter）
+	 *
+	 * @param array $labels
+	 */
+	$labels = apply_filters( 'zhiji_coupon_give_source_labels', array(
+		'direct'               => __( '挽留弹窗', 'zhiji' ),
+		'ref_bonus'            => __( '分享奖励', 'zhiji' ),
+		'comment_fortune'      => __( '评论福袋', 'zhiji' ),
+		'comment_fortune_free' => __( '评论福袋免单券', 'zhiji' ),
+		'reward_center'        => __( '奖励中心', 'zhiji' ),
+		'reward_center_free'   => __( '奖励中心免单券', 'zhiji' ),
+		'zhiji_lottery'        => __( '大转盘抽奖', 'zhiji' ),
+		'lottery'              => __( '大转盘抽奖', 'zhiji' ),
+		'manual_test'          => __( '后台发放', 'zhiji' ),
+	) );
+
+	$source = isset( $meta['source'] ) ? trim( (string) $meta['source'] ) : '';
+	if ( '' !== $source ) {
+		if ( isset( $labels[ $source ] ) ) {
+			return $labels[ $source ];
+		}
+		// 调用方直接传了可读中文标签（如「邮件订阅奖励」）→ 原样展示
+		if ( preg_match( '/[\x{4e00}-\x{9fa5}]/u', $source ) ) {
+			return $source;
+		}
+	}
+
+	if ( ! empty( $meta['title'] ) ) {
+		return (string) $meta['title'];
+	}
+
+	return __( '其他', 'zhiji' );
+}
+
+/**
  * 输出个人中心「我的优惠码」Tab 内容
  *
  * @param string $con 现有内容
@@ -1481,24 +1534,9 @@ function zhiji_coupon_user_tab_content( $con, $opt ) {
 			$status = __( '未使用', 'zhiji' );
 		}
 
-		// 来源：优先 meta.title（后台可配的来源描述），其次按 source 映射，兜底「其他」
-		$source_text = '';
-		if ( ! empty( $meta['title'] ) ) {
-			$source_text = (string) $meta['title'];
-		} elseif ( ! empty( $meta['source'] ) ) {
-			$source_map = array(
-				'direct'             => __( '邮箱领取', 'zhiji' ),
-				'ref_bonus'          => __( '分享奖励', 'zhiji' ),
-				'zhiji_lottery'      => __( '大转盘抽奖', 'zhiji' ),
-				'reward_center'      => __( '奖励中心', 'zhiji' ),
-				'reward_center_free' => __( '奖励中心免单', 'zhiji' ),
-				'manual_test'        => __( '后台发放', 'zhiji' ),
-			);
-			$src_key     = (string) $meta['source'];
-			$source_text = isset( $source_map[ $src_key ] ) ? $source_map[ $src_key ] : $src_key;
-		} else {
-			$source_text = __( '其他', 'zhiji' );
-		}
+		// 来源：业务来源优先（告别"来源=券标题"导致的清一色「奖励中心XXX」）
+		// 展示文案的唯一实现在 zhiji_coupon_give_source_label()
+		$source_text = zhiji_coupon_give_source_label( $meta );
 
 		$html .= '<tr>';
 		// 优惠码高亮样式与 CouponHighlight 的 .zhiji-cp 统一（2026-09-23）；
