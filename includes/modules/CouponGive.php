@@ -21,6 +21,11 @@
 
 defined('ABSPATH') || exit;
 
+/** 领取记录表（ClaimLog）中本功能使用的场景标识 */
+if (!defined('ZHIJI_COUPON_GIVE_CLAIM_SCENE')) {
+    define('ZHIJI_COUPON_GIVE_CLAIM_SCENE', 'coupon_give');
+}
+
 Zhiji_Registry::register_module('coupon_give', array(
     'title'    => '邮箱优惠码',
     'parent'   => 'zhiji_pay',
@@ -168,6 +173,14 @@ Zhiji_Registry::register_module('coupon_give', array(
 				'title'      => '每邮箱限领',
 				'desc' => __( '同一邮箱最多可领取的优惠码张数。', 'zhiji' ),
 				'default'    => '1',
+				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
+			),
+			array(
+				'id'         => 'coupon_give_unique_email',
+				'type'       => 'switcher',
+				'title'      => '同一邮箱仅限领取一次',
+				'desc' => __( '领取记录持久化到领取记录表，并在领取前校验；被误拦的邮箱可在后台「知集运维 → 邮箱领取限制」中重置放行。', 'zhiji' ),
+				'default'    => true,
 				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
 			),
 			array(
@@ -541,6 +554,65 @@ function zhiji_coupon_give_current_url() {
 	return $scheme . '://' . $host . $uri;
 }
 
+/**
+ * 运维是否已放行该邮箱
+ * ---------------------------------------------------------------------
+ * 判定依据：领取记录表（ClaimLog）中该邮箱存在「已放行」记录，且它比最近一条
+ * 「占用中」记录更新 —— 即运维人员在「知集运维 → 邮箱领取限制」里执行过重置。
+ * 已放行的邮箱跳过「邮箱维度」的限领校验，使重置动作一键生效（再次领取后会重新占用）。
+ *
+ * @param string $email 邮箱
+ * @return bool
+ */
+function zhiji_coupon_give_ops_cleared( $email ) {
+	if ( '' === (string) $email || ! function_exists( 'zhiji_claim_log_check' ) ) {
+		return false;
+	}
+	$chk = zhiji_claim_log_check( array( 'scene' => ZHIJI_COUPON_GIVE_CLAIM_SCENE, 'email' => $email ) );
+	return ( ! empty( $chk['reason'] ) && 'cleared_by_ops' === $chk['reason'] );
+}
+
+/**
+ * 累计「同一邮箱重复领取」被拦截次数（供运维总览评估规则命中情况）
+ *
+ * @return void
+ */
+function zhiji_coupon_give_count_blocked() {
+	if ( ! zhiji_get_option( 'ops_console_blocked_stat', 1 ) ) {
+		return;
+	}
+	$key = 'zhiji_claim_blocked_count';
+	update_option( $key, (int) get_option( $key, 0 ) + 1, false );
+}
+
+/**
+ * 领取记录落库（统一入口）
+ * ---------------------------------------------------------------------
+ * 写入失败不影响领取流程（日志是旁路，不是主流程依赖）。
+ *
+ * @param string $email   邮箱
+ * @param string $code    关联的优惠码（object_id）
+ * @param int    $user_id 用户 ID（游客为 0）
+ * @param string $ip      客户端 IP
+ * @param string $source  来源：direct 领取 / ref_bonus 分享奖励
+ * @param array  $meta    附加信息（title / discount / post_id）
+ * @return int|false
+ */
+function zhiji_coupon_give_log_claim( $email, $code, $user_id, $ip, $source = 'direct', $meta = array() ) {
+	if ( ! zhiji_get_option( 'ops_console_log_enabled', 1 ) || ! function_exists( 'zhiji_claim_log_add' ) ) {
+		return false;
+	}
+	return zhiji_claim_log_add( array(
+		'scene'     => ZHIJI_COUPON_GIVE_CLAIM_SCENE,
+		'email'     => $email,
+		'user_id'   => (int) $user_id,
+		'ip'        => $ip,
+		'object_id' => $code,
+		'source'    => $source,
+		'meta'      => $meta,
+	) );
+}
+
 /* =====================================================================
  * 二、AJAX：邮箱领取优惠码（生成一张一次性优惠码 + 邮件发送）
  * ===================================================================== */
@@ -586,10 +658,21 @@ function zhiji_coupon_give_ajax() {
 		wp_send_json_error( array( 'msg' => __( '今日优惠券已领完，明天再来吧', 'zhiji' ) ) );
 	}
 
-	// 5. 每邮箱限领数量
+	// 5. 领取前校验之一：领取记录持久化（同一邮箱仅限领取一次）
+	//    运维已在后台「重置并放行」的邮箱跳过「邮箱维度」限领，使运维动作一键生效
+	$ops_cleared = zhiji_coupon_give_ops_cleared( $email );
+	if ( zhiji_get_option( 'coupon_give_unique_email', 1 ) && ! $ops_cleared ) {
+		$chk = zhiji_claim_log_check( array( 'scene' => ZHIJI_COUPON_GIVE_CLAIM_SCENE, 'email' => $email ) );
+		if ( empty( $chk['allow'] ) ) {
+			zhiji_coupon_give_count_blocked();
+			wp_send_json_error( array( 'msg' => $chk['msg'] ? $chk['msg'] : __( '该邮箱已领取过，同一邮箱仅限领取一次', 'zhiji' ) ) );
+		}
+	}
+
+	// 5.2 每邮箱限领数量（历史规则；运维已放行的邮箱跳过，避免放行后被旧规则二次拦截）
 	$limit   = max( 1, (int) zhiji_get_option( 'coupon_give_limit_per', 1 ) );
 	$already = zhiji_coupon_give_count_by_email( $email );
-	if ( $already >= $limit ) {
+	if ( ! $ops_cleared && $already >= $limit ) {
 		wp_send_json_error( array( 'msg' => __( '该邮箱已领取过优惠码，感谢支持', 'zhiji' ) ) );
 	}
 
@@ -629,6 +712,21 @@ function zhiji_coupon_give_ajax() {
 		ZibCardPass::delete( array( 'password' => $code ) );
 		wp_send_json_error( array( 'msg' => __( '邮件发送失败，请检查站点邮件配置后重试', 'zhiji' ) ) );
 	}
+
+	// 8.2 领取记录持久化：写库成功才算「该邮箱已占用」，供先前的 5/5.2 校验与运维页面查询/清除
+	//     （放在邮件发送成功之后：邮件失败已回滚券码，不应占用邮箱名额）
+	zhiji_coupon_give_log_claim(
+		$email,
+		$code,
+		$user_id,
+		$ip,
+		'direct',
+		array(
+			'title'    => $meta['title'],
+			'discount' => $meta['discount'],
+			'post_id'  => $post_id,
+		)
+	);
 
 	// 8.3 站内通知联动：登录用户领取后发送系统通知（复用父主题 ZibMsg）
 	zhiji_coupon_give_notify_user( $user_id, $code, $discount_text, $expire_time, 'direct' );
@@ -719,6 +817,20 @@ function zhiji_coupon_give_ref_reward( $inviter_code ) {
 	$sent       = zhiji_coupon_give_send_mail( $inv_email, $bonus_code, $bonus_text, 'reward', $bonus_expire, __( '好友邀请', 'zhiji' ) );
 	if ( is_wp_error( $sent ) || ! $sent ) {
 		ZibCardPass::delete( array( 'password' => $bonus_code ) );
+	} else {
+		// 分享奖励同样落库（scene 相同、来源标记 ref_bonus，运维页面可统一查询）
+		zhiji_coupon_give_log_claim(
+			$inv_email,
+			$bonus_code,
+			$inv_uid,
+			zhiji_coupon_give_client_ip(),
+			'ref_bonus',
+			array(
+				'title'    => __( '分享奖励', 'zhiji' ),
+				'discount' => $bonus_meta['discount'],
+				'post_id'  => $post_id,
+			)
+		);
 	}
 
 	// 站内通知联动：邀请者（登录用户）获得分享奖励码
@@ -1127,7 +1239,7 @@ function zhiji_coupon_give_exit_block() {
 			setMsg('', true);
 			var fd = new FormData();
 			fd.append('action', 'zhiji_api');
-    append('api', 'zhiji_coupon_give');
+			fd.append('api', 'zhiji_coupon_give');
 			fd.append('nonce', nonce);
 			fd.append('email', email);
 			if (refEnabled && ref) fd.append('ref', ref);

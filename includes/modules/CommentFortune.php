@@ -31,7 +31,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 add_action( 'comment_post', 'zhiji_comment_fortune_on_comment', 10, 3 );
 zhiji_footer_add( 'comment-fortune', 'zhiji_comment_fortune_footer', 10 );
 // 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
-zhiji_api_register( 'zhiji_comment_fortune_check', 'zhiji_comment_fortune_ajax_check', false, '' );
+// 2026-09-27：补齐旧端点转发入口 —— 前端 JS 直调 action=zhiji_comment_fortune_check，
+//             缺此注册时 admin-ajax 找不到处理器会返回 **HTTP 400**（控制台报错、福袋查询静默失效）。
+//             public=true：处理器自身对游客返回 {fortune:false}（只读本人标记，无数据暴露），
+//             这样游客也不会看到 401/400 的控制台错误。
+zhiji_api_register( 'zhiji_comment_fortune_check', 'zhiji_comment_fortune_ajax_check', true, '' );
+add_action( 'wp_ajax_zhiji_comment_fortune_check', 'zhiji_api_legacy_forward' );
+add_action( 'wp_ajax_nopriv_zhiji_comment_fortune_check', 'zhiji_api_legacy_forward' );
 
 /**
  * 评论落库后：若命中福袋位且作者已登录，随机发放奖励并写入一次性标记。
