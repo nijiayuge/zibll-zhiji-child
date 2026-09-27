@@ -301,6 +301,101 @@ function zhiji_reward_center_grant_all( $uid, $source = '', $overrides = array()
 }
 
 /**
+ * 奖励来源标识 → 面向用户的展示名称（**唯一实现**，禁止在别处拼装）
+ *
+ * 语义：这是「这笔奖励由哪个业务/活动发放」，用于用户中心余额/积分记录的徽标与说明。
+ *
+ * 判定：映射表命中 → 已是中文（调用方直接传可读标签）原样 → 未识别的英文键回退「系统奖励」
+ *      （**绝不把内部标识直接显示给用户** —— 曾因 desc 直接拼 $source，
+ *        导致用户中心出现「来源：comment_fortune」这种英文码）
+ *
+ * @param string $source 业务来源标识
+ * @return string
+ */
+function zhiji_reward_source_labels() {
+	/**
+	 * 奖励来源标签映射（新增业务来源时在此追加，或挂该 filter）
+	 *
+	 * @param array $labels
+	 */
+	return apply_filters( 'zhiji_reward_source_labels', array(
+		// 评论福袋（CommentFortune）
+		'comment_fortune'      => __( '评论福袋', 'zhiji' ),
+		'comment_fortune_free' => __( '评论福袋', 'zhiji' ),
+		// 优惠码体系（CouponGive）
+		'direct'               => __( '挽留弹窗', 'zhiji' ),
+		'ref_bonus'            => __( '分享奖励', 'zhiji' ),
+		// 奖励中心自身
+		'reward_center'        => __( '奖励中心', 'zhiji' ),
+		'reward_center_free'   => __( '奖励中心', 'zhiji' ),
+		// 其它业务（含 v1 遗留标识）
+		'lottery'              => __( '大转盘抽奖', 'zhiji' ),
+		'zhiji_lottery'        => __( '大转盘抽奖', 'zhiji' ),
+		'email_subscribe'      => __( '邮件订阅', 'zhiji' ),
+		'daily_task'           => __( '每日任务', 'zhiji' ),
+		'credit_tasks'         => __( '知集任务', 'zhiji' ),
+		'zhiji_credit_tasks'   => __( '知集任务', 'zhiji' ),
+		'signin'               => __( '每日签到', 'zhiji' ),
+		'checkin'              => __( '每日签到', 'zhiji' ),
+		'bbs'                  => __( '社区互动', 'zhiji' ),
+		'manual'               => __( '后台发放', 'zhiji' ),
+		'ops_release'          => __( '运维放行', 'zhiji' ),
+	) );
+}
+
+/**
+ * 取来源展示名称
+ *
+ * @param string $source
+ * @return string
+ */
+function zhiji_reward_source_label( $source ) {
+	$source = trim( (string) $source );
+	$labels = zhiji_reward_source_labels();
+
+	if ( '' === $source ) {
+		return __( '系统奖励', 'zhiji' );
+	}
+	if ( isset( $labels[ $source ] ) ) {
+		return $labels[ $source ];
+	}
+	// 调用方直接传了中文标签（如 v1 的「邮件订阅奖励」）→ 原样展示
+	if ( preg_match( '/[\x{4e00}-\x{9fa5}]/u', $source ) ) {
+		return $source;
+	}
+	// 未识别的英文键：不把内部标识暴露给用户
+	return __( '系统奖励', 'zhiji' );
+}
+
+/**
+ * 奖励记录的「说明」文案（徽标右侧那行）
+ *
+ * 优先用调用方传入的 desc（如「热评锦鲤奖励」）；否则按奖励类型给一句可读说明。
+ *
+ * @param string $type      奖励类型 points/balance/vip/coupon/free
+ * @param array  $overrides 调用方覆盖参数（可含 desc）
+ * @return string
+ */
+function zhiji_reward_record_desc( $type, $overrides = array() ) {
+	if ( is_array( $overrides ) && ! empty( $overrides['desc'] ) ) {
+		return (string) $overrides['desc'];
+	}
+	switch ( (string) $type ) {
+		case 'points':
+			return __( '积分奖励', 'zhiji' );
+		case 'balance':
+			return __( '余额奖励', 'zhiji' );
+		case 'vip':
+			return __( '会员权益奖励', 'zhiji' );
+		case 'coupon':
+		case 'free':
+			return __( '优惠码奖励', 'zhiji' );
+		default:
+			return __( '活动奖励', 'zhiji' );
+	}
+}
+
+/**
  * 发放指定类型的一种奖励。
  *
  * @param int    $uid
@@ -310,6 +405,10 @@ function zhiji_reward_center_grant_all( $uid, $source = '', $overrides = array()
  * @return array 单条奖励数组，失败返回空数组
  */
 function zhiji_reward_center_grant_one( $uid, $type, $source = '', $overrides = array() ) {
+	// 兼容：调用方误把字符串当 overrides 传入时（曾有调用点参数错位），此处兜底为数组
+	if ( ! is_array( $overrides ) ) {
+		$overrides = array();
+	}
 	// 总开关（2026-09-26 补接线）：关闭时返回空数组，
 	// 调用方 CommentFortune / EmailSubscribe 已内置空值兜底，不会中断业务。
 	if ( ! zhiji_is_enabled( 'reward_center_enabled', true ) ) {
@@ -325,13 +424,25 @@ function zhiji_reward_center_grant_one( $uid, $type, $source = '', $overrides = 
 			$min = isset( $overrides['points_min'] ) ? (int) $overrides['points_min'] : max( 1, (int) zhiji_get_option( 'reward_center_points_min', 10 ) );
 			$max = isset( $overrides['points_max'] ) ? (int) $overrides['points_max'] : max( $min, (int) zhiji_get_option( 'reward_center_points_max', 100 ) );
 			$val = wp_rand( $min, $max );
-			Zhiji_Adapter::update_user_points( $uid, array( 'value' => $val, 'type' => '奖励中心', 'desc' => '来源：' . ( $source ? $source : '系统奖励' ) ) );			return array( 'type' => 'points', 'name' => __( '积分', 'zhiji' ), 'val' => $val, 'desc' => sprintf( __( '+%d 积分', 'zhiji' ), $val ) );
+			// 记录字段语义：type = 业务来源（徽标）、desc = 奖励说明
+			// （禁止再把内部标识 $source 直接写进 desc —— 那是「来源：comment_fortune」的成因）
+			Zhiji_Adapter::update_user_points( $uid, array(
+				'value' => $val,
+				'type'  => zhiji_reward_source_label( $source ),
+				'desc'  => zhiji_reward_record_desc( 'points', $overrides ),
+			) );
+			return array( 'type' => 'points', 'name' => __( '积分', 'zhiji' ), 'val' => $val, 'desc' => sprintf( __( '+%d 积分', 'zhiji' ), $val ) );
 
 		case 'balance':
 			$min = isset( $overrides['balance_min'] ) ? (float) $overrides['balance_min'] : max( 0, (float) zhiji_get_option( 'reward_center_balance_min', 1 ) );
 			$max = isset( $overrides['balance_max'] ) ? (float) $overrides['balance_max'] : max( $min, (float) zhiji_get_option( 'reward_center_balance_max', 5 ) );
 			$val = round( $min + ( mt_rand() / mt_getrandmax() ) * ( $max - $min ), 2 );
-			Zhiji_Adapter::update_user_balance( $uid, array( 'value' => $val, 'type' => '奖励中心', 'desc' => '来源：' . ( $source ? $source : '系统奖励' ) ) );			return array( 'type' => 'balance', 'name' => __( '余额', 'zhiji' ), 'val' => $val, 'desc' => sprintf( __( '+¥%s 余额', 'zhiji' ), number_format( $val, 2 ) ) );
+			Zhiji_Adapter::update_user_balance( $uid, array(
+				'value' => $val,
+				'type'  => zhiji_reward_source_label( $source ),
+				'desc'  => zhiji_reward_record_desc( 'balance', $overrides ),
+			) );
+			return array( 'type' => 'balance', 'name' => __( '余额', 'zhiji' ), 'val' => $val, 'desc' => sprintf( __( '+¥%s 余额', 'zhiji' ), number_format( $val, 2 ) ) );
 
 		case 'coupon':
 			if ( class_exists( 'ZibCardPass' ) && function_exists( 'zhiji_coupon_give_discount_meta' ) && function_exists( 'zhiji_coupon_give_create_one' ) ) {
@@ -425,7 +536,13 @@ function zhiji_reward_center_danmu_text( $reward ) {
  * ============================================================ */
 
 /**
- * 用户中心余额/积分记录来源标签前端修正（lottery → 锦鲤福袋，知任务 → 积分商城）
+ * 用户中心余额/积分记录来源标签前端修正（兜底）
+ *
+ * 说明：数据层已有一次性迁移（zhiji_reward_records_migrate()）把历史记录的
+ *       「奖励中心 + 来源：<英文码>」改写成可读文案；本脚本仅作**兜底**，
+ *       把仍残留的来源标识替换为展示名称（覆盖迁移未触达的旧缓存/异步内容）。
+ *
+ * 2026-09-27：替换表改为**由 PHP 标签映射驱动**（原实现只硬编码了 lottery / 知任务）。
  */
 // 2026-09-26：改走页脚统一调度（P3-⑧），原优先级 99 保持
 zhiji_footer_add( 'balance-source-label', 'zhiji_balance_source_label_fix', 99 );
@@ -433,22 +550,36 @@ function zhiji_balance_source_label_fix() {
 	if ( is_admin() || ! is_user_logged_in() ) {
 		return;
 	}
+	// 只替换"代码感"的标识（含下划线或明确长名），避免误伤正常英文单词
+	$map = array();
+	foreach ( zhiji_reward_source_labels() as $key => $label ) {
+		if ( '' === $key || $key === $label ) {
+			continue;
+		}
+		if ( false !== strpos( $key, '_' ) || in_array( $key, array( 'lottery', 'signin', 'checkin', '知任务' ), true ) ) {
+			$map[ $key ] = $label;
+		}
+	}
+	if ( ! $map ) {
+		return;
+	}
 	?>
 	<script id="zhiji-balance-label-fix">
 	(function(){
+		var MAP = <?php echo wp_json_encode( $map, JSON_UNESCAPED_UNICODE ); ?>;
+		var KEYS = Object.keys(MAP);
 		function fix(node) {
 			if (!node) return;
 			if (node.nodeType === 3) {
-				var t = node.nodeValue;
-				if (t) {
-					var nt = t.split('lottery').join('锦鲤福袋');
-					nt = nt.split('知任务').join('积分商城');
-					if (nt !== t) node.nodeValue = nt;
+				var t = node.nodeValue, nt = t;
+				for (var i = 0; i < KEYS.length; i++) {
+					if (nt.indexOf(KEYS[i]) !== -1) { nt = nt.split(KEYS[i]).join(MAP[KEYS[i]]); }
 				}
+				if (nt !== t) node.nodeValue = nt;
 				return;
 			}
 			var cs = node.childNodes;
-			for (var i = 0; i < cs.length; i++) { fix(cs[i]); }
+			for (var j = 0; j < cs.length; j++) { fix(cs[j]); }
 		}
 		function boot() {
 			var root = document.querySelector('.user-center') || document.querySelector('.user-center-sidebar');
@@ -466,3 +597,78 @@ function zhiji_balance_source_label_fix() {
 	</script>
 	<?php
 }
+
+/**
+ * 一次性迁移：把历史余额/积分记录里的「奖励中心 + 来源：<内部标识>」改写为可读文案
+ *
+ * 背景：v2 把发奖收口到奖励中心时，记录字段写成 type='奖励中心'、desc='来源：comment_fortune'，
+ *       徽标丢失业务语义、并把内部标识暴露给用户（用户中心显示「来源：comment_fortune」）。
+ *
+ * 迁移规则（仅处理匹配的记录，幂等）：
+ *   desc 形如「来源：<标识>」→ type = 来源展示名、desc = 按记录类型（余额/积分）生成的可读说明
+ *
+ * @return int 改写的记录条数
+ */
+function zhiji_reward_records_migrate() {
+	global $wpdb;
+
+	// 只取"含有旧格式记录"的用户，避免全表扫描
+	$user_ids = $wpdb->get_col( $wpdb->prepare(
+		"SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value LIKE %s LIMIT 200",
+		'zib_other_data',
+		'%' . $wpdb->esc_like( '来源：' ) . '%'
+	) );
+	if ( ! $user_ids ) {
+		return 0;
+	}
+
+	$changed = 0;
+	foreach ( $user_ids as $uid ) {
+		$uid = (int) $uid;
+		if ( $uid <= 0 ) {
+			continue;
+		}
+		foreach ( array( 'balance_record' => 'balance', 'points_record' => 'points' ) as $meta_key => $reward_type ) {
+			$records = function_exists( 'zib_get_user_meta' )
+				? zib_get_user_meta( $uid, $meta_key, true )
+				: get_user_meta( $uid, $meta_key, true );
+			if ( ! is_array( $records ) || ! $records ) {
+				continue;
+			}
+			$dirty = false;
+			foreach ( $records as $i => $rec ) {
+				if ( ! is_array( $rec ) || empty( $rec['desc'] ) ) {
+					continue;
+				}
+				if ( ! preg_match( '/^来源：(.+)$/u', (string) $rec['desc'], $m ) ) {
+					continue;
+				}
+				$records[ $i ]['type'] = zhiji_reward_source_label( $m[1] );
+				$records[ $i ]['desc'] = zhiji_reward_record_desc( $reward_type, array() );
+				$dirty                 = true;
+				$changed++;
+			}
+			if ( $dirty ) {
+				if ( function_exists( 'zib_update_user_meta' ) ) {
+					zib_update_user_meta( $uid, $meta_key, $records );
+				} else {
+					update_user_meta( $uid, $meta_key, $records );
+				}
+			}
+		}
+	}
+
+	update_option( 'zhiji_reward_labels_migrated', ZHIJI_VERSION, false );
+	return $changed;
+}
+
+// 幂等执行：仅在版本不符时跑一次（option 走 autoload=false，无额外查询负担）
+add_action( 'wp_loaded', function () {
+	if ( get_option( 'zhiji_reward_labels_migrated' ) === ZHIJI_VERSION ) {
+		return;
+	}
+	$n = zhiji_reward_records_migrate();
+	if ( $n > 0 ) {
+		zhiji_log( 'reward record labels migrated', array( 'changed' => $n ) );
+	}
+} );

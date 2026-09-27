@@ -60,6 +60,7 @@ function zhiji_ops_scene_fortune_reward_text($row)
  */
 zhiji_ops_register_scene(ZHIJI_OPS_SCENE_FORTUNE, array(
     'title'         => __('评论福袋待领取', 'zhiji'),
+    'icon'          => 'dashicons-awards',
     'desc'          => __('评论锦鲤福袋的发放与领取记录（按用户）。弹窗标记原本只存活 2 小时，用户错过就再也看不到中奖提示 —— 这里可查询、可补发。', 'zhiji'),
     'priority'      => 20,
     'cap'           => 'manage_options',
@@ -73,10 +74,10 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_FORTUNE, array(
     'stats'         => function () {
         $stats = zhiji_claim_log_stats(ZHIJI_OPS_SCENE_FORTUNE);
         return array(
-            array('label' => __('待领取', 'zhiji'), 'value' => $stats['active'], 'hint' => __('弹窗尚未被领走', 'zhiji'), 'tone' => $stats['active'] > 0 ? 'warn' : ''),
-            array('label' => __('今日发放', 'zhiji'), 'value' => $stats['today']),
-            array('label' => __('已领取', 'zhiji'), 'value' => $stats['cleared'], 'tone' => 'ok'),
-            array('label' => __('累计记录', 'zhiji'), 'value' => $stats['total']),
+            array('label' => __('待领取', 'zhiji'), 'value' => $stats['active'], 'hint' => __('弹窗尚未被领走', 'zhiji'), 'tone' => $stats['active'] > 0 ? 'warn' : '', 'icon' => 'dashicons-marker'),
+            array('label' => __('今日发放', 'zhiji'), 'value' => $stats['today'], 'icon' => 'dashicons-chart-line'),
+            array('label' => __('已领取', 'zhiji'), 'value' => $stats['cleared'], 'tone' => 'ok', 'icon' => 'dashicons-yes-alt'),
+            array('label' => __('累计记录', 'zhiji'), 'value' => $stats['total'], 'icon' => 'dashicons-database'),
         );
     },
 

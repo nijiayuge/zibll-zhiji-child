@@ -159,8 +159,15 @@ function zhiji_email_subscribe_grant_reward( $user_id ) {
     }
 
     // 调用奖励中心赠送积分
+    // 2026-09-27 修复：原调用参数错位 —— grant_one($uid, $type, $source, $overrides)，
+    //                   原写法把 $points 当成了 $source、把中文字符串当成了 $overrides，
+    //                   导致余额/积分记录里出现「来源：10」这种数字，且自定义区间失效。
     if ( function_exists( 'zhiji_reward_center_grant_one' ) ) {
-        zhiji_reward_center_grant_one( $user_id, 'points', $points, '邮件订阅奖励' );
+        zhiji_reward_center_grant_one( $user_id, 'points', 'email_subscribe', array(
+            'desc'       => __( '邮件订阅奖励', 'zhiji' ),
+            'points_min' => $points,
+            'points_max' => $points,
+        ) );
     } else {
         Zhiji_Adapter::update_user_points( $user_id, array(
             'value' => $points,

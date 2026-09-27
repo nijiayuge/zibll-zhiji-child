@@ -246,7 +246,11 @@ function zhiji_comment_fortune_grant( $uid ) {
 	 * 返回格式保持兼容：{type,name,val,desc,code?}
 	 */
 	if ( function_exists( 'zhiji_reward_center_grant_random' ) ) {
-		$reward = zhiji_reward_center_grant_random( $uid, 'comment_fortune' );
+		$reward = zhiji_reward_center_grant_random( $uid, 'comment_fortune', array(
+			// 2026-09-27：传 desc，使用户中心余额/积分记录的「说明」显示业务文案
+			//（v1 原为「热评锦鲤奖励」，v2 收口奖励中心时丢失，只剩「来源：comment_fortune」）
+			'desc' => __( '热评锦鲤奖励', 'zhiji' ),
+		) );
 		if ( $reward && is_array( $reward ) ) {
 			return $reward;
 		}

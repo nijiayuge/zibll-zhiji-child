@@ -77,6 +77,7 @@ function zhiji_ops_scene_claim_coupons_by_email($email)
  */
 zhiji_ops_register_scene(ZHIJI_OPS_SCENE_CLAIM, array(
     'title'         => __('邮箱领取限制', 'zhiji'),
+    'icon'          => 'dashicons-email-alt',
     'desc'          => __('退出挽留弹窗「输入邮箱领优惠码」的领取记录。规则：同一邮箱领取成功后不可重复领取；此处可查询被拦记录，并按需放行或清除。', 'zhiji'),
     'priority'      => 10,
     'cap'           => 'manage_options',
@@ -91,10 +92,10 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_CLAIM, array(
         $stats   = zhiji_claim_log_stats(ZHIJI_OPS_SCENE_CLAIM);
         $blocked = (int) get_option('zhiji_claim_blocked_count', 0);
         return array(
-            array('label' => __('占用中（已领取）', 'zhiji'), 'value' => $stats['active'], 'hint' => __('这些邮箱当前不可再领', 'zhiji'), 'tone' => $stats['active'] > 0 ? 'warn' : ''),
-            array('label' => __('今日新增', 'zhiji'), 'value' => $stats['today']),
-            array('label' => __('已放行', 'zhiji'), 'value' => $stats['cleared'], 'hint' => __('运维重置后可再领', 'zhiji'), 'tone' => 'ok'),
-            array('label' => __('累计记录', 'zhiji'), 'value' => $stats['total'], 'hint' => sprintf(__('历史拦截 %d 次', 'zhiji'), $blocked)),
+            array('label' => __('占用中（已领取）', 'zhiji'), 'value' => $stats['active'], 'hint' => __('这些邮箱当前不可再领', 'zhiji'), 'tone' => $stats['active'] > 0 ? 'warn' : '', 'icon' => 'dashicons-lock'),
+            array('label' => __('今日新增', 'zhiji'), 'value' => $stats['today'], 'icon' => 'dashicons-chart-line'),
+            array('label' => __('已放行', 'zhiji'), 'value' => $stats['cleared'], 'hint' => __('运维重置后可再领', 'zhiji'), 'tone' => 'ok', 'icon' => 'dashicons-unlock'),
+            array('label' => __('累计记录', 'zhiji'), 'value' => $stats['total'], 'hint' => sprintf(__('历史拦截 %d 次', 'zhiji'), $blocked), 'icon' => 'dashicons-database'),
         );
     },
 
