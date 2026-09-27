@@ -124,6 +124,11 @@ function zhiji_ops_print_styles()
     .zhiji-ops-filters .zhiji-ops-field{display:flex;flex-direction:column;gap:4px}
     .zhiji-ops-filters label{font-size:12px;color:#646970}
     .zhiji-ops-bulkbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff;border:1px solid #dcdcde;border-bottom:none;border-radius:8px 8px 0 0;padding:10px 12px}
+    .zhiji-ops-preactions{display:flex;flex-direction:column;gap:8px;margin:0 0 14px}
+    .zhiji-ops-preactions form{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff;border:1px solid #dcdcde;border-left:3px solid #2271b1;border-radius:8px;padding:10px 14px}
+    .zhiji-ops-preactions label{font-size:12px;color:#646970}
+    .zhiji-ops-preactions strong{font-size:13px}
+    .zhiji-ops-preactions input[type="text"],.zhiji-ops-preactions input[type="email"]{min-width:250px}
     .zhiji-ops .zhiji-ops-table-wrap{background:#fff;border:1px solid #dcdcde;border-radius:0 0 8px 8px;overflow:auto}
     .zhiji-ops table.zhiji-ops-table{margin:0;border:none;box-shadow:none}
     .zhiji-ops table.zhiji-ops-table th{font-weight:600}
@@ -402,6 +407,37 @@ function zhiji_ops_render_scene($id)
             </div>
         </form>
 
+        <!-- 表单型操作（不需要先选中记录：目标数据可能根本不在当前列表里） -->
+        <?php if ($can_clear && $scene['pre_actions']) : ?>
+            <div class="zhiji-ops-preactions">
+                <?php foreach ($scene['pre_actions'] as $pa) : ?>
+                    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>"
+                        <?php echo !empty($pa['confirm']) ? 'onsubmit="return confirm(\'' . esc_js($pa['confirm']) . '\');"' : ''; ?>>
+                        <input type="hidden" name="action" value="zhiji_ops_action">
+                        <input type="hidden" name="scene" value="<?php echo esc_attr($id); ?>">
+                        <input type="hidden" name="op" value="<?php echo esc_attr($pa['key']); ?>">
+                        <input type="hidden" name="redirect" value="<?php echo esc_attr(zhiji_ops_current_url($id, $filters, $page)); ?>">
+                        <?php wp_nonce_field('zhiji_ops_action'); ?>
+                        <strong<?php echo !empty($pa['tone']) ? ' class="' . esc_attr($pa['tone']) . '"' : ''; ?>><?php echo esc_html($pa['label']); ?></strong>
+                        <?php foreach ((array) $pa['fields'] as $field) : ?>
+                            <label for="zhiji-ops-pa-<?php echo esc_attr($pa['key'] . '-' . $field['name']); ?>"><?php echo esc_html($field['label']); ?></label>
+                            <input type="<?php echo esc_attr(isset($field['type']) ? $field['type'] : 'text'); ?>"
+                                   id="zhiji-ops-pa-<?php echo esc_attr($pa['key'] . '-' . $field['name']); ?>"
+                                   name="<?php echo esc_attr($field['name']); ?>"
+                                   placeholder="<?php echo esc_attr(isset($field['placeholder']) ? $field['placeholder'] : ''); ?>"
+                                   <?php echo !empty($field['required']) ? 'required' : ''; ?>>
+                        <?php endforeach; ?>
+                        <button type="submit" class="button <?php echo !empty($pa['tone']) ? esc_attr($pa['tone']) : 'button-secondary'; ?>">
+                            <?php echo esc_html__('执行', 'zhiji'); ?>
+                        </button>
+                        <?php if (!empty($pa['desc'])) : ?>
+                            <span class="description"><?php echo esc_html($pa['desc']); ?></span>
+                        <?php endif; ?>
+                    </form>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
         <!-- 批量操作表单（表格内 checkbox 通过 form 属性归属此表单） -->
         <?php if ($can_clear && $scene['actions']) : ?>
         <form id="<?php echo esc_attr($bulk_form); ?>" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
@@ -639,17 +675,20 @@ function zhiji_ops_handle_action()
     if ('' === $op) {
         $fail(__('未选择操作', 'zhiji'));
     }
-    if (!$ids) {
-        $fail(__('未选择任何记录', 'zhiji'));
-    }
     if (!zhiji_ops_can_clear($scene_id)) {
         $fail(__('「运维清除」已被关闭，操作被拒绝', 'zhiji'));
     }
 
-    // 校验操作是否在该场景声明内
+    // 校验操作是否在该场景声明内（行内/批量操作 vs 表单型操作）
     $declared = wp_list_pluck($scene['actions'], 'key');
-    if (!in_array($op, $declared, true)) {
+    $pre_ops  = wp_list_pluck($scene['pre_actions'], 'key');
+    $is_pre   = in_array($op, $pre_ops, true);
+    if (!$is_pre && !in_array($op, $declared, true)) {
         $fail(__('该场景不支持此操作', 'zhiji'));
+    }
+    // 表单型操作（pre_actions）自带参数，不要求选中记录；行内/批量操作必须选中
+    if (!$is_pre && !$ids) {
+        $fail(__('未选择任何记录', 'zhiji'));
     }
 
     $result = array('ok' => false, 'msg' => __('操作未执行', 'zhiji'));

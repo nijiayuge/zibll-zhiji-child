@@ -84,7 +84,7 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_CLAIM, array(
         return zhiji_is_enabled('ops_scene_claim_enabled', true);
     },
     'clear_enabled' => null, // 跟随全局「运维清除」开关
-    'notice'        => __('「重置并放行」= 该邮箱可立即再次领取（保留审计记录，一键生效）；「删除记录」不可恢复；「作废关联券」用于清理该邮箱名下的历史优惠码。注意：本场景只影响「邮箱」维度，不影响「每位用户仅限一次（按账号/IP）」。', 'zhiji'),
+    'notice'        => __('「重置并放行」= 该邮箱可立即再次领取（保留审计记录，一键生效）；「删除记录」不可恢复；「作废关联券」用于清理该邮箱名下的历史优惠码。若某邮箱「查不到记录却仍被拦」（历史券造成），用上方「按邮箱放行」。注意：本场景只影响「邮箱」维度，不影响「每位用户仅限一次（按账号/IP）」。', 'zhiji'),
 
     /* ---------- 统计卡片 ---------- */
     'stats'         => function () {
@@ -200,10 +200,105 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_CLAIM, array(
         return zhiji_claim_log_query($args);
     },
 
+    /* ---------- 表单型操作（目标数据可能不在当前列表里） ---------- */
+    // 典型场景：某邮箱**在记录表里 0 条**，但名下还有历史优惠码 → 仍被「每邮箱限领」拦住，
+    // 列表里没有行 = 行内「作废关联券」点不到 → 这里提供"不需要先有记录"的入口。
+    'pre_actions'   => array(
+        array(
+            'key'     => 'release_email',
+            'label'   => __('按邮箱放行', 'zhiji'),
+            'desc'    => __('邮箱在下面查不到记录时用它：作废其名下历史优惠码，并写入放行记录。', 'zhiji'),
+            'confirm' => __('确定对该邮箱放行吗？会作废其名下本模块发放的全部历史优惠码（不可恢复）。', 'zhiji'),
+            'fields'  => array(
+                array('name' => 'email', 'label' => __('邮箱', 'zhiji'), 'type' => 'email', 'placeholder' => 'user@example.com', 'required' => true),
+            ),
+        ),
+        array(
+            'key'     => 'purge_email',
+            'label'   => __('按邮箱清理记录', 'zhiji'),
+            'tone'    => 'zhiji-ops-danger',
+            'desc'    => __('删除该邮箱在本场景的全部领取记录（不可恢复），用于清理测试/异常数据。', 'zhiji'),
+            'confirm' => __('确定删除该邮箱的全部领取记录吗？此操作不可恢复。', 'zhiji'),
+            'fields'  => array(
+                array('name' => 'email', 'label' => __('邮箱', 'zhiji'), 'type' => 'email', 'placeholder' => 'user@example.com', 'required' => true),
+            ),
+        ),
+    ),
+
     /* ---------- 操作处理 ---------- */
     'handle'        => function ($op, $params, array $ids, $scene) {
         $by = get_current_user_id();
 
+        /* ---------- 表单型：按邮箱放行（作废历史券 + 写放行记录） ---------- */
+        if ('release_email' === $op) {
+            $email = isset($params['email']) ? sanitize_email(wp_unslash($params['email'])) : '';
+            if (!$email || !is_email($email)) {
+                return array('ok' => false, 'msg' => __('请填写有效的邮箱地址', 'zhiji'));
+            }
+
+            // 1) 作废该邮箱名下本模块发放的全部历史优惠码（旧规则「每邮箱限领」的拦截源）
+            $codes   = zhiji_ops_scene_claim_coupons_by_email($email);
+            $deleted = 0;
+            if (class_exists('ZibCardPass')) {
+                foreach ($codes as $code) {
+                    if (ZibCardPass::delete(array('password' => $code))) {
+                        $deleted++;
+                    }
+                }
+            }
+
+            // 2) 该邮箱原有的「占用中」记录一并放行（保留审计）
+            zhiji_claim_log_clear(array(
+                'scene' => ZHIJI_OPS_SCENE_CLAIM,
+                'email' => $email,
+                'mode'  => 'reset',
+                'note'  => __('运维按邮箱放行', 'zhiji'),
+                'by'    => $by,
+            ));
+
+            // 3) 写一条放行记录：既留审计，也让领取校验明确放行该邮箱（cleared 晚于 active）
+            $row_id = zhiji_claim_log_add(array(
+                'scene'  => ZHIJI_OPS_SCENE_CLAIM,
+                'email'  => $email,
+                'source' => 'ops_release',
+                'note'   => __('运维按邮箱放行', 'zhiji'),
+                'meta'   => array('by' => $by, 'purged_coupons' => $deleted),
+            ));
+            if ($row_id) {
+                zhiji_claim_log_clear(array(
+                    'ids'  => array($row_id),
+                    'mode' => 'reset',
+                    'note' => __('运维按邮箱放行', 'zhiji'),
+                    'by'   => $by,
+                ));
+            }
+
+            return array(
+                'ok'  => true,
+                /* translators: 1: 邮箱 2: 作废的券数 */
+                'msg' => sprintf(__('已对 %1$s 执行放行：作废历史优惠码 %2$d 张并写入放行记录，该邮箱现在可以再次领取。', 'zhiji'), $email, $deleted),
+            );
+        }
+
+        /* ---------- 表单型：按邮箱清理记录（只删记录，不动作废券） ---------- */
+        if ('purge_email' === $op) {
+            $email = isset($params['email']) ? sanitize_email(wp_unslash($params['email'])) : '';
+            if (!$email || !is_email($email)) {
+                return array('ok' => false, 'msg' => __('请填写有效的邮箱地址', 'zhiji'));
+            }
+            $ret = zhiji_claim_log_clear(array(
+                'scene' => ZHIJI_OPS_SCENE_CLAIM,
+                'email' => $email,
+                'mode'  => 'delete',
+            ));
+            return array(
+                'ok'  => true,
+                /* translators: 1: 邮箱 2: 删除条数 */
+                'msg' => sprintf(__('已删除 %1$s 的 %2$d 条领取记录（不动作废优惠码）。', 'zhiji'), $email, (int) $ret['affected']),
+            );
+        }
+
+        /* ---------- 行内/批量：重置放行、删除记录、作废关联券 ---------- */
         if ('reset' === $op || 'delete' === $op) {
             $mode = ('delete' === $op) ? 'delete' : 'reset';
             $ret  = zhiji_claim_log_clear(array(

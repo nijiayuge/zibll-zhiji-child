@@ -39,7 +39,12 @@ if (!defined('ZHIJI_OPS_ACTIVITY_MAX')) {
  *   filters       array     筛选项：array('key','label','type'(text|select|date),'options','placeholder','default')
  *   columns       array     列：array('key','label','width','render'=>function($row,$scene))
  *   query         callable  function(array $args): array('rows','total','pages','page','per_page')
- *   actions       array     操作：array('key','label','mode'(single|bulk),'confirm','tone','need_clear')
+ *   actions       array     行内/批量操作：array('key','label','mode'(single|bulk),'confirm','tone')
+ *   pre_actions   array     **表单型操作**（不需要先选中记录，页面顶部直接填参执行）：
+ *                           array('key','label','desc','confirm','tone',
+ *                                 'fields'=>array(array('name','label','type'(text|email),'placeholder','required')))
+ *                           适用场景：目标数据不在当前列表里（例如"某个邮箱没有任何记录，但被历史券拦住"）。
+ *                           处理器通过 $params（= $_POST）拿字段值。
  *   handle        callable  function($action, array $params, array $ids, array $scene): array('ok'=>,'msg'=>)
  *   notice        string    页面顶部提示（可含 HTML 白名单外的纯文本）
  *
@@ -68,6 +73,7 @@ function zhiji_ops_register_scene($id, array $args = array())
         'columns'       => array(),
         'query'         => null,
         'actions'       => array(),
+        'pre_actions'   => array(),
         'handle'        => null,
         'notice'        => '',
         'id'            => $id,
