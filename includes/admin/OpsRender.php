@@ -172,29 +172,48 @@ function zhiji_ops_print_styles()
     .zhiji-ops table.zhiji-ops-table thead a.zhiji-ops-sort.is-active{color:var(--zhiji-primary);font-weight:700}
     .zhiji-ops table.zhiji-ops-table thead a.zhiji-ops-sort .zhiji-ops-sort-arrow{font-size:11px;line-height:1;opacity:.8}
 
-    /* ---------- 行级详情弹窗（2026-09-28 新增） ---------- */
-    .zhiji-ops .zhiji-ops-modal-mask{position:fixed;inset:0;z-index:100000;background:rgba(16,24,40,.46);
-      display:flex;align-items:center;justify-content:center;padding:24px;animation:zhiji-ops-fade .16s ease}
+    /* ---------- 行级详情抽屉（2026-09-28 v2：slide-over，行业惯例见附录 R.9） ---------- */
+    .zhiji-ops .zhiji-ops-modal-mask{position:fixed;inset:0;z-index:100000;background:rgba(16,24,40,.32);
+      display:flex;justify-content:flex-end;align-items:stretch;padding:0;animation:zhiji-ops-fade .18s ease}
     .zhiji-ops .zhiji-ops-modal-mask[hidden]{display:none}
-    .zhiji-ops .zhiji-ops-modal{background:#fff;border-radius:var(--zhiji-radius);box-shadow:0 12px 40px rgba(16,24,40,.22);
-      width:min(640px,94vw);max-height:86vh;display:flex;flex-direction:column;animation:zhiji-ops-pop .18s ease}
+    .zhiji-ops .zhiji-ops-modal{background:#fff;width:min(480px,92vw);height:100%;max-height:none;
+      border-radius:0;box-shadow:-12px 0 40px rgba(16,24,40,.18);display:flex;flex-direction:column;
+      animation:zhiji-ops-slide .24s cubic-bezier(.2,.7,.3,1)}
+    @media (max-width:640px){.zhiji-ops .zhiji-ops-modal{width:100vw}}
     .zhiji-ops .zhiji-ops-modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;
-      padding:14px 20px;border-bottom:1px solid var(--zhiji-line-soft)}
-    .zhiji-ops .zhiji-ops-modal-head strong{font-size:15px;color:var(--zhiji-ink)}
+      padding:16px 20px;border-bottom:1px solid var(--zhiji-line);flex-shrink:0}
+    .zhiji-ops .zhiji-ops-modal-titlewrap{display:flex;align-items:center;gap:10px;min-width:0}
+    .zhiji-ops .zhiji-ops-modal-head strong{font-size:15px;color:var(--zhiji-ink);white-space:nowrap}
     .zhiji-ops .zhiji-ops-modal-close{background:none;border:1px solid transparent;border-radius:6px;color:var(--zhiji-muted);
-      font-size:20px;line-height:1;width:30px;height:30px;cursor:pointer;padding:0}
+      font-size:20px;line-height:1;width:30px;height:30px;cursor:pointer;padding:0;flex-shrink:0}
     .zhiji-ops .zhiji-ops-modal-close:hover{background:var(--zhiji-bg-soft);color:var(--zhiji-ink)}
-    .zhiji-ops .zhiji-ops-modal-body{padding:8px 20px 20px;overflow:auto}
-    .zhiji-ops .zhiji-ops-kv{display:grid;grid-template-columns:132px 1fr;gap:8px 14px;padding:8px 0;
-      border-bottom:1px dashed var(--zhiji-line-soft);font-size:13px;align-items:start}
-    .zhiji-ops .zhiji-ops-kv:last-child{border-bottom:none}
-    .zhiji-ops .zhiji-ops-kv .zhiji-ops-kv-k{color:var(--zhiji-muted)}
-    .zhiji-ops .zhiji-ops-kv .zhiji-ops-kv-v{color:var(--zhiji-ink);word-break:break-all;overflow-wrap:anywhere}
-    .zhiji-ops .zhiji-ops-kv pre.zhiji-ops-pre{margin:0;background:var(--zhiji-bg-soft);border:1px solid var(--zhiji-line-soft);
-      border-radius:6px;padding:10px 12px;font-family:Menlo,Consolas,Monaco,monospace;font-size:12px;line-height:1.7;
-      color:var(--zhiji-body);white-space:pre-wrap;word-break:break-all;user-select:all;max-height:260px;overflow:auto}
+    .zhiji-ops .zhiji-ops-modal-body{padding:0 0 20px;overflow:auto;flex:1}
+
+    /* 概览区：2 列大字网格（关键信息一眼扫到） */
+    .zhiji-ops .zhiji-ops-dl-primary{display:grid;grid-template-columns:1fr 1fr;gap:1px;
+      background:var(--zhiji-line-soft);border-bottom:1px solid var(--zhiji-line-soft)}
+    .zhiji-ops .zhiji-ops-dl-pcell{background:#fff;padding:14px 20px 12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+    .zhiji-ops .zhiji-ops-dl-k{font-size:12px;color:var(--zhiji-faint)}
+    .zhiji-ops .zhiji-ops-dl-v{font-size:14px;font-weight:600;color:var(--zhiji-ink);word-break:break-all;overflow-wrap:anywhere}
+
+    /* 明细区：label 上 / value 下的分段列表 */
+    .zhiji-ops .zhiji-ops-dl-fields{padding:4px 20px 0}
+    .zhiji-ops .zhiji-ops-dl-item{padding:11px 0;border-bottom:1px dashed var(--zhiji-line-soft);
+      display:flex;flex-direction:column;gap:4px}
+    .zhiji-ops .zhiji-ops-dl-item:last-child{border-bottom:none}
+    .zhiji-ops .zhiji-ops-dl-item .zhiji-ops-dl-k{font-size:12px;color:var(--zhiji-faint)}
+    .zhiji-ops .zhiji-ops-dl-item .zhiji-ops-dl-v{font-size:13px;color:var(--zhiji-ink);word-break:break-all;overflow-wrap:anywhere}
+
+    /* meta：原生 <details> 默认折叠（progressive disclosure） */
+    .zhiji-ops .zhiji-ops-dl-meta{margin:12px 20px 0;border:1px solid var(--zhiji-line-soft);
+      border-radius:8px;background:var(--zhiji-bg-soft)}
+    .zhiji-ops .zhiji-ops-dl-meta summary{cursor:pointer;padding:10px 14px;font-size:13px;color:var(--zhiji-muted);user-select:none}
+    .zhiji-ops .zhiji-ops-dl-meta summary:hover{color:var(--zhiji-primary)}
+    .zhiji-ops .zhiji-ops-dl-meta[open] summary{border-bottom:1px dashed var(--zhiji-line-soft)}
+    .zhiji-ops .zhiji-ops-dl-meta pre.zhiji-ops-pre{margin:10px;background:#fff;border:none;max-height:300px}
+
     @keyframes zhiji-ops-fade{from{opacity:0}to{opacity:1}}
-    @keyframes zhiji-ops-pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+    @keyframes zhiji-ops-slide{from{transform:translateX(56px);opacity:0}to{transform:none;opacity:1}}
     @media (prefers-reduced-motion:reduce){.zhiji-ops .zhiji-ops-modal-mask,.zhiji-ops .zhiji-ops-modal{animation:none}}
     </style>
     <?php

@@ -461,15 +461,18 @@ function zhiji_ops_render_scene($id)
             <?php endif; ?>
         </div>
 
-        <!-- 行级详情弹窗（数据已由服务端编码进每行 data-zhiji-detail，纯前端展示） -->
+        <!-- 行级详情抽屉（slide-over，数据已由服务端编码进每行 data-zhiji-detail，纯前端展示） -->
         <div class="zhiji-ops-modal-mask" id="zhiji-ops-modal" hidden>
-            <div class="zhiji-ops-modal" role="dialog" aria-modal="true" aria-labelledby="zhiji-ops-modal-title">
+            <aside class="zhiji-ops-modal" role="dialog" aria-modal="true" aria-labelledby="zhiji-ops-modal-title">
                 <div class="zhiji-ops-modal-head">
-                    <strong id="zhiji-ops-modal-title"><?php esc_html_e('记录详情', 'zhiji'); ?></strong>
+                    <div class="zhiji-ops-modal-titlewrap">
+                        <strong id="zhiji-ops-modal-title"><?php esc_html_e('记录详情', 'zhiji'); ?></strong>
+                        <span id="zhiji-ops-modal-status" class="zhiji-ops-tag" hidden></span>
+                    </div>
                     <button type="button" class="zhiji-ops-modal-close" aria-label="<?php esc_attr_e('关闭', 'zhiji'); ?>">&times;</button>
                 </div>
                 <div class="zhiji-ops-modal-body"></div>
-            </div>
+            </aside>
         </div>
         <script>
         (function () {
@@ -477,6 +480,7 @@ function zhiji_ops_render_scene($id)
             var mask  = document.getElementById('zhiji-ops-modal');
             var body  = mask ? mask.querySelector('.zhiji-ops-modal-body') : null;
             var title = document.getElementById('zhiji-ops-modal-title');
+            var stTag = document.getElementById('zhiji-ops-modal-status');
             var lastFocus = null;
 
             function esc(s) {
@@ -485,27 +489,58 @@ function zhiji_ops_render_scene($id)
                 return d.innerHTML;
             }
 
-            function render(items) {
+            // 行业做法（uxpatterns.dev / UserPilot）：概览大字区 → 明细列表 → 原始数据默认折叠
+            function render(d) {
                 if (!body) { return; }
                 var html = '';
-                for (var i = 0; i < items.length; i++) {
-                    var it = items[i];
-                    if (!it) { continue; }
-                    if (it.pre) {
-                        html += '<div class="zhiji-ops-kv"><span class="zhiji-ops-kv-k">' + esc(it.k) + '</span>'
-                              + '<pre class="zhiji-ops-pre">' + esc(it.v) + '</pre></div>';
-                    } else {
-                        html += '<div class="zhiji-ops-kv"><span class="zhiji-ops-kv-k">' + esc(it.k) + '</span>'
-                              + '<span class="zhiji-ops-kv-v">' + esc(it.v) + '</span></div>';
+
+                if (d.primary && d.primary.length) {
+                    html += '<div class="zhiji-ops-dl-primary">';
+                    for (var i = 0; i < d.primary.length; i++) {
+                        html += '<div class="zhiji-ops-dl-pcell">'
+                              + '<span class="zhiji-ops-dl-k">' + esc(d.primary[i].k) + '</span>'
+                              + '<span class="zhiji-ops-dl-v">' + esc(d.primary[i].v) + '</span></div>';
                     }
+                    html += '</div>';
                 }
+
+                if (d.fields && d.fields.length) {
+                    html += '<div class="zhiji-ops-dl-fields">';
+                    for (var j = 0; j < d.fields.length; j++) {
+                        var it = d.fields[j];
+                        if (!it) { continue; }
+                        html += '<div class="zhiji-ops-dl-item"><span class="zhiji-ops-dl-k">' + esc(it.k) + '</span>'
+                              + (it.pre
+                                  ? '<pre class="zhiji-ops-pre">' + esc(it.v) + '</pre>'
+                                  : '<span class="zhiji-ops-dl-v">' + esc(it.v) + '</span>')
+                              + '</div>';
+                    }
+                    html += '</div>';
+                }
+
+                if (d.meta) {
+                    html += '<details class="zhiji-ops-dl-meta">'
+                          + '<summary><?php echo esc_js(__('扩展数据 (meta)', 'zhiji')); ?></summary>'
+                          + '<pre class="zhiji-ops-pre">' + esc(d.meta) + '</pre></details>';
+                }
+
                 body.innerHTML = html || '<p class="description">无数据</p>';
             }
 
-            function open(items) {
-                if (!mask || !items || !items.length) { return; }
+            function open(d) {
+                if (!mask) { return; }
                 lastFocus = document.activeElement;
-                render(items);
+                render(d);
+                if (stTag) {
+                    if (d.status && d.status.text) {
+                        stTag.textContent = d.status.text;
+                        stTag.className = 'zhiji-ops-tag ' + ('ok' === d.status.tone ? 'cleared' : 'active');
+                        stTag.hidden = false;
+                    } else {
+                        stTag.hidden = true;
+                    }
+                }
+                if (title) { title.textContent = '<?php echo esc_js(__('记录详情', 'zhiji')); ?> #' + (d.id || '—'); }
                 mask.hidden = false;
                 var closeBtn = mask.querySelector('.zhiji-ops-modal-close');
                 if (closeBtn) { closeBtn.focus(); }
@@ -519,7 +554,7 @@ function zhiji_ops_render_scene($id)
                 lastFocus = null;
             }
 
-            // 事件委托：点击「详情」按钮 → 读取所在行 data-zhiji-detail
+            // 事件委托：点击「详情」按钮 → 读取所在行 data-zhiji-detail；点遮罩空白处关闭
             document.addEventListener('click', function (e) {
                 var btn = e.target.closest ? e.target.closest('.zhiji-ops-detail-btn') : null;
                 if (btn) {
@@ -527,19 +562,15 @@ function zhiji_ops_render_scene($id)
                     var raw  = tr ? tr.getAttribute('data-zhiji-detail') : '';
                     var data = null;
                     try { data = JSON.parse(raw); } catch (err) { data = null; }
-                    if (data && data.length) {
-                        if (title && data[0] && data[0].k) {
-                            // 标题沿用场景名 + 记录 ID（首项固定为记录 ID）
-                            title.textContent = '<?php echo esc_js(__('记录详情 · ID ', 'zhiji')); ?>' + (data[0].v || '—');
-                        }
-                        open(data);
-                    }
+                    if (data && (data.fields || data.primary || data.meta)) { open(data); }
                     return;
                 }
-                if (e.target.closest && e.target.closest('.zhiji-ops-modal-close')) { close(); }
+                if (e.target.closest && e.target.closest('.zhiji-ops-modal-close')) { close(); return; }
+                // 点遮罩（非抽屉本体）关闭
+                if (e.target === mask) { close(); }
             });
 
-            // Esc 关闭 + 焦点圈定在弹窗内
+            // Esc 关闭
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && mask && !mask.hidden) { close(); }
             });
@@ -621,24 +652,32 @@ function zhiji_ops_current_url($id, array $filters = array(), $page = 1)
 }
 
 /**
- * 构建行级「详情弹窗」数据（2026-09-28 新增）
+ * 构建行级「详情抽屉」数据（2026-09-28 v2：分组结构，配合右侧 slide-over 抽屉）
+ *
+ * 行业依据（uxpatterns.dev / UserPilot / onething.design 的 Modal vs Drawer 结论）：
+ *  · 记录审查/inspect 类任务 → Drawer（slide-over），背景列表保持可见可对比，
+ *    不用居中 Modal（那是「必须打断做决定」场景用的）；
+ *  · 原始数据（meta JSON）低频信息 → 默认折叠（progressive disclosure）。
  *
  * 设计要点：
  *  · 服务端完成全部业务归一（时间占位归一 / 来源汉化 / 操作人解析 / meta 美化），
- *    前端 JS 只做「标签+值」渲染，不承载业务语义；
- *  · 输出为 array(array('k'=>标签,'v'=>展示值,'pre'=>bool),...)，整体 wp_json_encode
- *    后挂到 <tr data-zhiji-detail>，点击「详情」纯前端展示，无额外 AJAX 请求；
- *  · 时间/来源归一复用 ClaimLog 共享帮助函数（与列表列完全同口径）。
+ *    前端 JS 只做分组渲染，不承载业务语义；
+ *  · 输出分组结构（wp_json_encode 后挂 <tr data-zhiji-detail>，点击「详情」零 AJAX）：
+ *      id      => int    标题用
+ *      status  => ['text'=>显示文案, 'tone'=>'ok|warn'] 徽标（无 status 字段则缺省）
+ *      primary => [ ['k','v'], ... ]  概览区（2 列大字网格，仅关键且有值的字段）
+ *      fields  => [ ['k','v','pre'], ... ]  明细列表（label 上 / value 下）
+ *      meta    => string|null  美化后的 JSON（前端放进 <details> 默认折叠）
  *
  * @param object $row      数据行（claim_log 或场景自定义行）
- * @param string $scene_id 场景 ID（备用，当前用于标题上下文）
+ * @param string $scene_id 场景 ID（备用）
  * @return array
  */
 function zhiji_ops_build_detail($row, $scene_id = '')
 {
-    $items = array();
+    $out = array('id' => 0, 'status' => null, 'primary' => array(), 'fields' => array(), 'meta' => null);
     if (!is_object($row)) {
-        return $items;
+        return $out;
     }
 
     $labels = array(
@@ -654,20 +693,29 @@ function zhiji_ops_build_detail($row, $scene_id = '')
         'cleared'    => __('放行/领取时间', 'zhiji'),
         'cleared_by' => __('放行操作人', 'zhiji'),
         'ip'         => __('IP 地址', 'zhiji'),
-        'meta'       => __('扩展数据 (meta)', 'zhiji'),
     );
 
     $data = (array) $row;
+    $out['id'] = isset($data['id']) ? (int) $data['id'] : 0;
+
+    // 状态徽标（通用文案：各场景语义不同，不再细分「占用中/待领取」）
+    if (isset($data['status']) && '' !== (string) $data['status']) {
+        $st = (string) $data['status'];
+        $out['status'] = array(
+            'text' => ('cleared' === $st) ? __('已完结', 'zhiji') : __('处理中', 'zhiji'),
+            'tone' => ('cleared' === $st) ? 'ok' : 'warn',
+            'raw'  => $st,
+        );
+    }
 
     // meta 先行解析：JSON → 关联数组（展示时 pretty print）；解析失败保留原文
-    $meta_display = null;
     if (array_key_exists('meta', $data)) {
         $meta_raw     = (string) $data['meta'];
         $meta_decoded = json_decode($meta_raw, true);
         if (is_array($meta_decoded) || is_object($meta_decoded)) {
-            $meta_display = wp_json_encode($meta_decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+            $out['meta'] = wp_json_encode($meta_decoded, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
         } elseif ('' !== $meta_raw) {
-            $meta_display = $meta_raw;
+            $out['meta'] = $meta_raw;
         }
     }
 
@@ -682,67 +730,62 @@ function zhiji_ops_build_detail($row, $scene_id = '')
         return ('' === $s) ? '—' : $s;
     };
 
-    $push = function ($key, $value, $pre = false) use (&$items, $labels) {
-        $label   = isset($labels[$key]) ? $labels[$key] : $key;
-        $items[] = array('k' => $label, 'v' => $value, 'pre' => $pre);
-    };
-
-    // 固定顺序优先，其余键按原顺序追加（自定义场景字段不丢）
-    $ordered = array('id', 'scene', 'email', 'user_id', 'object_id', 'source', 'status', 'note', 'created', 'cleared', 'cleared_by', 'ip');
-    $seen    = array();
-
-    foreach ($ordered as $key) {
-        if (!array_key_exists($key, $data)) {
-            continue;
-        }
-        $seen[$key] = true;
+    // 单字段构造（时间归一 / 来源汉化 / 操作人解析）
+    $make = function ($key, $v) use ($labels, $render_value) {
+        $item = array('k' => isset($labels[$key]) ? $labels[$key] : $key, 'v' => '', 'pre' => false);
         switch ($key) {
             case 'created':
             case 'cleared':
                 // 时间归一：epoch 占位/空值/异常年份 → '—'（与列表列同口径）
-                $text = function_exists('zhiji_claim_log_time_text')
-                    ? zhiji_claim_log_time_text($data[$key])
-                    : (string) $data[$key];
-                $push($key, $text);
+                $item['v'] = function_exists('zhiji_claim_log_time_text')
+                    ? zhiji_claim_log_time_text($v)
+                    : (string) $v;
                 break;
             case 'source':
-                $text = function_exists('zhiji_claim_log_source_label')
-                    ? zhiji_claim_log_source_label($data[$key])
-                    : (string) $data[$key];
-                $push($key, $text);
+                $item['v'] = function_exists('zhiji_claim_log_source_label')
+                    ? zhiji_claim_log_source_label($v)
+                    : (string) $v;
                 break;
             case 'cleared_by':
-                $uid = (int) $data[$key];
+                $uid = (int) $v;
                 $u   = $uid ? get_userdata($uid) : null;
-                $push($key, $u ? sprintf('%s (#%d)', $u->user_login, $uid) : ($uid ? '#' . $uid : '—'));
+                $item['v'] = $u ? sprintf('%s (#%d)', $u->user_login, $uid) : ($uid ? '#' . $uid : '—');
                 break;
             default:
-                $pre = false;
-                $val = $render_value($data[$key], $pre);
-                $push($key, $val, $pre);
+                $item['v'] = $render_value($v, $item['pre']);
+        }
+        return $item;
+    };
+
+    // 概览区字段（关键且非空才展示）：邮箱 / 券码 / 来源 / 用户 / IP
+    foreach (array('email', 'object_id', 'source', 'user_id', 'ip') as $key) {
+        if (!array_key_exists($key, $data) || '' === (string) $data[$key] || null === $data[$key]) {
+            continue;
+        }
+        $item = $make($key, $data[$key]);
+        if ('—' !== $item['v']) {
+            $out['primary'][] = $item;
         }
     }
 
-    // 剩余键（场景自定义字段 / meta 之外的附加列）
+    // 明细区：固定顺序 + 场景自定义字段（primary 已含的跳过）
+    $ordered = array('scene', 'status', 'note', 'created', 'cleared', 'cleared_by');
+    $in_primary = array('email', 'object_id', 'source', 'user_id', 'ip', 'id', 'meta');
+    $seen = array();
+    foreach ($ordered as $key) {
+        if (!array_key_exists($key, $data) || in_array($key, $in_primary, true)) {
+            continue;
+        }
+        $seen[$key] = true;
+        $out['fields'][] = $make($key, $data[$key]);
+    }
     foreach ($data as $key => $v) {
-        if (isset($seen[$key]) || !is_string($key)) {
+        if (isset($seen[$key]) || !is_string($key) || in_array($key, $in_primary, true)) {
             continue;
         }
-        if ('meta' === $key) {
-            if (null !== $meta_display) {
-                $push('meta', $meta_display, true);
-            }
-            continue;
-        }
-        $pre = false;
-        $val = $render_value($v, $pre);
-        $push($key, $val, $pre);
+        $seen[$key] = true;
+        $out['fields'][] = $make($key, $v);
     }
 
-    // meta 若在行里但未进入 data（防御），补在最后
-    if (null !== $meta_display && !isset($seen['meta'])) {
-        $push('meta', $meta_display, true);
-    }
-
-    return $items;
+    return $out;
 }
