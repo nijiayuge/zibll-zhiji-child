@@ -19,6 +19,11 @@ Zhiji_Registry::register_module('comment_fortune', array(
     'option'   => 'comment_fortune_enabled',
 ));
 
+/** 领取记录表（ClaimLog）中本功能使用的场景标识（用户维度） */
+if ( ! defined( 'ZHIJI_COMMENT_FORTUNE_CLAIM_SCENE' ) ) {
+	define( 'ZHIJI_COMMENT_FORTUNE_CLAIM_SCENE', 'comment_fortune' );
+}
+
 
 
 // 安全门
@@ -62,20 +67,45 @@ function zhiji_comment_fortune_on_comment( $comment_id, $comment_approved, $comm
 		return;
 	}
 
+	zhiji_comment_fortune_dispatch( $uid, $count );
+}
+
+/**
+ * 发放一个福袋：写弹窗标记 + 持久化「待领取」记录 + 奖励通知 + 弹幕播报
+ *
+ * 2026-09-27：从 on_comment 抽出为独立函数，便于直接调用与联调（不必真发评论）。
+ *
+ * @param int $uid   用户 id
+ * @param int $count 当日评论序位（第 N 条命中福袋位）
+ * @return bool 是否发放成功
+ */
+function zhiji_comment_fortune_dispatch( $uid, $count ) {
+	$uid   = (int) $uid;
+	$count = (int) $count;
+	if ( $uid <= 0 ) {
+		return false;
+	}
+
 	$reward = zhiji_comment_fortune_grant( $uid );
 	if ( ! is_array( $reward ) ) {
-		return;
+		return false;
 	}
+
+	$text = zhiji_comment_fortune_pick_text();
 
 	set_transient(
 		'zhiji_comment_fortune_' . $uid,
 		array(
 			'n'      => $count,
 			'reward' => $reward,
-			'text'   => zhiji_comment_fortune_pick_text(),
+			'text'   => $text,
 		),
 		2 * HOUR_IN_SECONDS
 	);
+
+	// 持久化「待领取」记录：transient 只活 2 小时，过期后用户就再也看不到中奖弹窗；
+	// 落库后运维台可查询、可补发（详见 core/ClaimLog.php 与 admin/scenes/CommentFortune.php）
+	zhiji_comment_fortune_log_claim( $uid, $count, $reward, $text );
 
 	// 统一奖励通知：站内系统通知 + 邮件（RewardNotify 模块，可后台开关）
 	if ( function_exists( 'zhiji_reward_notify' ) ) {
@@ -102,6 +132,86 @@ function zhiji_comment_fortune_on_comment( $comment_id, $comment_approved, $comm
 		}
 		zhiji_danmu_push( 'fortune', $uid, $danmu );
 	}
+
+	return true;
+}
+
+/**
+ * 消费用户的福袋标记（用户打开页面领到弹窗时调用）
+ *
+ * 2026-09-27：从 ajax_check 抽出，便于直测；同时把领取动作落到记录表（active → 已领取）。
+ *
+ * @param int $uid 用户 id
+ * @return array|null 命中时返回标记数据（n / reward / text），否则 null
+ */
+function zhiji_comment_fortune_consume( $uid ) {
+	$uid = (int) $uid;
+	if ( $uid <= 0 ) {
+		return null;
+	}
+	$flag = get_transient( 'zhiji_comment_fortune_' . $uid );
+	if ( ! is_array( $flag ) || empty( $flag['n'] ) ) {
+		return null;
+	}
+	delete_transient( 'zhiji_comment_fortune_' . $uid );
+
+	zhiji_comment_fortune_log_consumed( $uid );
+	return $flag;
+}
+
+/**
+ * 福袋记录落库（scene=comment_fortune，**用户维度**而非邮箱维度）
+ *
+ * @param int    $uid    用户 id
+ * @param int    $count  当日评论序位
+ * @param array  $reward 奖励数据
+ * @param string $text   文案
+ * @return int|false 记录 ID
+ */
+function zhiji_comment_fortune_log_claim( $uid, $count, $reward, $text ) {
+	if ( ! zhiji_get_option( 'comment_fortune_log_enabled', true ) || ! function_exists( 'zhiji_claim_log_add' ) ) {
+		return false;
+	}
+	return zhiji_claim_log_add( array(
+		'scene'     => ZHIJI_COMMENT_FORTUNE_CLAIM_SCENE,
+		'user_id'   => (int) $uid,
+		'object_id' => isset( $reward['code'] ) ? (string) $reward['code'] : '',
+		'source'    => isset( $reward['type'] ) ? (string) $reward['type'] : '',
+		'note'      => sprintf( '第 %d 位锦鲤', (int) $count ),
+		'meta'      => array(
+			'n'      => (int) $count,
+			'reward' => $reward,
+			'text'   => $text,
+		),
+	) );
+}
+
+/**
+ * 把该用户最新一条「待领取」记录标记为已领取（active → cleared，保留审计）
+ *
+ * @param int $uid 用户 id
+ * @return int 影响行数
+ */
+function zhiji_comment_fortune_log_consumed( $uid ) {
+	if ( ! function_exists( 'zhiji_claim_log_query' ) ) {
+		return 0;
+	}
+	$q = zhiji_claim_log_query( array(
+		'scene'    => ZHIJI_COMMENT_FORTUNE_CLAIM_SCENE,
+		'user_id'  => (int) $uid,
+		'status'   => 'active',
+		'per_page' => 1,
+	) );
+	if ( empty( $q['rows'] ) ) {
+		return 0;
+	}
+	$ret = zhiji_claim_log_clear( array(
+		'ids'  => array( (int) $q['rows'][0]->id ),
+		'mode' => 'reset',
+		'note' => '用户已领取弹窗',
+		'by'   => 0,
+	) );
+	return (int) $ret['affected'];
 }
 
 /**
@@ -178,9 +288,8 @@ function zhiji_comment_fortune_ajax_check() {
 		wp_send_json_success( array( 'fortune' => false ) );
 	}
 	$uid  = get_current_user_id();
-	$flag = get_transient( 'zhiji_comment_fortune_' . $uid );
+	$flag = zhiji_comment_fortune_consume( $uid );
 	if ( is_array( $flag ) && ! empty( $flag['n'] ) ) {
-		delete_transient( 'zhiji_comment_fortune_' . $uid );
 		wp_send_json_success(
 			array(
 				'fortune' => true,
@@ -449,6 +558,14 @@ function zhiji_comment_fortune_register_options() {
 					'placeholder' => '锦鲤护体，好运常伴～',
 					'sanitize'   => false,
 					'desc'       => __( '命中后随机展示一句。留空使用内置 5 句默认文案。', 'zhiji' ),
+				),
+				array(
+					'dependency' => array( 'comment_fortune_enabled', '==', '1' ),
+					'id'         => 'comment_fortune_log_enabled',
+					'type'       => 'switcher',
+					'title'      => __( '记录福袋领取日志', 'zhiji' ),
+					'default'    => true,
+					'desc'       => __( '把每次福袋发放持久化为「待领取」记录（用户领到弹窗后转为已领取）。后台「知集运维 → 评论福袋待领取」可查询与补发。关闭后不做持久化。', 'zhiji' ),
 				),
 				array(
 					'type'    => 'content',

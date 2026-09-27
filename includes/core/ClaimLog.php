@@ -464,6 +464,90 @@ function zhiji_claim_log_clear(array $args)
 }
 
 /**
+ * 恢复记录为「占用中 / 待处理」（运维"补发"用，是 clear() 的反向操作）
+ *
+ * 场景：某条记录被标记为已放行/已领取后，运维需要让它回到"待处理"状态
+ * （例如福袋弹窗被误消费、用户没看到，需要重新置为待领取）。
+ *
+ * 必须给出过滤条件：ids 或 scene+user_id，禁止无条件恢复。
+ *
+ * @param array $args ids(array) / scene / user_id / note / by(操作人 ID)
+ * @return array array(affected, error)
+ */
+function zhiji_claim_log_restore(array $args = array())
+{
+    global $wpdb;
+
+    $args = wp_parse_args($args, array(
+        'ids'     => array(),
+        'scene'   => '',
+        'user_id' => 0,
+        'note'    => '',
+        'by'      => 0,
+    ));
+
+    $ids    = array_filter(array_map('intval', (array) $args['ids']));
+    $where  = array();
+    $params = array();
+
+    if ($ids) {
+        $where[] = 'id IN (' . implode(',', $ids) . ')';
+    } elseif ('' !== (string) $args['scene'] && (int) $args['user_id'] > 0) {
+        $where[]  = 'scene = %s';
+        $params[] = sanitize_key($args['scene']);
+        $where[]  = 'user_id = %d';
+        $params[] = (int) $args['user_id'];
+    } else {
+        return array('affected' => 0, 'error' => 'missing_filter');
+    }
+
+    $table = zhiji_claim_log_table();
+    $sql   = "UPDATE {$table}
+              SET status = 'active', cleared = '1970-01-01 00:00:00', cleared_by = 0, note = %s
+              WHERE " . implode(' AND ', $where);
+
+    $query_params = array_merge(array(substr((string) $args['note'], 0, 255)), $params);
+    $affected     = $wpdb->query($wpdb->prepare($sql, $query_params));
+
+    do_action('zhiji_claim_log_restored', array(
+        'ids'      => $ids,
+        'scene'    => sanitize_key($args['scene']),
+        'user_id'  => (int) $args['user_id'],
+        'affected' => (int) $affected,
+        'by'       => (int) $args['by'],
+    ));
+
+    return array('affected' => (int) $affected, 'error' => '');
+}
+
+/**
+ * 解析记录的 meta 字段（统一入口）
+ *
+ * ⚠️ 本表的 meta 约定用 **JSON** 存储（写入时 wp_json_encode）。
+ *    早期/外部写入可能是 PHP 序列化字符串，这里做双兼容：
+ *    先按 JSON 解，再回退 maybe_unserialize。
+ *    消费方**不要**直接对 $row->meta 调 maybe_unserialize() ——
+ *    JSON 字符串不是序列化数据，会解析失败（曾因此导致奖励列为空、补发被跳过）。
+ *
+ * @param object|string $row 记录行对象，或直接传 meta 字符串
+ * @return array 解析后的数组（失败返回空数组）
+ */
+function zhiji_claim_log_meta($row)
+{
+    $raw = is_object($row) ? (isset($row->meta) ? $row->meta : '') : (string) $row;
+    $raw = (string) $raw;
+    if ('' === $raw) {
+        return array();
+    }
+    $json = json_decode($raw, true);
+    if (is_array($json)) {
+        return $json;
+    }
+    $un = maybe_unserialize($raw);
+    return is_array($un) ? $un : array();
+}
+
+/**
  * 按 ID 取单条记录
  *
  * @param int $id

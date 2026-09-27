@@ -81,6 +81,14 @@ Zhiji_Registry::register_module('ops_console', array(
             'desc'       => '在运维页面中启用「邮箱领取限制」场景（退出挽留弹窗领券记录的管理入口）。',
             'dependency' => array('ops_console_enabled', '==', '1'),
         ),
+        array(
+            'id'         => 'ops_scene_fortune_enabled',
+            'type'       => 'switcher',
+            'title'      => '场景：评论福袋待领取',
+            'default'    => true,
+            'desc'       => '在运维页面中启用「评论福袋待领取」场景（用户维度：查询发放记录、补发中奖弹窗）。',
+            'dependency' => array('ops_console_enabled', '==', '1'),
+        ),
     ), 15);
 
 /* ============================================================
