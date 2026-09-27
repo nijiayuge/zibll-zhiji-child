@@ -730,8 +730,15 @@ function zhiji_ops_build_detail($row, $scene_id = '')
         return ('' === $s) ? '—' : $s;
     };
 
-    // 单字段构造（时间归一 / 来源汉化 / 操作人解析）
-    $make = function ($key, $v) use ($labels, $render_value) {
+    // 单字段构造（时间归一 / 来源汉化 / 操作人解析 / 场景标题化）
+    $scene_title = '';
+    if ($scene_id && function_exists('zhiji_ops_scene')) {
+        $sc = zhiji_ops_scene($scene_id);
+        if ($sc && !empty($sc['title'])) {
+            $scene_title = (string) $sc['title'];
+        }
+    }
+    $make = function ($key, $v) use ($labels, $render_value, $scene_title) {
         $item = array('k' => isset($labels[$key]) ? $labels[$key] : $key, 'v' => '', 'pre' => false);
         switch ($key) {
             case 'created':
@@ -745,6 +752,10 @@ function zhiji_ops_build_detail($row, $scene_id = '')
                 $item['v'] = function_exists('zhiji_claim_log_source_label')
                     ? zhiji_claim_log_source_label($v)
                     : (string) $v;
+                break;
+            case 'scene':
+                // 场景显示注册表的中文标题（2026-09-28 用户反馈：不外泄英文码）
+                $item['v'] = ('' !== $scene_title) ? $scene_title : $render_value($v, $item['pre']);
                 break;
             case 'cleared_by':
                 $uid = (int) $v;
@@ -769,22 +780,30 @@ function zhiji_ops_build_detail($row, $scene_id = '')
     }
 
     // 明细区：固定顺序 + 场景自定义字段（primary 已含的跳过）
-    $ordered = array('scene', 'status', 'note', 'created', 'cleared', 'cleared_by');
-    $in_primary = array('email', 'object_id', 'source', 'user_id', 'ip', 'id', 'meta');
+    // 2026-09-28 用户反馈：①status 不进明细（头部徽标已表达，避免重复出现英文原值）
+    //                    ②值为 '—' 的空字段直接不显示（详情里只保留有信息量的字段）
+    $ordered = array('scene', 'note', 'created', 'cleared', 'cleared_by');
+    $in_primary = array('email', 'object_id', 'source', 'user_id', 'ip', 'id', 'meta', 'status');
     $seen = array();
     foreach ($ordered as $key) {
         if (!array_key_exists($key, $data) || in_array($key, $in_primary, true)) {
             continue;
         }
         $seen[$key] = true;
-        $out['fields'][] = $make($key, $data[$key]);
+        $item = $make($key, $data[$key]);
+        if ('—' !== $item['v']) {
+            $out['fields'][] = $item;
+        }
     }
     foreach ($data as $key => $v) {
         if (isset($seen[$key]) || !is_string($key) || in_array($key, $in_primary, true)) {
             continue;
         }
         $seen[$key] = true;
-        $out['fields'][] = $make($key, $v);
+        $item = $make($key, $v);
+        if ('—' !== $item['v']) {
+            $out['fields'][] = $item;
+        }
     }
 
     return $out;
