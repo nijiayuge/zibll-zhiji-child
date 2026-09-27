@@ -104,7 +104,8 @@ function zhiji_reward_notify_desc_text( $reward ) {
 		case 'coupon':
 			return sprintf( __( '优惠码：%s（%s）', 'zhiji' ), isset( $reward['code'] ) ? $reward['code'] : $val, isset( $reward['desc'] ) ? $reward['desc'] : '' );
 		case 'free':
-			return sprintf( __( '免单券：%s（本单全额免费）', 'zhiji' ), isset( $reward['code'] ) ? $reward['code'] : $val );
+			// 文案口语化（2026-09-27）：原「免单券：%s（本单全额免费）」偏书面
+			return sprintf( __( '免单券 %s（下单不用付钱）', 'zhiji' ), isset( $reward['code'] ) ? $reward['code'] : $val );
 		case 'experience':
 			if ( '' === $val || null === $val ) {
 				return __( '经验奖励', 'zhiji' );
@@ -289,7 +290,7 @@ function zhiji_reward_notify_mail_template( $site, $name, $reward, $source = '' 
 			$right_label   = '优惠码 COUPON';
 			$right_content = '<div style="font-size:' . $code_fs . ';font-weight:800;color:' . $mail_brand . ';letter-spacing:' . $code_ls . ';word-break:break-all;font-family:Menlo,Consolas,Monaco,monospace;">' . esc_html( $code ) . '</div>';
 			$right_sub     = __( '专属折扣', 'zhiji' );
-			$rule_line    = __( '* 该优惠码仅可使用一次，结算时输入即可抵扣，逾期自动失效。', 'zhiji' );
+			$rule_line    = __( '* 一张券只能用一次；下单时粘贴到「优惠码」框里就能抵扣，过期作废。', 'zhiji' );
 			$btn_text     = __( '立即使用优惠码 &#8594;', 'zhiji' );
 			$subline      = $src_text
 				? sprintf( __( '感谢您对本站的支持，这是来自「%s」的专属奖励，请在有效期内使用：', 'zhiji' ), $src_text )

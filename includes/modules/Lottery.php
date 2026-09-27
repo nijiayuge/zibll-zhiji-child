@@ -1526,7 +1526,7 @@ function zhiji_lottery_grant_prize( $uid, $prize ) {
 					if ( function_exists( 'zhiji_coupon_give_notify_user' ) ) {
 						zhiji_coupon_give_notify_user( $uid, $code, $discount_text, $expire, 'lottery' );
 					}
-					$msg                         = '🎉 恭喜获得 ' . $name . '！免单券 ' . $code . ' 已发放至「个人中心→我的优惠码」，下单可全额抵扣。';
+					$msg                         = '🎉 抽到免单券啦！券码 ' . $code . ' 已放进「个人中心 → 我的优惠码」，下单时粘贴就能免单。';
 					$extra['coupon_code']          = $code;
 					$extra['coupon_discount_text'] = $discount_text;
 					$extra['coupon_expire']        = $expire;

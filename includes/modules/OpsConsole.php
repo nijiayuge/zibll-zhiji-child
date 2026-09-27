@@ -97,7 +97,10 @@ Zhiji_Registry::register_module('ops_console', array(
  *   · admin/scenes/*.php    各运维场景声明（新增场景只需新增文件）
  * ============================================================ */
 if (is_admin() && zhiji_ops_enabled()) {
-    require_once ZHIJI_INC . 'admin/OpsPage.php';
+    // 运维台按职责拆分（2026-09-27）：页面组装 / 渲染元件 / 操作入口 / JSON 接口
+    foreach (array('OpsPage', 'OpsRender', 'OpsActions', 'OpsApi') as $zhiji_ops_file) {
+        require_once ZHIJI_INC . 'admin/' . $zhiji_ops_file . '.php';
+    }
 
     foreach ((array) glob(ZHIJI_INC . 'admin/scenes/*.php') as $zhiji_ops_scene_file) {
         require_once $zhiji_ops_scene_file;

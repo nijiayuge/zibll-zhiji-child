@@ -237,6 +237,11 @@ function zhiji_ops_action_label($action)
         'delete'       => '删除记录',
         'purge_coupon' => '作废关联优惠码',
         'clear_all'    => '批量清除',
+        'release_email' => '按邮箱放行',
+        'purge_email'  => '按邮箱清理记录',
+        'fortune_resend' => '补发福袋弹窗',
+        'fortune_consumed' => '标记福袋已领取',
+        'export'       => '导出 CSV',
     );
     $action = sanitize_key($action);
     return isset($map[$action]) ? $map[$action] : $action;

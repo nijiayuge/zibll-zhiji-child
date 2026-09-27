@@ -369,24 +369,20 @@ function zhiji_comment_fortune_footer() {
 				rwBox.innerHTML = '获得 <b>' + Number(rw.val) + ' 天' + (rw.name || '会员权益') + '</b><br><span style="font-size:12px;color:#9a9aa8">' + (rw.desc || '') + '</span>';
 			} else if (rw.type === 'coupon' || rw.type === 'free') {
 				var isFree = rw.type === 'free';
-				rwBox.innerHTML = '获得 <b>' + (rw.name || '优惠码') + '</b><span style="font-size:12px;color:#9a9aa8">（' + (rw.desc || '') + '，点击复制）</span>';
+				// 文案口语化（2026-09-27）：说人话、给下一步动作，少用书面语
+				rwBox.innerHTML = (isFree ? '运气爆棚！抽到 <b>' : '抽到 <b>') + (rw.name || '优惠码') + '</b> 啦'
+					+ '<span style="font-size:12px;color:#9a9aa8">（点一下券码就能复制）</span>';
 				var code = document.createElement('div');
 				code.className = 'zhiji-cf-code';
 				code.textContent = rw.code || rw.val;
-				code.setAttribute('title', '点击复制');
-				code.addEventListener('click', function(){
-					var txt = code.textContent;
-					if (navigator.clipboard && navigator.clipboard.writeText) {
-						navigator.clipboard.writeText(txt).then(function(){ code.style.background = '#e4ffe9'; setTimeout(function(){ code.style.background = ''; }, 900); }, function(){});
-					} else {
-						var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select();
-						try { document.execCommand('copy'); } catch (e) {} document.body.removeChild(ta);
-					}
-				});
+				// 复制统一走 core/CopyToast 模块（点击即复制 + 明确提示）
+				code.setAttribute('data-zhiji-copy', String(rw.code || rw.val));
+				code.setAttribute('data-zhiji-copy-msg', isFree ? '免单券已复制，去结算时粘贴即可免单' : '券码已复制，结算时粘贴即可抵扣');
+				code.setAttribute('title', '点一下即可复制');
 				rwBox.appendChild(code);
 				var tip = document.createElement('div');
 				tip.className = 'zhiji-cf-tip';
-				tip.textContent = isFree ? '免单券：结算时输入即可本单全额免费' : '一次性优惠码，结算时输入即可抵扣';
+				tip.textContent = isFree ? '下单结算时把券码粘进去，这单就不用付钱啦' : '下单结算时粘贴券码，直接减钱';
 				rwBox.appendChild(tip);
 			} else {
 				rwBox.innerHTML = '获得 <b>' + (rw.val || '') + ' ' + (rw.name || '奖励') + '</b>';

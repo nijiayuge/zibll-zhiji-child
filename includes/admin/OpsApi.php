@@ -1,0 +1,130 @@
+<?php
+/**
+ * @module  OpsApi
+ * @desc    Ops console JSON endpoints registered into the unified AJAX gateway (query / clear).
+ * @since   2.0.0
+ */
+
+defined('ABSPATH') || exit;
+
+/* ============================================================
+ * 七、HTTP 接口（管理端 JSON：查询 / 清除）
+ *
+ * 注册进统一网关（nonce 'zhiji_ops'，仅登录用户），供运维页面 AJAX
+ * 或外部工具/脚本复用；权限统一要求 manage_options。
+ * ============================================================ */
+
+zhiji_api_register('zhiji_ops_query', 'zhiji_ops_api_query', false, 'zhiji_ops');
+zhiji_api_register('zhiji_ops_clear', 'zhiji_ops_api_clear', false, 'zhiji_ops');
+
+/**
+ * 查询接口：按场景与条件查询记录
+ *
+ * 入参：scene / email / status / source / search / date_from / date_to / page / per_page
+ *
+ * @param array $request
+ * @return void
+ */
+function zhiji_ops_api_query($request = array())
+{
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(array('msg' => __('权限不足', 'zhiji')), 403);
+    }
+    if (!zhiji_ops_enabled()) {
+        wp_send_json_error(array('msg' => __('运维页面未启用', 'zhiji')), 403);
+    }
+
+    $scene_id = zhiji_api_enum($request, 'scene', array_keys(zhiji_ops_scenes()), '');
+    if ('' === $scene_id) {
+        wp_send_json_error(array('msg' => __('缺少或无效的 scene 参数', 'zhiji')), 400);
+    }
+
+    $result = zhiji_claim_log_query(array(
+        'scene'     => $scene_id,
+        'email'     => zhiji_api_str($request, 'email', 100),
+        'status'    => zhiji_api_enum($request, 'status', array('', 'active', 'cleared'), ''),
+        'source'    => zhiji_api_str($request, 'source', 40),
+        'search'    => zhiji_api_str($request, 'search', 100),
+        'date_from' => zhiji_api_str($request, 'date_from', 10),
+        'date_to'   => zhiji_api_str($request, 'date_to', 10),
+        'page'      => max(1, zhiji_api_digits($request, 'page', 1)),
+        'per_page'  => min(200, max(1, zhiji_api_digits($request, 'per_page', 20))),
+    ));
+
+    wp_send_json_success(array(
+        'scene' => $scene_id,
+        'stats' => zhiji_claim_log_stats($scene_id),
+        'rows'  => $result['rows'],
+        'total' => $result['total'],
+        'pages' => $result['pages'],
+        'page'  => $result['page'],
+    ));
+}
+
+/**
+ * 清除接口：重置（恢复可领取）或删除记录
+ *
+ * 入参：scene / mode(reset|delete) / ids(逗号分隔) 或 email
+ *
+ * @param array $request
+ * @return void
+ */
+function zhiji_ops_api_clear($request = array())
+{
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(array('msg' => __('权限不足', 'zhiji')), 403);
+    }
+
+    $scene_id = zhiji_api_enum($request, 'scene', array_keys(zhiji_ops_scenes()), '');
+    if ('' === $scene_id) {
+        wp_send_json_error(array('msg' => __('缺少或无效的 scene 参数', 'zhiji')), 400);
+    }
+    if (!zhiji_ops_can_clear($scene_id)) {
+        wp_send_json_error(array('msg' => __('「运维清除」已被关闭', 'zhiji')), 403);
+    }
+
+    $mode = zhiji_api_enum($request, 'mode', array('reset', 'delete'), 'reset');
+    $ids  = array();
+    if (!empty($request['ids'])) {
+        foreach (explode(',', (string) $request['ids']) as $piece) {
+            if (preg_match('/^\d+$/', trim($piece))) {
+                $ids[] = (int) trim($piece);
+            }
+        }
+    }
+    $email = zhiji_api_str($request, 'email', 100);
+    if (!$ids && '' === $email) {
+        wp_send_json_error(array('msg' => __('必须提供 ids 或 email，禁止无条件清除', 'zhiji')), 400);
+    }
+
+    $ret = zhiji_claim_log_clear(array(
+        'ids'   => $ids,
+        'scene' => $scene_id,
+        'email' => $email,
+        'mode'  => $mode,
+        'note'  => __('通过 HTTP 接口清除', 'zhiji'),
+        'by'    => get_current_user_id(),
+    ));
+
+    if (!empty($ret['error'])) {
+        wp_send_json_error(array('msg' => $ret['error']), 400);
+    }
+
+    zhiji_ops_add_activity(
+        'reset' === $mode ? 'reset' : 'delete',
+        sprintf(
+            /* translators: 1: 记录数 2: 场景 */
+            __('HTTP 接口清除 %1$d 条记录（%2$s）', 'zhiji'),
+            (int) $ret['affected'],
+            $email ? $email : implode(',', $ids)
+        ),
+        $scene_id
+    );
+
+    wp_send_json_success(array(
+        'scene'    => $scene_id,
+        'mode'     => $ret['mode'],
+        'affected' => $ret['affected'],
+        'stats'    => zhiji_claim_log_stats($scene_id),
+    ));
+}

@@ -109,7 +109,7 @@ var span = document.createElement('span');
 span.className = 'zhiji-cp';
 span.textContent = code;
 span.setAttribute('data-code', code);
-span.title = '点击复制优惠码';
+span.title = '点一下即可复制';
 out.appendChild(span);
 last = m.index + m[0].length;
 }
@@ -120,31 +120,9 @@ parent.replaceChild(out, node);
 });
 }
 var tip = null;
-function showTip(x, y, msg) {
-if (!tip) { tip = document.createElement('div'); tip.className = 'zhiji-cp-tip'; document.body.appendChild(tip); }
-tip.textContent = msg;
-tip.style.left = (x + 10) + 'px'; tip.style.top = (y - 30) + 'px';
-tip.classList.add('show');
-clearTimeout(tip._t);
-tip._t = setTimeout(function () { tip.classList.remove('show'); }, 1400);
-}
-document.addEventListener('click', function (e) {
-var cp = e.target.closest ? e.target.closest('.zhiji-cp') : null;
-if (!cp) return;
-var code = cp.getAttribute('data-code') || cp.textContent;
-var ok = function () { cp.classList.add('copied'); showTip(e.clientX, e.clientY, '✅ 优惠码已复制'); setTimeout(function () { cp.classList.remove('copied'); }, 1500); };
-if (navigator.clipboard && navigator.clipboard.writeText) {
-navigator.clipboard.writeText(code).then(ok, function () {
-if (document.execCommand('copy')) { ok(); } else { showTip(e.clientX, e.clientY, '复制失败，请手动复制'); }
-});
-} else {
-var ta = document.createElement('textarea');
-ta.value = code; ta.style.position = 'fixed'; ta.style.opacity = '0';
-document.body.appendChild(ta); ta.select();
-try { document.execCommand('copy'); ok(); } catch (err) { showTip(e.clientX, e.clientY, '复制失败，请手动复制'); }
-document.body.removeChild(ta);
-}
-});
+/* 复制提醒已统一到 core/CopyToast 模块（2026-09-27）：
+   .zhiji-cp[data-code] 由该模块的事件委托自动接管 —— 点击即复制并弹出提示，
+   因此这里不再自行绑定 click / 不再自绘气泡（避免双份提示）。 */
   if (!start()) {
       // 容器尚未出现（用户中心 AJAX 切 tab / 消息异步加载）→ 轮询等待，最多 20 秒
       var wt = setInterval(function () { if (start()) { clearInterval(wt); } }, 500);
@@ -178,6 +156,6 @@ add_action('wp_enqueue_scripts', 'zhiji_coupon_highlight_assets', 99);
             'type'    => 'switcher',
             'title'   => '启用优惠码高亮复制',
             'default' => true,
-            'desc'    => '消息中心通知正文中的优惠码自动高亮为可点击复制的标签。',
+            'desc'    => '消息中心通知正文中的优惠码自动高亮为可一键复制的标签（点击后弹出复制结果提示）。',
         ),
     ), 20);

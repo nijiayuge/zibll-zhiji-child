@@ -78,7 +78,8 @@ zhiji_footer_add( 'exit-intent', function () {
                     <div class="zhiji-exit-coupon-label"><?php echo esc_html($coupon_desc); ?></div>
                     <div class="zhiji-exit-coupon-code">
                         <span id="zhijiExitCouponCode"><?php echo esc_html($coupon); ?></span>
-                        <button type="button" class="zhiji-exit-coupon-copy" id="zhijiExitCopyBtn">复制</button>
+                        <button type="button" class="zhiji-exit-coupon-copy" id="zhijiExitCopyBtn"
+                            <?php echo zhiji_copy_attrs_by_selector('#zhijiExitCouponCode', array('msg' => __('优惠码已复制，下单立减', 'zhiji'))); ?>>复制</button>
                     </div>
                 </div>
                 <?php endif; ?>
@@ -120,18 +121,7 @@ zhiji_footer_add( 'exit-intent', function () {
         document.getElementById('zhijiExitClose').onclick=hide;
         mask.addEventListener('click',function(e){ if(e.target===mask) hide(); });
         document.addEventListener('keydown',function(e){ if(e.key==='Escape') hide(); });
-        var copyBtn=document.getElementById('zhijiExitCopyBtn');
-        if(copyBtn){
-            copyBtn.onclick=function(){
-                var code=document.getElementById('zhijiExitCouponCode').textContent;
-                if(navigator.clipboard){
-                    navigator.clipboard.writeText(code).then(function(){ copyBtn.textContent='已复制'; setTimeout(function(){copyBtn.textContent='复制';},1500); });
-                }else{
-                    var ta=document.createElement('textarea'); ta.value=code; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-                    copyBtn.textContent='已复制'; setTimeout(function(){copyBtn.textContent='复制';},1500);
-                }
-            };
-        }
+        // 优惠码复制：统一走 core/CopyToast 模块（按钮上已声明 data-zhiji-copy-sel）
     })();
     </script>
     <?php

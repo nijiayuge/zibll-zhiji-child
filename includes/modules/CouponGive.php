@@ -939,7 +939,7 @@ function zhiji_coupon_give_send_mail( $email, $code, $discount_text = '', $type 
 			'ticket_right_label'   => __( '优惠码 COUPON', 'zhiji' ),
 			'ticket_right_content' => '<div style="font-size:22px;font-weight:800;color:' . zhiji_token_color( 'brand' ) . ';letter-spacing:2px;line-height:1.4;word-break:break-all;">' . esc_html( $code ) . '</div>',
 			'coupon_expiry'        => $expire_text ? sprintf( __( '优惠码有效期至 %s，逾期自动失效', 'zhiji' ), $expire_text ) : __( '本优惠码长期有效', 'zhiji' ),
-			'rule_line'            => __( '* 该优惠码仅可使用一次，结算时输入即可抵扣，逾期自动失效。', 'zhiji' ),
+			'rule_line'            => __( '* 一张券只能用一次；下单时粘贴到「优惠码」框里就能抵扣，过期作废。', 'zhiji' ),
 			'btn_text'             => __( '立即使用优惠码 &#8594;', 'zhiji' ),
 			'btn_url'              => home_url( '/' ),
 		) );
@@ -1196,7 +1196,8 @@ function zhiji_coupon_give_exit_block() {
 			<div class="zhiji-exit-give-share-tip"><?php echo esc_html__( '分享给好友，你和好友各得一张优惠券！', 'zhiji' ); ?></div>
 			<div class="zhiji-exit-give-share-row">
 				<input type="text" id="zhijiExitGiveShareUrl" readonly>
-				<button type="button" id="zhijiExitGiveShareBtn"><?php echo esc_html__( '复制链接', 'zhiji' ); ?></button>
+				<button type="button" id="zhijiExitGiveShareBtn"
+					<?php echo zhiji_copy_attrs_by_selector( '#zhijiExitGiveShareUrl', array( 'msg' => __( '邀请链接已复制，快分享给好友', 'zhiji' ) ) ); ?>><?php echo esc_html__( '复制链接', 'zhiji' ); ?></button>
 			</div>
 		</div>
 		<?php endif; ?>
@@ -1279,39 +1280,8 @@ function zhiji_coupon_give_exit_block() {
 		btn.addEventListener('click', submit);
 		input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
 
-		// 复制分享链接
-		// 优先使用现代 Clipboard API（navigator.clipboard.writeText），
-		// 仅在不可用（非安全上下文 http / 老浏览器）时降级 execCommand，
-		// 并给出明确的成功/失败反馈，避免静默失败。
-		var shareBtn = document.getElementById('zhijiExitGiveShareBtn');
-		if (shareBtn) {
-			shareBtn.addEventListener('click', function () {
-				var urlInput = document.getElementById('zhijiExitGiveShareUrl');
-				var url = urlInput.value || '';
-				function showOk() {
-					shareBtn.textContent = '已复制';
-					setTimeout(function () { shareBtn.textContent = '复制链接'; }, 1500);
-				};
-				function showFail() {
-					shareBtn.textContent = '复制失败，请手动选择复制';
-					setTimeout(function () { shareBtn.textContent = '复制链接'; }, 2200);
-				};
-				function fallbackCopy() {
-					urlInput.focus();
-					urlInput.select();
-					urlInput.setSelectionRange(0, urlInput.value.length);
-					var ok = false;
-					try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
-					ok ? showOk() : showFail();
-				};
-				// Clipboard API 优先（直接尝试，失败自动降级）；兼容内网 http 环境
-				if (navigator.clipboard && navigator.clipboard.writeText) {
-					navigator.clipboard.writeText(url).then(showOk).catch(fallbackCopy);
-				} else {
-					fallbackCopy();
-				}
-			});
-		}
+		// 复制分享链接：已统一到 core/CopyToast 模块（按钮上声明 data-zhiji-copy-sel）
+		// —— 该模块自带 Clipboard API + execCommand 降级 + 明确的失败提示，模块内无需重复实现
 	})();
 	</script>
 	<style>
@@ -1541,7 +1511,9 @@ function zhiji_coupon_user_tab_content( $con, $opt ) {
 		$html .= '<tr>';
 		// 优惠码高亮样式与 CouponHighlight 的 .zhiji-cp 统一（2026-09-23）；
 		// 用内联样式保证任何情况下都可见（不依赖其它模块是否输出 CSS）
-		$html .= '<td><span class="zhiji-copy-code" data-code="' . esc_attr( $row->password ) . '" title="' . esc_attr__( '点击复制', 'zhiji' ) . '" style="display:inline-block;background:#fff6ec;border:1px dashed #ffb366;color:#e8590c;font-weight:600;border-radius:6px;padding:0 7px;letter-spacing:.5px;cursor:pointer;user-select:all;transition:all .15s ease">' . esc_html( $row->password ) . '</span></td>';
+		$html .= '<td><span class="zhiji-copy-code" data-code="' . esc_attr( $row->password ) . '" '
+			. zhiji_copy_attrs( $row->password, array( 'msg' => __( '券码已复制，下单粘贴即可抵扣', 'zhiji' ) ) )
+			. ' title="' . esc_attr__( '点一下即可复制', 'zhiji' ) . '" style="display:inline-block;background:#fff6ec;border:1px dashed #ffb366;color:#e8590c;font-weight:600;border-radius:6px;padding:0 7px;letter-spacing:.5px;cursor:pointer;user-select:all;transition:all .15s ease">' . esc_html( $row->password ) . '</span></td>';
 		$html .= '<td>' . esc_html( $discount_text ) . '</td>';
 		$html .= '<td>' . esc_html( $source_text ) . '</td>';
 		$html .= '<td>' . esc_html( $status ) . '</td>';
@@ -1594,60 +1566,9 @@ function zhiji_coupon_copy_script() {
 	html body .zhiji-coupon-table>tbody>tr:hover>th{background-color:transparent!important}
 	html body.dark-theme .zhiji-coupon-table>tbody>tr:hover>td,html.dark-theme body .zhiji-coupon-table>tbody>tr:hover>td{background-color:transparent!important}
 	</style>
-	<script>
-	(function(){
-		// 角标浮层提示（2026-09-23 新增：与 CouponHighlight 的 .zhiji-cp-tip 体验统一；
-		// 用内联样式实现，不依赖其它模块是否输出 CSS）
-		var tip = null;
-		function showTip(x, y, msg) {
-			if (!tip) {
-				tip = document.createElement('div');
-				tip.style.cssText = 'position:fixed;z-index:99999;background:#333;color:#fff;font-size:12px;padding:5px 12px;border-radius:6px;pointer-events:none;opacity:0;transition:opacity .2s;box-shadow:0 4px 12px rgba(0,0,0,.2)';
-				document.body.appendChild(tip);
-			}
-			tip.textContent = msg;
-			tip.style.left = (x + 10) + 'px';
-			tip.style.top = (y - 30) + 'px';
-			tip.style.opacity = '1';
-			clearTimeout(tip._t);
-			tip._t = setTimeout(function () { tip.style.opacity = '0'; }, 1400);
-		}
-		document.addEventListener('click', function(e){
-			var t = e.target && e.target.closest ? e.target.closest('.zhiji-copy-code') : null;
-			if (!t) return;
-			var code = t.getAttribute('data-code') || t.textContent.trim();
-			var ori = t.textContent;
-			function ok() {
-				t.textContent = '已复制';
-				showTip(e.clientX, e.clientY, '✅ 优惠码已复制：' + code);
-				setTimeout(function(){ t.textContent = ori; }, 1200);
-			}
-			function fail() {
-				t.textContent = '复制失败，请长按/双击手动选择';
-				showTip(e.clientX, e.clientY, '复制失败，请长按/双击手动选择');
-				setTimeout(function(){ t.textContent = ori; }, 2200);
-			}
-			function fallback() {
-				var ta = document.createElement('textarea');
-				ta.value = code;
-				ta.style.position = 'fixed';
-				ta.style.opacity = '0';
-				document.body.appendChild(ta);
-				ta.select();
-				var okc = false;
-				try { okc = document.execCommand('copy'); } catch(err) {}
-				document.body.removeChild(ta);
-				okc ? ok() : fail();
-			}
-			if (navigator.clipboard && navigator.clipboard.writeText) {
-				navigator.clipboard.writeText(code).then(ok, fallback);
-			} else {
-				fallback();
-			}
-		});
-	})();
-	</script>
 	<?php
+	// 复制提醒已统一到 core/CopyToast 模块（2026-09-27）：.zhiji-copy-code[data-code] 由该模块
+	// 的事件委托自动接管（点击即复制 + 明确提示），此处不再自绘气泡，避免双份提示。
 }
 
 /**

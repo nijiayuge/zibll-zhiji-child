@@ -123,7 +123,11 @@ function zhiji_claim_log_add(array $args)
     }
 
     $email = sanitize_email($args['email']);
-    $data  = array(
+    // ⚠️ 必须**显式传 format**（2026-09-27 踩坑）：
+    //    WordPress 的 wpdb::$field_types 里注册了 'object_id' => '%d'（源自核心表 wp_term_relationships），
+    //    不传 format 时 wpdb 会按 %d 处理，把券码（如 'iauZY6EXN0bQ' / '=1+1'）强转成整数 → 存成 0！
+    //    （历史数据里"关联优惠码"大量为 0/空即由此造成，已由 zhiji_claim_log_repair_object_id() 修复）
+    $data = array(
         'scene'     => $scene,
         'email'     => $email,
         'email_key' => zhiji_claim_log_email_key($email),
@@ -136,10 +140,93 @@ function zhiji_claim_log_add(array $args)
         'created'   => current_time('mysql'),
         'meta'      => wp_json_encode($args['meta'], JSON_UNESCAPED_UNICODE),
     );
+    $formats = array('%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s');
 
-    $ok = $wpdb->insert(zhiji_claim_log_table(), $data);
+    $ok = $wpdb->insert(zhiji_claim_log_table(), $data, $formats);
     return $ok ? (int) $wpdb->insert_id : false;
 }
+
+/**
+ * 一次性修复：把因 wpdb field_types 误判而丢失的 object_id（券码）补回来
+ *
+ * 修复来源（两条可靠路径）：
+ *   1) 福袋场景：券码就在 meta.reward.code 里 → 直接回填
+ *   2) 领券场景：按邮箱到卡密表找"发放时间最接近（≤1 小时）"的那张券 → 回填
+ *
+ * @return int 修复条数
+ */
+function zhiji_claim_log_repair_object_id()
+{
+    global $wpdb;
+
+    $table = zhiji_claim_log_table();
+    $fixed = 0;
+
+    // 1) 福袋场景：meta.reward.code
+    $rows = $wpdb->get_results($wpdb->prepare(
+        "SELECT id, meta FROM {$table} WHERE scene = %s AND ( object_id = '' OR object_id = '0' ) LIMIT 500",
+        ZHIJI_COMMENT_FORTUNE_CLAIM_SCENE
+    ));
+    foreach ((array) $rows as $r) {
+        $meta = zhiji_claim_log_meta($r->meta);
+        $code = isset($meta['reward']['code']) ? (string) $meta['reward']['code'] : '';
+        if ('' !== $code) {
+            $wpdb->query($wpdb->prepare("UPDATE {$table} SET object_id = %s WHERE id = %d", $code, (int) $r->id));
+            $fixed++;
+        }
+    }
+
+    // 2) 领券场景：按邮箱匹配卡密表里时间最接近的券
+    $rows = $wpdb->get_results(
+        "SELECT id, email, created FROM {$table} WHERE scene = 'coupon_give' AND ( object_id = '' OR object_id = '0' ) LIMIT 500"
+    );
+    if ($rows && class_exists('ZibCardPass')) {
+        $by_email = array();
+        foreach ((array) ZibCardPass::get(array('type' => 'coupon'), 'id', 0, 'all') as $c) {
+            $m = maybe_unserialize($c->meta);
+            if (is_array($m) && !empty($m['email'])) {
+                $by_email[strtolower($m['email'])][] = array(
+                    'code' => (string) $c->password,
+                    'time' => (string) $c->create_time,
+                );
+            }
+        }
+        foreach ((array) $rows as $r) {
+            $key = strtolower((string) $r->email);
+            if (empty($by_email[$key])) {
+                continue;
+            }
+            $best      = null;
+            $best_delta = null;
+            foreach ($by_email[$key] as $c) {
+                $delta = abs(strtotime($c['time']) - strtotime($r->created));
+                if (null === $best_delta || $delta < $best_delta) {
+                    $best_delta = $delta;
+                    $best       = $c;
+                }
+            }
+            // 1 小时内视为同一次发放，避免把历史券错配到新记录
+            if ($best && null !== $best_delta && $best_delta <= 3600) {
+                $wpdb->query($wpdb->prepare("UPDATE {$table} SET object_id = %s WHERE id = %d", $best['code'], (int) $r->id));
+                $fixed++;
+            }
+        }
+    }
+
+    update_option('zhiji_claim_object_id_fixed', '1.0', false);
+    return $fixed;
+}
+
+// 幂等执行：仅在版本不符时跑一次
+add_action('wp_loaded', function () {
+    if (get_option('zhiji_claim_object_id_fixed') === '1.0') {
+        return;
+    }
+    $n = zhiji_claim_log_repair_object_id();
+    if ($n > 0) {
+        zhiji_log('claim log object_id repaired', array('fixed' => $n));
+    }
+});
 
 /**
  * 构造查询条件（内部使用）

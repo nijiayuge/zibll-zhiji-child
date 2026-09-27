@@ -488,7 +488,7 @@ function zhiji_reward_center_grant_one( $uid, $type, $source = '', $overrides = 
 				);
 				$code = zhiji_coupon_give_create_one( $meta, 0 );
 				if ( $code ) {
-					return array( 'type' => 'free', 'name' => __( '免单券', 'zhiji' ), 'val' => $code, 'desc' => __( '本单全额免费', 'zhiji' ), 'code' => $code );
+					return array( 'type' => 'free', 'name' => __( '免单券', 'zhiji' ), 'val' => $code, 'desc' => __( '下单直接免单', 'zhiji' ), 'code' => $code );
 				}
 			}
 			// 免单券生成失败，保底发积分
