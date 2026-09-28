@@ -32,7 +32,8 @@ if (!defined('ZHIJI_OPS_ACTIVITY_MAX')) {
  *   title         string    场景名（菜单/卡片显示）
  *   desc          string    一句话说明（页面顶部）
  *   priority      int       排序（小在前）
- *   cap           string    所需权限，默认 manage_options
+ *   cap           string    **查看**场景页所需权限，默认 zhiji_ops_view（管理员经能力桥隐式拥有；
+ *                           2026-09-29 RBAC：变更类操作另需 zhiji_ops_manage，见 can_clear）
  *   enabled       bool      场景级开关，默认 true
  *   clear_enabled bool|null 是否允许"清除/重置/删除"；null = 跟随全局开关
  *   stats         callable  function(): array( array('label'=>,'value'=>,'hint'=>,'tone'=>'') )
@@ -61,6 +62,52 @@ if (!defined('ZHIJI_OPS_ACTIVITY_MAX')) {
  * @param array  $args
  * @return void
  */
+
+/* ============================================================
+ * 〇、能力模型（2026-09-29 新增，附录 Y ⭐⭐⭐：RBAC 只读/操作分离）
+ * ============================================================ */
+
+/**
+ * 运维台**查看**能力（列表 / 详情 / 导出 —— 只读）
+ *
+ * @return string
+ */
+function zhiji_ops_view_cap()
+{
+    return 'zhiji_ops_view';
+}
+
+/**
+ * 运维台**操作**能力（清除 / 重置 / 删除 / 放行 —— 变更状态）
+ *
+ * @return string
+ */
+function zhiji_ops_manage_cap()
+{
+    return 'zhiji_ops_manage';
+}
+
+/**
+ * 能力桥：administrator（manage_options）**隐式**获得两个运维能力
+ *
+ * 为什么用 user_has_cap 桥而不是给角色写能力：
+ *  ① 零行为变化 —— 管理员无需任何迁移就保持完整访问（默认语义与升级前一致）；
+ *  ② 主题不改角色数据（角色归站点管理员管，主题只在"判定时"动态放行）；
+ *  ③ 站长想给非管理员授权时，用任意角色编辑器 / WP-CLI 给某角色加
+ *     `zhiji_ops_view`（只读）或 `zhiji_ops_manage`（可操作）即可，互不牵连。
+ *
+ * ⚠️ 只做"放行"，绝不"收回"：没有 manage_options 的用户，两个能力都为 false。
+ */
+add_filter('user_has_cap', function ($allcaps, $caps, $args) {
+    if (!empty($allcaps['manage_options'])) {
+        foreach ((array) $caps as $cap) {
+            if (zhiji_ops_view_cap() === $cap || zhiji_ops_manage_cap() === $cap) {
+                $allcaps[$cap] = true;
+            }
+        }
+    }
+    return $allcaps;
+}, 10, 3);
 function zhiji_ops_register_scene($id, array $args = array())
 {
     $id = sanitize_key($id);
@@ -74,7 +121,7 @@ function zhiji_ops_register_scene($id, array $args = array())
         'title'         => $id,
         'desc'          => '',
         'priority'      => 50,
-        'cap'           => 'manage_options',
+        'cap'           => null, // 默认 zhiji_ops_view（见 zhiji_ops_scene_cap()）
         'enabled'       => true,
         'clear_enabled' => null,
         'stats'         => null,
@@ -89,6 +136,13 @@ function zhiji_ops_register_scene($id, array $args = array())
         'notice'        => '',
         'id'            => $id,
     ));
+
+    // 归一化 cap：未声明（或声明为空）→ 查看（zhiji_ops_view）
+    // ⚠️ 管理员经能力桥隐式拥有 view/manage，默认行为与升级前一致
+    if (empty($GLOBALS['__zhiji_ops_scenes'][$id]['cap'])
+        || !is_string($GLOBALS['__zhiji_ops_scenes'][$id]['cap'])) {
+        $GLOBALS['__zhiji_ops_scenes'][$id]['cap'] = zhiji_ops_view_cap();
+    }
 }
 
 /**
@@ -150,8 +204,22 @@ function zhiji_ops_enabled()
  * @param string $id 场景 ID
  * @return bool
  */
+/**
+ * 当前用户能否对该场景执行**清除类操作**（渲染按钮与接口共用的同一收口）
+ *
+ * 2026-09-29 RBAC：在原「总闸 + 场景开关」之上叠加**当前用户能力**
+ * （zhiji_ops_manage）—— 只读用户（仅 zhiji_ops_view）看不到也不会拿到操作入口。
+ * 管理员经能力桥隐式拥有 manage，默认行为不变。
+ *
+ * @param string $id
+ * @return bool
+ */
 function zhiji_ops_can_clear($id)
 {
+    // 当前用户必须具备"操作"能力（只读用户在此被拦下）
+    if (!current_user_can(zhiji_ops_manage_cap())) {
+        return false;
+    }
     if (!zhiji_is_enabled('ops_console_clear_enabled', true)) {
         return false;
     }

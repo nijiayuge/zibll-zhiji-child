@@ -11,7 +11,7 @@ defined('ABSPATH') || exit;
  * 七、HTTP 接口（管理端 JSON：查询 / 清除）
  *
  * 注册进统一网关（nonce 'zhiji_ops'，仅登录用户），供运维页面 AJAX
- * 或外部工具/脚本复用；权限统一要求 manage_options。
+ * 或外部工具/脚本复用；权限：查询=zhiji_ops_view（只读），清除=zhiji_ops_manage（变更）。
  * ============================================================ */
 
 zhiji_api_register('zhiji_ops_query', 'zhiji_ops_api_query', false, 'zhiji_ops');
@@ -31,7 +31,7 @@ function zhiji_ops_api_query($request = array())
     // 依据行业审计规范：权限拒绝/越权尝试是安全事件的第一指标，不留痕等于没有控制。
     // ⚠️ 只记 403（权限/开关），**不记 400 参数校验失败** ——
     //    后者任何人都可批量触发，会把审计日志刷满、淹没真正有价值的信号。
-    if (!current_user_can('manage_options')) {
+    if (!current_user_can(zhiji_ops_view_cap())) { // 2026-09-29 RBAC：查询=查看能力
         zhiji_ops_add_activity('ops_query', __('权限不足，已拒绝', 'zhiji'), '',
             array('outcome' => 'denied', 'target' => '403'));
         wp_send_json_error(array('msg' => __('权限不足', 'zhiji')), 403);
@@ -82,7 +82,7 @@ function zhiji_ops_api_query($request = array())
  */
 function zhiji_ops_api_clear($request = array())
 {
-    if (!current_user_can('manage_options')) {
+    if (!current_user_can(zhiji_ops_manage_cap())) { // 2026-09-29 RBAC：清除=操作能力
         zhiji_ops_add_activity('ops_clear', __('权限不足，已拒绝', 'zhiji'), '',
             array('outcome' => 'denied', 'target' => '403'));
         wp_send_json_error(array('msg' => __('权限不足', 'zhiji')), 403);

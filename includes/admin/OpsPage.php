@@ -80,7 +80,7 @@ function zhiji_ops_register_menu()
     add_menu_page(
         __('知集运维', 'zhiji'),
         __('知集运维', 'zhiji'),
-        'manage_options',
+        zhiji_ops_view_cap(), // 2026-09-29 RBAC：查看能力（管理员经能力桥隐式拥有，默认行为不变）
         ZHIJI_OPS_MENU_SLUG,
         'zhiji_ops_render_overview',
         'dashicons-shield-alt',
@@ -91,7 +91,7 @@ function zhiji_ops_register_menu()
         ZHIJI_OPS_MENU_SLUG,
         __('运维总览', 'zhiji'),
         __('运维总览', 'zhiji'),
-        'manage_options',
+        zhiji_ops_view_cap(), // 2026-09-29 RBAC：查看能力
         ZHIJI_OPS_MENU_SLUG,
         'zhiji_ops_render_overview'
     );
@@ -131,7 +131,7 @@ function zhiji_ops_scene_slug($id)
  */
 function zhiji_ops_render_overview()
 {
-    if (!current_user_can('manage_options')) {
+    if (!current_user_can(zhiji_ops_view_cap())) { // 2026-09-29 RBAC
         wp_die(__('您没有权限访问该页面', 'zhiji'));
     }
     zhiji_ops_print_styles();

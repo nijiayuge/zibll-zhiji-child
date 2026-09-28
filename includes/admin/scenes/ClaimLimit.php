@@ -121,7 +121,7 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_CLAIM, array(
     'icon'          => 'dashicons-email-alt',
     'desc'          => __('退出挽留弹窗「输入邮箱领优惠码」的领取记录。规则：同一邮箱领取成功后不可重复领取；此处可查询被拦记录，并按需放行或清除。', 'zhiji'),
     'priority'      => 10,
-    'cap'           => 'manage_options',
+    // cap 省略 → 继承契约默认 zhiji_ops_view（2026-09-29 RBAC：操作门槛由 zhiji_ops_manage 单独把守）
     'enabled'       => function () {
         return zhiji_is_enabled('ops_scene_claim_enabled', true);
     },

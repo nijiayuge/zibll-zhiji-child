@@ -63,7 +63,7 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_FORTUNE, array(
     'icon'          => 'dashicons-awards',
     'desc'          => __('评论锦鲤福袋的发放与领取记录（按用户）。弹窗标记原本只存活 2 小时，用户错过就再也看不到中奖提示 —— 这里可查询、可补发。', 'zhiji'),
     'priority'      => 20,
-    'cap'           => 'manage_options',
+    // cap 省略 → 继承契约默认 zhiji_ops_view（2026-09-29 RBAC：操作门槛由 zhiji_ops_manage 单独把守）
     'enabled'       => function () {
         return zhiji_is_enabled('ops_scene_fortune_enabled', true);
     },

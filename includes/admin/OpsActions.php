@@ -23,7 +23,7 @@ add_action('admin_post_zhiji_ops_action', 'zhiji_ops_handle_action');
  */
 function zhiji_ops_handle_action()
 {
-    if (!is_user_logged_in() || !current_user_can('manage_options')) {
+    if (!is_user_logged_in() || !current_user_can(zhiji_ops_manage_cap()) /* 2026-09-29 RBAC：变更类操作 */) {
         wp_die(__('您没有权限执行该操作', 'zhiji'));
     }
     check_admin_referer('zhiji_ops_action');
@@ -142,7 +142,7 @@ add_action('admin_post_zhiji_ops_export', 'zhiji_ops_handle_export');
  */
 function zhiji_ops_handle_export()
 {
-    if (!is_user_logged_in() || !current_user_can('manage_options')) {
+    if (!is_user_logged_in() || !current_user_can(zhiji_ops_view_cap()) /* 2026-09-29 RBAC：导出=只读 */) {
         wp_die(__('您没有权限执行该操作', 'zhiji'));
     }
     $scene_id = isset($_GET['scene']) ? sanitize_key(wp_unslash($_GET['scene'])) : '';
@@ -270,7 +270,7 @@ add_action('admin_post_zhiji_ops_export_audit', 'zhiji_ops_handle_export_audit')
  */
 function zhiji_ops_handle_export_audit()
 {
-    if (!is_user_logged_in() || !current_user_can('manage_options')) {
+    if (!is_user_logged_in() || !current_user_can(zhiji_ops_view_cap()) /* 2026-09-29 RBAC：导出审计=只读 */) {
         wp_die(__('您没有权限执行该操作', 'zhiji'));
     }
     check_admin_referer('zhiji_ops_export_audit');
