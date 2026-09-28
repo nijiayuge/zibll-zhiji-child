@@ -83,6 +83,10 @@ class Zhiji_Registry
             // 分节图标（可选）。2026-09-28 补：MailTemplate 由 legacy 路径迁入后仍能保留 icon，
             // 否则「邮件模板」分节会丢掉 fa fa-envelope-o（可见回归）。
             'icon'     => '',
+            // 常开模块（2026-09-28 补）：基础设施型模块（如 AJAX 网关）没有"关闭"的合理场景，
+            // 其开关已从后台移除、运行期不再判断。标记 always_on 后 module_enabled() 如实返回 true，
+            // 避免它去读一个已不存在的键而误报"未启用"。
+            'always_on' => false,
         ));
     }
 
@@ -101,6 +105,10 @@ class Zhiji_Registry
     {
         if (!isset(self::$modules[$key])) {
             return false;
+        }
+        // 常开模块（基础设施）：开关已移除，如实返回 true，不去读已不存在的键
+        if (!empty(self::$modules[$key]['always_on'])) {
+            return true;
         }
         return zhiji_is_enabled(self::$modules[$key]['option'], false);
     }

@@ -7,7 +7,7 @@
  * @option  ops_console_enabled       运维页面总开关
  *          ops_console_clear_enabled 是否允许运维清除（总闸：关掉后只能查询）
  *          ops_console_log_enabled   是否记录领取日志（关掉则不做持久化校验）
- *          ops_console_blocked_stat  是否统计被拦截次数
+ *          ops_console_blocked_stat  是否统计被拦截次数（2026-09-28 已移除 → 恒统计）
  *          ops_console_per_page      列表每页条数
  *          ops_console_retention_days 记录保留天数（0=永久）
  *          ops_scene_claim_enabled   场景开关：邮箱领取限制
@@ -50,11 +50,12 @@ Zhiji_Registry::register_module('ops_console', array(
             'dependency' => array('ops_console_enabled', '==', '1'),
         ),
         array(
-            'id'         => 'ops_console_blocked_stat',
-            'type'       => 'switcher',
-            'title'      => '统计被拦截次数',
-            'default'    => true,
-            'desc'       => '记录「同一邮箱重复领取」被拦截的次数，用于评估规则命中情况。',
+            // 2026-09-28：「统计被拦截次数」开关已按「开关评估 A4」移除，改为常驻 + 说明。
+            // 它是纯计数器，关闭只会失去观测能力，没有合理关闭场景。
+            'type'       => 'submessage',
+            'style'      => 'info',
+            'content'    => __('「被拦截次数」<strong>始终统计</strong>（2026-09-28 起不再可配置）。'
+                . '该计数用于观察「同一邮箱重复领取」规则的命中趋势，无副作用。', 'zhiji'),
             'dependency' => array('ops_console_enabled', '==', '1'),
         ),
         array(

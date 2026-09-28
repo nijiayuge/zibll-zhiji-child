@@ -623,9 +623,10 @@ function zhiji_coupon_give_ops_cleared( $email ) {
  * @return void
  */
 function zhiji_coupon_give_count_blocked() {
-	if ( ! zhiji_get_option( 'ops_console_blocked_stat', 1 ) ) {
-		return;
-	}
+	// 2026-09-28：原 `ops_console_blocked_stat` 开关已按「开关评估 A4」移除。
+	// 理由：这是**纯计数器**（在已有写入路径上顺手 +1），无副作用、无额外查询、
+	// 也不涉及隐私；关闭它只会让运维侧失去"规则命中趋势"的观测能力，
+	// 不存在"关闭更好"的站点形态。
 	$key = 'zhiji_claim_blocked_count';
 	update_option( $key, (int) get_option( $key, 0 ) + 1, false );
 }

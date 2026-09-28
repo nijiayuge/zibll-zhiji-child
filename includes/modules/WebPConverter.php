@@ -1,10 +1,10 @@
 <?php
 /**
  * @module  WebPConverter
- * @desc    WebP 图片转换：上传 JPG/PNG 时经 GD 自动转 WebP（可选保留原图），展示层替换为 WebP
+ * @desc    WebP 图片转换：上传 JPG/PNG 时经 GD 自动转 WebP（**恒保留原图**），展示层替换为 WebP
  * @option  webp_enabled        总开关
  *          webp_quality        转换质量 1-100
- *          webp_keep_original  是否保留原图
+ *          （`webp_keep_original` 已于 2026-09-28 按「开关评估 A2」移除，恒为保留原图）
  * @hook    wp_handle_upload(20) / wp_get_attachment_image_src(20)
  * @since   2.0.0
  * @migrate 自 v1 `inc/Functions/WebPConverter.php`
@@ -132,7 +132,12 @@ add_filter('wp_handle_upload', function ($file) {
     }
 
     $quality = max(1, min(100, (int) zhiji_get_option('webp_quality', 80)));
-    $keep    = zhiji_is_enabled('webp_keep_original', true);
+    // 2026-09-28：原 `webp_keep_original` 开关已按「开关评估 A2」移除，**恒为保留原图**。
+    // 理由（源码实证）：`zhiji_webp_convert()` 在 !$keep_original 时会执行
+    // `wp_delete_file($file_path)` ——即**永久删除原始 JPG/PNG**，不可恢复。
+    // 用不可逆的数据损失去换一点磁盘空间，不应作为可配置默认项；
+    // 需要省空间应改用「压缩原图」而不是「删掉原图」。
+    $keep = true;
 
     $result = zhiji_webp_convert($file_path, $quality, $keep);
     if ($result && !is_wp_error($result)) {
@@ -190,11 +195,13 @@ add_filter('wp_get_attachment_image_src', function ($image) {
             'dependency' => array('webp_enabled', '==', '1'),
         ),
         array(
-            'id'         => 'webp_keep_original',
-            'type'       => 'switcher',
-            'title'      => '保留原图',
-            'desc'       => '转换 WebP 后是否保留原始 JPG/PNG 文件（建议保留，兼容不支持 WebP 的浏览器）',
-            'default'    => true,
+            // 2026-09-28：「保留原图」开关已按「开关评估 A2」移除，改为常驻 + 说明。
+            // 原开关关闭时会 wp_delete_file() 永久删除原图（不可恢复），不应可配。
+            'type'       => 'submessage',
+            'style'      => 'info',
+            'content'    => __('原始 JPG/PNG <strong>始终保留</strong>（2026-09-28 起不再可配置）。'
+                . '此前关闭该项会在转换后永久删除原图，属于不可逆的数据损失；'
+                . '如需节省空间，建议改用图片压缩而非删除原图。', 'zhiji'),
             'dependency' => array('webp_enabled', '==', '1'),
         ),
         array(

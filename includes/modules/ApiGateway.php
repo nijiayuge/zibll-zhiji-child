@@ -2,7 +2,8 @@
 /**
  * @module  ApiGateway
  * @desc    AJAX 统一网关：单端点 zhiji_api + 处理器注册表 + 参数校验辅助
- * @option  api_gateway_enabled  网关总开关（默认开）
+ * @option  （无常开/可配置开关）—— 2026-09-28 起 AJAX 网关**常驻启用**，
+ *          原 `api_gateway_enabled` 开关已按「开关评估 A1」移除（见后台分节内的说明）
  * @hook    wp_ajax(_nopriv)_zhiji_api · 统一端点（nonce 'zhiji_nonce' 校验）
  * @api     zhiji_api_register($name, $handler, $public)  注册处理器
  *          zhiji_api_digits/enum/str($_REQUEST, $key, ...)  白名单式取参
@@ -16,10 +17,12 @@ defined('ABSPATH') || exit;
  * 模块自注册
  * ============================================================ */
 Zhiji_Registry::register_module('api_gateway', array(
-    'title'    => 'AJAX 统一网关',
-    'parent'   => 'zhiji_basic',
-    'priority' => 5,
-    'option'   => 'api_gateway_enabled',
+    'title'     => 'AJAX 统一网关',
+    'parent'    => 'zhiji_basic',
+    'priority'  => 5,
+    // 保留 option 名义值仅为兼容历史引用；always_on 才是运行期依据（开关已移除）
+    'option'    => 'api_gateway_enabled',
+    'always_on' => true,
 ));
 
 /* ============================================================
@@ -99,10 +102,10 @@ add_action('wp_ajax_nopriv_zhiji_api', 'zhiji_api_gateway');
 
 function zhiji_api_gateway()
 {
-    // 网关总开关（默认开）
-    if (!zhiji_is_enabled('api_gateway_enabled', true)) {
-        wp_send_json_error(array('msg' => 'API 网关未启用'), 403);
-    }
+    // 2026-09-28：原「网关总开关」已移除（评估报告 A1）。
+    // 理由：网关是**基础设施**而非功能偏好 —— 关闭它会让依赖网关的前台交互全部失效
+    // （退出挽留弹窗领券、福袋查询、消息角标刷新…），不存在"想关掉网关"的正常场景；
+    // 留一个能不启用它的开关，只会带来"误关导致前台半瘫"的风险。
     $name = zhiji_api_str($_REQUEST, 'api', 64);
     if ('' === $name) {
         wp_send_json_error(array('msg' => '缺少 api 参数'), 400);
@@ -138,10 +141,11 @@ function zhiji_api_gateway()
     // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
     Zhiji_Registry::register_options('api_gateway', array(
         array(
-            'id'      => 'api_gateway_enabled',
-            'type'    => 'switcher',
-            'title'   => '启用 AJAX 统一网关',
-            'desc'    => '单端点 + nonce 统一校验。关闭后依赖网关的前台交互将不可用。',
-            'default' => true,
+            'type'    => 'submessage',
+            'style'   => 'info',
+            'content' => __('<strong>AJAX 统一网关已常驻启用</strong>（不再是可配置项）。'
+                . '全站 AJAX 交互都走这一个端点并统一做 nonce 校验；'
+                . '关闭它会让依赖网关的前台功能（领券、福袋查询、消息角标刷新等）全部失效，'
+                . '因此该开关已于 2026-09-28 移除。', 'zhiji'),
         ),
     ), 20);
