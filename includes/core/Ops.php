@@ -46,6 +46,15 @@ if (!defined('ZHIJI_OPS_ACTIVITY_MAX')) {
  *                           适用场景：目标数据不在当前列表里（例如"某个邮箱没有任何记录，但被历史券拦住"）。
  *                           处理器通过 $params（= $_POST）拿字段值。
  *   handle        callable  function($action, array $params, array $ids, array $scene): array('ok'=>,'msg'=>)
+ *   detail        callable  **详情抽屉扩展**（2026-09-28 新增，方案 P2-C）：
+ *                           function($row, array $scene): array
+ *                           用于补充**计算字段**（不在原始行里的值，如按券码查出的「优惠内容」）。
+ *                           可返回的键（全部可选）：
+ *                             primary => array( array('k'=>…,'v'=>…), … )   追加到概览区
+ *                             fields  => array( array('k'=>…,'v'=>…,'pre'=>bool), … )  追加到明细区
+ *                             status  => array('text'=>…,'tone'=>'ok|warn')  覆盖状态徽标
+ *                           ⚠️ 页面层负责通用分组与 JSON 编码；本回调只提供**内容**，不输出 HTML。
+ *                           未声明时页面层走通用逻辑（仅行字段）。
  *   notice        string    页面顶部提示（可含 HTML 白名单外的纯文本）
  *
  * @param string $id   场景 ID（sanitize_key 后使用，同时作为页面 slug 一部分）
@@ -75,6 +84,8 @@ function zhiji_ops_register_scene($id, array $args = array())
         'actions'       => array(),
         'pre_actions'   => array(),
         'handle'        => null,
+        // 详情抽屉扩展回调（2026-09-28 新增，见上方契约说明）
+        'detail'        => null,
         'notice'        => '',
         'id'            => $id,
     ));

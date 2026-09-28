@@ -296,6 +296,25 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_CLAIM, array(
         return zhiji_claim_log_query($args);
     },
 
+    /* ---------- 详情抽屉扩展（2026-09-28 新增，方案 P2-C） ---------- */
+    // 补**计算字段**：按券码查出优惠内容（列表「优惠内容」列已有，
+    // 但抽屉原本只渲染原始行字段，看不到它 —— 这里补上，与列表同口径）。
+    'detail'        => function ($row) {
+        $out = array('primary' => array());
+        $code = is_object($row) && isset($row->object_id) ? (string) $row->object_id : '';
+        if ('' === $code) {
+            return $out;
+        }
+        $text = function_exists('zhiji_ops_scene_claim_discount_text')
+            ? (string) zhiji_ops_scene_claim_discount_text($code)
+            : '';
+        if ('' === $text) {
+            return $out;
+        }
+        $out['primary'][] = array('k' => __('优惠内容', 'zhiji'), 'v' => $text);
+        return $out;
+    },
+
     /* ---------- 表单型操作（目标数据可能不在当前列表里） ---------- */
     // 典型场景：某邮箱**在记录表里 0 条**，但名下还有历史优惠码 → 仍被「每邮箱限领」拦住，
     // 列表里没有行 = 行内「作废关联券」点不到 → 这里提供"不需要先有记录"的入口。

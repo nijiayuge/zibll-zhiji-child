@@ -13,6 +13,54 @@ if (!defined('ZHIJI_OPS_MENU_SLUG')) {
 }
 
 /* ============================================================
+ * 〇、页面资源（2026-09-28 新增：抽屉脚本外置，方案 P2-B）
+ * ============================================================ */
+
+/**
+ * 运维页资源：行级详情抽屉脚本
+ *
+ * 由来：该脚本原先是 `zhiji_ops_render_scene()` 里的**内联 <script>**（约 4.6KB），
+ * 每次渲染都要随页面输出、无法被浏览器缓存。现外置为
+ * `assets/zhiji/js/ops-drawer.js`，经 `zhiji_asset_url()` 入队（自带 filemtime 版本号）。
+ *
+ * ⚠️ 两个约束（改动前务必阅读）：
+ *  1. **只在运维页加载** —— 用 page 前缀 `zhiji-ops` 判定（总览 + 各场景子页都是该前缀）。
+ *  2. **head 输出 + 脚本内部 DOM 安全启动** ——
+ *     本项目既有的结论是「head 更稳」（wp_footer 输出曾在线上被环境干扰，见 core/Assets.php 注释）；
+ *     而抽屉脚本依赖 `#zhiji-ops-modal` 元素，head 加载时 DOM 尚未生成，
+ *     故脚本内部用 DOMContentLoaded / readyState 做了保护（见 ops-drawer.js 头部注释）。
+ *     ⚠️ 若改成 footer 输出，请同步确认该站点的 footer 脚本可靠性。
+ *
+ * @return void
+ */
+function zhiji_ops_page_assets()
+{
+    $page = isset($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
+    if (0 !== strpos($page, ZHIJI_OPS_MENU_SLUG)) {
+        return; // 仅运维页（含各场景子页）
+    }
+
+    wp_enqueue_script(
+        'zhiji-ops-drawer',
+        zhiji_asset_url('js/ops-drawer.js'),
+        array(),
+        ZHIJI_VERSION,
+        false // head：沿用本项目「head 更稳」的既有结论
+    );
+
+    // i18n 文案由 PHP 注入（不可写死在 js 里）
+    wp_add_inline_script(
+        'zhiji-ops-drawer',
+        'window.ZHIJI_OPS_DRAWER=' . wp_json_encode(array(
+            'meta'  => __('扩展数据 (meta)', 'zhiji'),
+            'title' => __('记录详情', 'zhiji'),
+        ), JSON_UNESCAPED_UNICODE) . ';',
+        'before'
+    );
+}
+add_action('admin_enqueue_scripts', 'zhiji_ops_page_assets', 20);
+
+/* ============================================================
  * 一、菜单注册
  * ============================================================ */
 
@@ -474,108 +522,11 @@ function zhiji_ops_render_scene($id)
                 <div class="zhiji-ops-modal-body"></div>
             </aside>
         </div>
-        <script>
-        (function () {
-            'use strict';
-            var mask  = document.getElementById('zhiji-ops-modal');
-            var body  = mask ? mask.querySelector('.zhiji-ops-modal-body') : null;
-            var title = document.getElementById('zhiji-ops-modal-title');
-            var stTag = document.getElementById('zhiji-ops-modal-status');
-            var lastFocus = null;
 
-            function esc(s) {
-                var d = document.createElement('div');
-                d.textContent = null === s || undefined === s ? '' : String(s);
-                return d.innerHTML;
-            }
-
-            // 行业做法（uxpatterns.dev / UserPilot）：概览大字区 → 明细列表 → 原始数据默认折叠
-            function render(d) {
-                if (!body) { return; }
-                var html = '';
-
-                if (d.primary && d.primary.length) {
-                    html += '<div class="zhiji-ops-dl-primary">';
-                    for (var i = 0; i < d.primary.length; i++) {
-                        html += '<div class="zhiji-ops-dl-pcell">'
-                              + '<span class="zhiji-ops-dl-k">' + esc(d.primary[i].k) + '</span>'
-                              + '<span class="zhiji-ops-dl-v">' + esc(d.primary[i].v) + '</span></div>';
-                    }
-                    html += '</div>';
-                }
-
-                if (d.fields && d.fields.length) {
-                    html += '<div class="zhiji-ops-dl-fields">';
-                    for (var j = 0; j < d.fields.length; j++) {
-                        var it = d.fields[j];
-                        if (!it) { continue; }
-                        html += '<div class="zhiji-ops-dl-item"><span class="zhiji-ops-dl-k">' + esc(it.k) + '</span>'
-                              + (it.pre
-                                  ? '<pre class="zhiji-ops-pre">' + esc(it.v) + '</pre>'
-                                  : '<span class="zhiji-ops-dl-v">' + esc(it.v) + '</span>')
-                              + '</div>';
-                    }
-                    html += '</div>';
-                }
-
-                if (d.meta) {
-                    html += '<details class="zhiji-ops-dl-meta">'
-                          + '<summary><?php echo esc_js(__('扩展数据 (meta)', 'zhiji')); ?></summary>'
-                          + '<pre class="zhiji-ops-pre">' + esc(d.meta) + '</pre></details>';
-                }
-
-                body.innerHTML = html || '<p class="description">无数据</p>';
-            }
-
-            function open(d) {
-                if (!mask) { return; }
-                lastFocus = document.activeElement;
-                render(d);
-                if (stTag) {
-                    if (d.status && d.status.text) {
-                        stTag.textContent = d.status.text;
-                        stTag.className = 'zhiji-ops-tag ' + ('ok' === d.status.tone ? 'cleared' : 'active');
-                        stTag.hidden = false;
-                    } else {
-                        stTag.hidden = true;
-                    }
-                }
-                if (title) { title.textContent = '<?php echo esc_js(__('记录详情', 'zhiji')); ?> #' + (d.id || '—'); }
-                mask.hidden = false;
-                var closeBtn = mask.querySelector('.zhiji-ops-modal-close');
-                if (closeBtn) { closeBtn.focus(); }
-            }
-
-            function close() {
-                if (!mask) { return; }
-                mask.hidden = true;
-                if (body) { body.innerHTML = ''; }
-                if (lastFocus && lastFocus.focus) { lastFocus.focus(); }
-                lastFocus = null;
-            }
-
-            // 事件委托：点击「详情」按钮 → 读取所在行 data-zhiji-detail；点遮罩空白处关闭
-            document.addEventListener('click', function (e) {
-                var btn = e.target.closest ? e.target.closest('.zhiji-ops-detail-btn') : null;
-                if (btn) {
-                    var tr   = btn.closest('tr');
-                    var raw  = tr ? tr.getAttribute('data-zhiji-detail') : '';
-                    var data = null;
-                    try { data = JSON.parse(raw); } catch (err) { data = null; }
-                    if (data && (data.fields || data.primary || data.meta)) { open(data); }
-                    return;
-                }
-                if (e.target.closest && e.target.closest('.zhiji-ops-modal-close')) { close(); return; }
-                // 点遮罩（非抽屉本体）关闭
-                if (e.target === mask) { close(); }
-            });
-
-            // Esc 关闭
-            document.addEventListener('keydown', function (e) {
-                if (e.key === 'Escape' && mask && !mask.hidden) { close(); }
-            });
-        })();
-        </script>
+        <!-- 抽屉交互脚本已外置：assets/zhiji/js/ops-drawer.js
+             （经 zhiji_asset_url() 入队 + wp_add_inline_script 注入 i18n 文案）
+             注意：head 输出，故脚本内部做了 DOM 安全启动（DOMContentLoaded），
+             见 OpsPage.php 的 zhiji_ops_page_assets() -->
 
         <?php zhiji_ops_section_title(__('最近运维操作', 'zhiji')); ?>
         <?php zhiji_ops_render_activity($id, 8); ?>
@@ -803,6 +754,46 @@ function zhiji_ops_build_detail($row, $scene_id = '')
         $item = $make($key, $v);
         if ('—' !== $item['v']) {
             $out['fields'][] = $item;
+        }
+    }
+
+    /* ------------------------------------------------------------
+     * 场景扩展：补**计算字段**（不在原始行里的值）。
+     *
+     * 2026-09-28 新增（方案 P2-C）：页面层只做「通用分组 + 值渲染 + JSON 编码」，
+     * 场景自有的领域计算通过 `$scene['detail']` 回调提供 —— 新增场景无需改动本函数。
+     *
+     * 典型用例：ClaimLimit 按券码查出「优惠内容」（列表列已有、但抽屉里原本看不到）。
+     * ------------------------------------------------------------ */
+    if ($scene_id && function_exists('zhiji_ops_scene')) {
+        $scene = zhiji_ops_scene($scene_id);
+        if ($scene && !empty($scene['detail']) && is_callable($scene['detail'])) {
+            $extra = call_user_func($scene['detail'], $row, $scene);
+            if (is_array($extra)) {
+                // 状态徽标：场景可提供语义化文案（覆盖通用「已完结/处理中」）
+                if (!empty($extra['status']) && is_array($extra['status'])) {
+                    $out['status'] = $extra['status'];
+                }
+                foreach (array('primary', 'fields') as $group) {
+                    if (empty($extra[$group]) || !is_array($extra[$group])) {
+                        continue;
+                    }
+                    foreach ($extra[$group] as $it) {
+                        if (!is_array($it) || !isset($it['k'], $it['v'])) {
+                            continue;
+                        }
+                        // 与通用逻辑同口径：值为空占位的不进详情
+                        if ('—' === (string) $it['v']) {
+                            continue;
+                        }
+                        $out[$group][] = array(
+                            'k'   => (string) $it['k'],
+                            'v'   => (string) $it['v'],
+                            'pre' => !empty($it['pre']),
+                        );
+                    }
+                }
+            }
         }
     }
 
