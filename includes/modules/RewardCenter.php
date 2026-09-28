@@ -633,9 +633,7 @@ function zhiji_reward_records_migrate() {
 			continue;
 		}
 		foreach ( array( 'balance_record' => 'balance', 'points_record' => 'points' ) as $meta_key => $reward_type ) {
-			$records = function_exists( 'zib_get_user_meta' )
-				? zib_get_user_meta( $uid, $meta_key, true )
-				: get_user_meta( $uid, $meta_key, true );
+			$records = Zhiji_Adapter::user_meta_get( $uid, $meta_key );
 			if ( ! is_array( $records ) || ! $records ) {
 				continue;
 			}
@@ -653,11 +651,7 @@ function zhiji_reward_records_migrate() {
 				$changed++;
 			}
 			if ( $dirty ) {
-				if ( function_exists( 'zib_update_user_meta' ) ) {
-					zib_update_user_meta( $uid, $meta_key, $records );
-				} else {
-					update_user_meta( $uid, $meta_key, $records );
-				}
+				Zhiji_Adapter::user_meta_update( $uid, $meta_key, $records );
 			}
 		}
 	}

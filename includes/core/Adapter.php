@@ -87,6 +87,32 @@ class Zhiji_Adapter
     }
 
     /**
+     * 用户 meta 读取（父主题封装，兼容其序列化与默认值逻辑）
+     *
+     * 奖励记录（balance_record / points_record）等父主题定义的用户数据必须走这里，
+     * 否则会绕过父主题的读写口径。
+     */
+    public static function user_meta_get($user_id, $key, $default = '')
+    {
+        if (function_exists('zib_get_user_meta')) {
+            return zib_get_user_meta($user_id, $key, true);
+        }
+        $v = get_user_meta($user_id, $key, true);
+        return ('' === $v) ? $default : $v;
+    }
+
+    /**
+     * 用户 meta 写入
+     */
+    public static function user_meta_update($user_id, $key, $value)
+    {
+        if (function_exists('zib_update_user_meta')) {
+            return zib_update_user_meta($user_id, $key, $value);
+        }
+        return update_user_meta($user_id, $key, $value);
+    }
+
+    /**
      * 用户头像 URL（优先父主题逻辑，缺失时回落 WP 原生）
      */
     public static function avatar_url($user_id, $size = 96)
