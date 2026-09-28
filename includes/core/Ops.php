@@ -276,13 +276,19 @@ function zhiji_ops_add_activity($action, $detail = '', $scene = '', array $ctx =
 }
 
 /**
- * 最近运维操作
+ * 最近运维操作（审计日志读取）
+ *
+ * 2026-09-29 新增可选 $args 筛选（附录 Y：审计日志筛选能力，标准要求"没人看的日志不是控制"）：
+ *   outcome => success|denied|error（只看该结果）
+ *   user    => 操作者登录名精确匹配
+ *   search  => 在 detail / target / reason 里模糊匹配
  *
  * @param int    $limit
  * @param string $scene 为空则全部场景
+ * @param array  $args  可选筛选（见上）
  * @return array
  */
-function zhiji_ops_activities($limit = 10, $scene = '')
+function zhiji_ops_activities($limit = 10, $scene = '', array $args = array())
 {
     $list = get_option(ZHIJI_OPS_ACTIVITY_KEY, array());
     if (!is_array($list)) {
@@ -294,6 +300,36 @@ function zhiji_ops_activities($limit = 10, $scene = '')
             return isset($row['scene']) && $row['scene'] === $scene;
         }));
     }
+
+    $outcome = isset($args['outcome']) ? sanitize_key($args['outcome']) : '';
+    if ('' !== $outcome) {
+        $list = array_values(array_filter($list, function ($row) use ($outcome) {
+            // ⚠️ 旧条目（升级前写入）没有 outcome 字段 → **不参与**结果筛选
+            //   （它们语义上是 success，但没有证据，不该在"只看拒绝"时混进来）
+            return isset($row['outcome']) && $row['outcome'] === $outcome;
+        }));
+    }
+
+    $user = isset($args['user']) ? sanitize_user((string) $args['user']) : '';
+    if ('' !== $user) {
+        $list = array_values(array_filter($list, function ($row) use ($user) {
+            return isset($row['user']) && $row['user'] === $user;
+        }));
+    }
+
+    $search = isset($args['search']) ? sanitize_text_field((string) $args['search']) : '';
+    if ('' !== $search) {
+        $needle = mb_strtolower($search);
+        $list   = array_values(array_filter($list, function ($row) use ($needle) {
+            $hay = mb_strtolower((
+                (isset($row['detail']) ? $row['detail'] : '') . ' '
+                . (isset($row['target']) ? $row['target'] : '') . ' '
+                . (isset($row['reason']) ? $row['reason'] : '')
+            ));
+            return false !== mb_strpos($hay, $needle);
+        }));
+    }
+
     return array_slice($list, 0, max(1, (int) $limit));
 }
 
@@ -315,6 +351,10 @@ function zhiji_ops_action_label($action)
         'fortune_resend' => '补发福袋弹窗',
         'fortune_consumed' => '标记福袋已领取',
         'export'       => '导出 CSV',
+        // 2026-09-29 审计合规化新增（附录 Y）：导出审计日志 / API 层动作
+        'export_audit' => '导出审计日志（CSV）',
+        'ops_query'    => '查询接口（被拒绝）',
+        'ops_clear'    => '清除接口',
     );
     $action = sanitize_key($action);
     return isset($map[$action]) ? $map[$action] : $action;

@@ -183,8 +183,8 @@ function zhiji_ops_render_overview()
             </div>
         <?php endif; ?>
 
-        <?php zhiji_ops_section_title(__('最近运维操作', 'zhiji')); ?>
-        <?php zhiji_ops_render_activity('', 10); ?>
+        <?php zhiji_ops_section_title(__('审计日志', 'zhiji')); ?>
+        <?php zhiji_ops_render_audit_panel(); ?>
     </div>
     <?php
 }

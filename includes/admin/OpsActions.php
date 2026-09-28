@@ -251,3 +251,117 @@ function zhiji_ops_handle_export()
     exit;
 }
 
+add_action('admin_post_zhiji_ops_export_audit', 'zhiji_ops_handle_export_audit');
+
+/**
+ * 导出**审计日志**为 CSV（2026-09-29 新增，附录 Y ⭐⭐⭐）
+ *
+ * 与场景导出的区别：导出对象是审计日志本身 → **导出行为必须留痕**（meta-logging，
+ * 标准依据："读取敏感数据也要留痕"——导出是把全部审计条目一次性拿走的动作）。
+ *
+ * 筛选口径与总览页审计面板完全一致（所见即所得）。
+ * 安全：登录 + manage_options + nonce `zhiji_ops_export_audit`。
+ *
+ * ⚠️ 顺序约定：**先取行、再写审计、最后输出 CSV** ——
+ *    本次导出的文件里**不含**它自己的导出记录（那条会出现在*下一次*导出里），
+ *    避免同一事件在单次导出中"自我包含"。
+ *
+ * @return void
+ */
+function zhiji_ops_handle_export_audit()
+{
+    if (!is_user_logged_in() || !current_user_can('manage_options')) {
+        wp_die(__('您没有权限执行该操作', 'zhiji'));
+    }
+    check_admin_referer('zhiji_ops_export_audit');
+
+    // 与面板同一套筛选白名单（GET 参数名一致）
+    $outcomes = array('', 'success', 'denied', 'error');
+    $outcome  = isset($_GET['audit_outcome']) ? sanitize_key(wp_unslash($_GET['audit_outcome'])) : '';
+    if (!in_array($outcome, $outcomes, true)) {
+        $outcome = '';
+    }
+    $user   = isset($_GET['audit_user']) ? sanitize_user(wp_unslash($_GET['audit_user'])) : '';
+    $scene  = isset($_GET['audit_scene']) ? sanitize_key(wp_unslash($_GET['audit_scene'])) : '';
+    $search = isset($_GET['audit_search']) ? sanitize_text_field(wp_unslash($_GET['audit_search'])) : '';
+
+    $args = array();
+    if ('' !== $outcome) {
+        $args['outcome'] = $outcome;
+    }
+    if ('' !== $user) {
+        $args['user'] = $user;
+    }
+    if ('' !== $search) {
+        $args['search'] = $search;
+    }
+
+    $rows = zhiji_ops_activities(ZHIJI_OPS_ACTIVITY_MAX, $scene, $args);
+
+    // meta-logging：导出审计日志这个动作本身写入审计（success + 影响面）
+    zhiji_ops_add_activity(
+        'export_audit',
+        sprintf(
+            /* translators: 1: 导出条数 */
+            __('导出审计日志共 %1$d 条记录（CSV）', 'zhiji'),
+            count($rows)
+        ),
+        '',
+        array(
+            'outcome' => 'success',
+            'target'  => 'audit_rows=' . count($rows) . ('' !== $scene ? ' scene=' . $scene : ''),
+        )
+    );
+
+    $filename = sprintf('zhiji-ops-audit-%s.csv', current_time('Ymd-His'));
+
+    nocache_headers();
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+
+    $out = fopen('php://output', 'w');
+
+    // UTF-8 BOM：Excel 直接双击打开不乱码
+    fwrite($out, "\xEF\xBB\xBF");
+
+    // 审计导出为**全字段**（页面是摘要，CSV 是取证口径）
+    $head = array('记录时间(本地)', '记录时间(UTC)', '操作者', '来源 IP', '场景', '动作', '动作(原始)', '说明', '结果', '影响面', '变更摘要', '理由', '事件 ID');
+    fputcsv($out, $head);
+
+    $safe = function ($v) {
+        $v = is_scalar($v) ? (string) $v : '';
+        return preg_match('/^[=+\-@]/', $v) ? "'" . $v : $v;
+    };
+
+    $outcome_label = array(
+        'success' => __('成功', 'zhiji'),
+        'denied'  => __('已拒绝', 'zhiji'),
+        'error'   => __('失败', 'zhiji'),
+    );
+
+    foreach ($rows as $row) {
+        $changes = isset($row['changes']) && is_array($row['changes']) && $row['changes']
+            ? wp_json_encode($row['changes'], JSON_UNESCAPED_UNICODE)
+            : '';
+        $o = isset($row['outcome']) ? (string) $row['outcome'] : '';
+        fputcsv($out, array(
+            $safe(isset($row['time']) ? $row['time'] : ''),
+            $safe(isset($row['time_utc']) ? $row['time_utc'] : ''),
+            $safe(isset($row['user']) ? $row['user'] : ''),
+            $safe(isset($row['ip']) ? $row['ip'] : ''),
+            $safe(isset($row['scene']) ? $row['scene'] : ''),
+            $safe(zhiji_ops_action_label(isset($row['action']) ? $row['action'] : '')),
+            $safe(isset($row['action']) ? $row['action'] : ''),
+            $safe(isset($row['detail']) ? $row['detail'] : ''),
+            $safe(isset($outcome_label[$o]) ? $outcome_label[$o] : $o),
+            $safe(isset($row['target']) ? $row['target'] : ''),
+            $safe($changes),
+            $safe(isset($row['reason']) ? $row['reason'] : ''),
+            $safe(isset($row['event_id']) ? $row['event_id'] : ''),
+        ));
+    }
+
+    fclose($out);
+    exit;
+}
+

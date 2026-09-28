@@ -301,8 +301,21 @@ function zhiji_ops_render_activity($scene = '', $limit = 10)
         echo '</div>';
         return;
     }
+    zhiji_ops_render_activity_rows($rows);
+    echo '</div>';
+}
 
-    // 结果徽标：success=绿 / denied=红 / error=红（与审计字段 outcome 对应）
+/**
+ * 渲染审计条目列表（2026-09-29 从 render_activity 抽出 —— 供场景页简版与总览审计面板复用）
+ *
+ * 结果徽标：success=绿 / denied·error=红；旧数据（无 outcome 字段）不标 —— 不猜、不误标。
+ * 每行附 来源 IP + 事件 ID 前 8 位（可在沟通/工单里直接引用）。
+ *
+ * @param array $rows 审计条目数组
+ * @return void
+ */
+function zhiji_ops_render_activity_rows($rows)
+{
     $outcome_badge = function ($row) {
         $outcome = isset($row['outcome']) ? (string) $row['outcome'] : '';
         if ('denied' === $outcome) {
@@ -339,5 +352,105 @@ function zhiji_ops_render_activity($scene = '', $limit = 10)
             $trace ? ' <span class="description" style="font-size:12px">(' . implode(' · ', $trace) . ')</span>' : ''
         );
     }
-    echo '</ul></div>';
+    echo '</ul>';
+}
+
+/**
+ * 总览页「审计日志」面板（2026-09-29 新增，附录 Y ⭐⭐⭐：筛选 + 导出）
+ *
+ * 筛选维度（标准依据：后台审计视图应支持 actor / action-type / target-object / 时间窗）：
+ *   结果（全部/成功/已拒绝/失败）· 操作者 · 场景 · 关键词（detail/target/reason 模糊）
+ * 导出：admin-post.php?action=zhiji_ops_export_audit（带 nonce）；
+ *   ⚠️ 导出行为本身会写入审计（meta-logging）——"读取敏感数据也要留痕"。
+ *
+ * @return void
+ */
+function zhiji_ops_render_audit_panel()
+{
+    $outcomes = array(
+        ''        => __('全部结果', 'zhiji'),
+        'success' => __('成功', 'zhiji'),
+        'denied'  => __('已拒绝', 'zhiji'),
+        'error'   => __('失败', 'zhiji'),
+    );
+
+    // 读取筛选（GET，服务端渲染，无 JS 依赖）
+    $cur_outcome = isset($_GET['audit_outcome']) ? sanitize_key(wp_unslash($_GET['audit_outcome'])) : '';
+    if (!array_key_exists($cur_outcome, $outcomes)) {
+        $cur_outcome = '';
+    }
+    $cur_user   = isset($_GET['audit_user']) ? sanitize_user(wp_unslash($_GET['audit_user'])) : '';
+    $cur_scene  = isset($_GET['audit_scene']) ? sanitize_key(wp_unslash($_GET['audit_scene'])) : '';
+    $cur_search = isset($_GET['audit_search']) ? sanitize_text_field(wp_unslash($_GET['audit_search'])) : '';
+
+    $args = array();
+    if ('' !== $cur_outcome) {
+        $args['outcome'] = $cur_outcome;
+    }
+    if ('' !== $cur_user) {
+        $args['user'] = $cur_user;
+    }
+    if ('' !== $cur_search) {
+        $args['search'] = $cur_search;
+    }
+
+    $all_rows  = zhiji_ops_activities(ZHIJI_OPS_ACTIVITY_MAX, $cur_scene, $args);
+    $base_url  = zhiji_ops_page_url();
+
+    // 导出链接：携带当前筛选（导出内容 = 页面所见，所见即所得）
+    $export_url = add_query_arg(array_filter(array(
+        'action'       => 'zhiji_ops_export_audit',
+        'audit_outcome' => $cur_outcome,
+        'audit_user'   => $cur_user,
+        'audit_scene'  => $cur_scene,
+        'audit_search' => $cur_search,
+    )), admin_url('admin-post.php'));
+    $export_url = wp_nonce_url($export_url, 'zhiji_ops_export_audit');
+
+    echo '<div class="zhiji-ops-activity">';
+
+    // 筛选表单（GET 提交，不改变任何状态）
+    echo '<form method="get" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">';
+    echo '<input type="hidden" name="page" value="' . esc_attr(ZHIJI_OPS_MENU_SLUG) . '">';
+    printf(
+        '<select name="audit_outcome">%s</select>',
+        implode('', array_map(function ($v, $label) use ($cur_outcome) {
+            return sprintf('<option value="%s"%s>%s</option>',
+                esc_attr($v), selected($cur_outcome, $v, false), esc_html($label));
+        }, array_keys($outcomes), $outcomes))
+    );
+    printf(
+        '<input type="text" name="audit_user" value="%s" placeholder="%s" style="min-width:120px">',
+        esc_attr($cur_user), esc_attr__('操作者', 'zhiji')
+    );
+    $scenes = zhiji_ops_scenes();
+    printf(
+        '<select name="audit_scene"><option value="">%s</option>%s</select>',
+        esc_html__('全部场景', 'zhiji'),
+        implode('', array_map(function ($sid, $sc) use ($cur_scene) {
+            return sprintf('<option value="%s"%s>%s</option>',
+                esc_attr($sid), selected($cur_scene, $sid, false), esc_html($sc['title']));
+        }, array_keys($scenes), $scenes))
+    );
+    printf(
+        '<input type="text" name="audit_search" value="%s" placeholder="%s" style="min-width:160px">',
+        esc_attr($cur_search), esc_attr__('关键词（说明/影响面/理由）', 'zhiji')
+    );
+    submit_button(__('筛选', 'zhiji'), 'secondary', 'submit', false);
+    echo '</form>';
+
+    // 工具行：条数 + 导出（导出会留审计痕）
+    printf(
+        '<p class="description" style="margin:0 0 8px">%s · <a class="button button-small" href="%s">%s</a></p>',
+        esc_html(sprintf(__('共 %d 条（环形保留最近 %d 条）', 'zhiji'), count($all_rows), (int) ZHIJI_OPS_ACTIVITY_MAX)),
+        esc_url($export_url),
+        esc_html__('导出 CSV', 'zhiji')
+    );
+
+    if (!$all_rows) {
+        echo '<p class="description">' . esc_html__('没有符合筛选条件的记录。', 'zhiji') . '</p>';
+    } else {
+        zhiji_ops_render_activity_rows($all_rows);
+    }
+    echo '</div>';
 }
