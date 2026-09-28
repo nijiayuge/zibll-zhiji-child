@@ -23,6 +23,7 @@ zib_require(array(
     'core/Constants',
     'core/Options',
     'core/Helpers',
+    'core/Fields',
     'core/Adapter',
     'core/Registry',
     'core/Assets',

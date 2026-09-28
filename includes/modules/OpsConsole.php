@@ -41,24 +41,22 @@ Zhiji_Registry::register_module('ops_console', array(
             'desc'       => '总闸。关闭后运维页面只能查询，不能重置/删除任何记录；HTTP 清除接口同步拒绝。',
             'dependency' => array('ops_console_enabled', '==', '1'),
         ),
-        array(
-            // 2026-09-28：「记录领取日志」开关已按「开关评估 A3」移除，改为常驻 + 说明。
-            // 它是风控规则「同一邮箱仅限领取一次」的唯一数据源，关掉会让规则失效且运维无法放行。
-            'type'       => 'submessage',
-            'style'      => 'info',
-            'content'    => __('领取记录 <strong>始终写入</strong>（2026-09-28 起不再可配置）。'
+        // 2026-09-28：「记录领取日志」开关已按「开关评估 A3」移除，改为常驻 + 说明。
+        // 它是风控规则「同一邮箱仅限领取一次」的唯一数据源，关掉会让规则失效且运维无法放行。
+        zhiji_notice(
+            __('领取记录 <strong>始终写入</strong>（2026-09-28 起不再可配置）。'
                 . '该记录是「同一邮箱仅限领取一次」校验与运维台查询/放行的唯一数据源，'
                 . '关闭会使风控规则形同失效，故开关已移除。', 'zhiji'),
-            'dependency' => array('ops_console_enabled', '==', '1'),
+            'info',
+            array('ops_console_enabled', '==', '1')
         ),
-        array(
-            // 2026-09-28：「统计被拦截次数」开关已按「开关评估 A4」移除，改为常驻 + 说明。
-            // 它是纯计数器，关闭只会失去观测能力，没有合理关闭场景。
-            'type'       => 'submessage',
-            'style'      => 'info',
-            'content'    => __('「被拦截次数」<strong>始终统计</strong>（2026-09-28 起不再可配置）。'
+        // 2026-09-28：「统计被拦截次数」开关已按「开关评估 A4」移除，改为常驻 + 说明。
+        // 它是纯计数器，关闭只会失去观测能力，没有合理关闭场景。
+        zhiji_notice(
+            __('「被拦截次数」<strong>始终统计</strong>（2026-09-28 起不再可配置）。'
                 . '该计数用于观察「同一邮箱重复领取」规则的命中趋势，无副作用。', 'zhiji'),
-            'dependency' => array('ops_console_enabled', '==', '1'),
+            'info',
+            array('ops_console_enabled', '==', '1')
         ),
         array(
             'id'         => 'ops_console_per_page',

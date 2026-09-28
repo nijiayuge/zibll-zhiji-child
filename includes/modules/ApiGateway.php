@@ -140,12 +140,10 @@ function zhiji_api_gateway()
  * ============================================================ */
     // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
     Zhiji_Registry::register_options('api_gateway', array(
-        array(
-            'type'    => 'submessage',
-            'style'   => 'info',
-            'content' => __('<strong>AJAX 统一网关已常驻启用</strong>（不再是可配置项）。'
+        zhiji_notice(
+            __('<strong>AJAX 统一网关已常驻启用</strong>（不再是可配置项）。'
                 . '全站 AJAX 交互都走这一个端点并统一做 nonce 校验；'
                 . '关闭它会让依赖网关的前台功能（领券、福袋查询、消息角标刷新等）全部失效，'
-                . '因此该开关已于 2026-09-28 移除。', 'zhiji'),
+                . '因此该开关已于 2026-09-28 移除。', 'zhiji')
         ),
     ), 20);

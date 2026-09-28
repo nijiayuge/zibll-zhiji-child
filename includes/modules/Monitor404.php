@@ -97,21 +97,22 @@ function zhiji_monitor_404_migrate_legacy() {
  * 后台 CSF 设置：扩展&增强 → 404监控
  * ============================================================ */
     // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
+    // 2026-09-28：改用 core/Fields.php 的字段构件（P2-A 样板）——
+    //   等价改写，已用 `zhiji_settings_snapshot.py --diff` 证明确零差异
+    //   （③ 源码字段指纹含 id|默认值|标题，故不只是 id 没变）。
     Zhiji_Registry::register_options('monitor_404', array(
-			array(
-				'id'      => 'monitor_404_enabled',
-				'type'    => 'switcher',
-				'title'   => '启用404监控',
-				'default' => false,
-				'desc'    => '监控网站404请求，URL去重计数，后台「工具 → 404监控」查看明细和趋势。白名单过滤favicon/robots/静态资源，登录用户不统计。',
+			zhiji_field_switch(
+				'monitor_404_enabled',
+				'启用404监控',
+				false,
+				'监控网站404请求，URL去重计数，后台「工具 → 404监控」查看明细和趋势。白名单过滤favicon/robots/静态资源，登录用户不统计。'
 			),
-			array(
-				'id'         => 'monitor_404_track_logged_in',
-				'type'       => 'switcher',
-				'title'      => '统计登录用户',
-				'default'    => false,
-				'dependency' => array( 'monitor_404_enabled', '==', '1' ),
-				'desc'       => '默认不统计登录用户的404请求，开启后也会统计。',
+			zhiji_field_switch(
+				'monitor_404_track_logged_in',
+				'统计登录用户',
+				false,
+				'默认不统计登录用户的404请求，开启后也会统计。',
+				array( 'monitor_404_enabled', '==', '1' )
 			),
 		), 20);
 

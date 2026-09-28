@@ -194,15 +194,14 @@ add_filter('wp_get_attachment_image_src', function ($image) {
             'step'       => 1,
             'dependency' => array('webp_enabled', '==', '1'),
         ),
-        array(
-            // 2026-09-28：「保留原图」开关已按「开关评估 A2」移除，改为常驻 + 说明。
-            // 原开关关闭时会 wp_delete_file() 永久删除原图（不可恢复），不应可配。
-            'type'       => 'submessage',
-            'style'      => 'info',
-            'content'    => __('原始 JPG/PNG <strong>始终保留</strong>（2026-09-28 起不再可配置）。'
+        // 2026-09-28：「保留原图」开关已按「开关评估 A2」移除，改为常驻 + 说明。
+        // 原开关关闭时会 wp_delete_file() 永久删除原图（不可恢复），不应可配。
+        zhiji_notice(
+            __('原始 JPG/PNG <strong>始终保留</strong>（2026-09-28 起不再可配置）。'
                 . '此前关闭该项会在转换后永久删除原图，属于不可逆的数据损失；'
                 . '如需节省空间，建议改用图片压缩而非删除原图。', 'zhiji'),
-            'dependency' => array('webp_enabled', '==', '1'),
+            'info',
+            array('webp_enabled', '==', '1')
         ),
         array(
             'type'    => 'submessage',

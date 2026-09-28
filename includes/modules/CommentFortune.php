@@ -563,15 +563,14 @@ function zhiji_comment_fortune_register_options() {
 					'sanitize'   => false,
 					'desc'       => __( '命中后随机展示一句。留空使用内置 5 句默认文案。', 'zhiji' ),
 				),
-				array(
-					// 2026-09-28：「记录福袋领取日志」开关已按「开关评估 A6」移除，改为常驻 + 说明。
-					// 关掉它会让中奖弹窗只活在 2h transient → 错过即永久丢失且无法补发。
-					'dependency' => array( 'comment_fortune_enabled', '==', '1' ),
-					'type'       => 'submessage',
-					'style'      => 'info',
-					'content'    => __( '福袋发放记录 <strong>始终持久化</strong>（2026-09-28 起不再可配置）。'
+				// 2026-09-28：「记录福袋领取日志」开关已按「开关评估 A6」移除，改为常驻 + 说明。
+				// 关掉它会让中奖弹窗只活在 2h transient → 错过即永久丢失且无法补发。
+				zhiji_notice(
+					__( '福袋发放记录 <strong>始终持久化</strong>（2026-09-28 起不再可配置）。'
 						. '该记录是后台「知集运维 → 评论福袋待领取」查询与补发中奖弹窗的唯一依据；'
 						. '关闭它会导致用户错过弹窗后无法找回，故开关已移除。', 'zhiji' ),
+					'info',
+					array( 'comment_fortune_enabled', '==', '1' )
 				),
 				array(
 					'type'    => 'content',
