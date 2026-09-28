@@ -17,6 +17,8 @@ Zhiji_Registry::register_module('mail_template', array(
     'parent'   => 'zhiji_user',
     'priority' => 40,
     'option'   => 'mail_template_enabled',
+    // 图标随注册元数据声明（2026-09-28：由 legacy 分节迁入 register_options 后仍保留图标）
+    'icon'     => 'fa fa-envelope-o',
 ));
 
 
@@ -367,14 +369,10 @@ function zhiji_mail_test_send( $scene, $to ) {
 }
 
 // 后台设置：用户&互动 → 邮件模板
+// 2026-09-28：由 `csf_section_for_legacy()`（v1 迁移兼容路径）改为统一的 `register_options()`。
+// 分节元数据（parent/title/priority/icon）全部取自上方 register_module，字段定义不变。
 if ( class_exists( 'CSF' ) ) {
-	Zhiji_Registry::csf_section_for_legacy( 'mail_template', array(
-		'id'     => 'zhiji_mail_template',
-		'title'  => '邮件模板',
-		'icon'   => 'fa fa-envelope-o',
-		'parent' => 'zhiji_user',
-		'priority' => 40,
-		'fields' => array(
+	Zhiji_Registry::register_options( 'mail_template', array(
 			array(
 				'title'   => '测试收件邮箱',
 				'label'   => '填写您自己的邮箱，用于接收测试邮件（默认使用站点管理员邮箱）',
@@ -409,8 +407,8 @@ if ( class_exists( 'CSF' ) ) {
 				'type'  => 'notice',
 				'style' => 'info',
 			),
-		),
-	) );
+		)
+	);
 }
 
 // 保存触发：检测 mail_test_send 开启 → 发送 → 复位开关

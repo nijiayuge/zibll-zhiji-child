@@ -3,7 +3,7 @@
  * 知集（zhiji）子主题唯一入口
  *
  * 加载顺序（改动前务必阅读《新子主题-v2/03-工程结构与规范.md》）：
- *   ① 核心层 core/      —— 常量、工具、父主题适配层、模块注册表
+ *   ① 核心层 core/      —— 常量、配置门面、工具、父主题适配层、模块注册表
  *   ② 配置层 options/   —— CSF 设置页与保存/备份动作
  *   ③ 功能层 functions/ —— 主题级函数
  *   ④ 业务模块 modules/ —— 一功能一文件，自注册 + 独立开关
@@ -15,35 +15,13 @@
 
 defined('ABSPATH') || exit;
 
-/**
- * 读取主题配置项（唯一实现，禁止在别处重复定义）
- *
- * @param string $name    配置键
- * @param mixed  $default 键不存在时的默认值
- * @param string $subname 嵌套子键（可选）
- * @return mixed
- */
-function zhiji_get_option($name, $default = false, $subname = '')
-{
-    static $options = null;
-    if ($options === null) {
-        $options = get_option('zhiji_options');
-    }
-    if (!is_array($options)) {
-        return $default;
-    }
-    if (!isset($options[$name])) {
-        return $default;
-    }
-    if ($subname) {
-        return isset($options[$name][$subname]) ? $options[$name][$subname] : $default;
-    }
-    return $options[$name];
-}
-
-// ① 核心层：常量 / 工具 / 父主题适配层 / 模块注册表
+// ① 核心层：常量 / 配置门面 / 工具 / 父主题适配层 / 模块注册表
+// ⚠️ core/Options 必须位于 core 层**最靠前**（紧随 Constants）：它提供 zhiji_get_option()，
+//    原实现位于本文件顶层（早于所有 require），故 core 层任何文件在**加载期**调用它都成立。
+//    迁入 core/Options.php 后，只有保证它最先加载才能维持这一既有事实（详见该文件头部说明）。
 zib_require(array(
     'core/Constants',
+    'core/Options',
     'core/Helpers',
     'core/Adapter',
     'core/Registry',

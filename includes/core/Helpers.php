@@ -1,8 +1,11 @@
 <?php
 /**
  * @module  Helpers
- * @desc    通用工具：资源 URL（自动带版本）、开关判定、日志
+ * @desc    通用工具：资源 URL（自动带版本）、日志、数组取值
  * @since   2.0.0
+ *
+ * ⚠️ 2026-09-28：`zhiji_is_enabled()` 与 `zhiji_update_option()` 已迁至 **core/Options.php**
+ *    （配置相关能力集中到配置门面）。本文件不再定义它们 —— 重复定义会导致致命错误。
  */
 
 defined('ABSPATH') || exit;
@@ -44,35 +47,6 @@ function zhiji_hex_rgba($hex, $alpha)
         hexdec(substr($hex, 4, 2)),
         rtrim(rtrim(number_format((float) $alpha, 3, '.', ''), '0'), '.')
     );
-}
-
-/**
- * 写入单个配置项（只改指定键，不动其它键；禁止在模块里直接 update_option）
- *
- * @param string $key
- * @param mixed  $value
- * @return bool
- */
-function zhiji_update_option($key, $value)
-{
-    $options = get_option(ZHIJI_OPTION_KEY, array());
-    if (!is_array($options)) {
-        $options = array();
-    }
-    $options[$key] = $value;
-    return update_option(ZHIJI_OPTION_KEY, $options);
-}
-
-/**
- * 开关判定：CSF 的 switcher 存的是字符串 '0'/'1'，必须统一用布尔解析
- *
- * @param string $key
- * @param bool   $default
- * @return bool
- */
-function zhiji_is_enabled($key, $default = false)
-{
-    return (bool) filter_var(zhiji_get_option($key, $default), FILTER_VALIDATE_BOOLEAN);
 }
 
 /**

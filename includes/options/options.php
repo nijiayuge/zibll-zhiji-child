@@ -26,7 +26,8 @@ function zhiji_get_admin_csf_url($tab = '')
         $tab_array_sanitize[] = sanitize_title($tab_i);
     }
     $tab_attr = esc_attr(implode('/', $tab_array_sanitize));
-    $url      = add_query_arg('page', 'zhiji_options', admin_url('admin.php'));
+    // 页面 slug == 选项 key（admin-options.php 的 menu_slug 用的就是 ZHIJI_OPTION_KEY）
+    $url      = add_query_arg('page', ZHIJI_OPTION_KEY, admin_url('admin.php'));
     $url      = $tab ? $url . '#tab=' . $tab_attr : $url;
     return esc_url($url);
 }
@@ -34,10 +35,10 @@ function zhiji_get_admin_csf_url($tab = '')
 //备份主题数据
 function zhiji_options_backup($type = '自动备份')
 {
-    $prefix  = 'zhiji_options';
-    $options = get_option($prefix);
+    // 用常量而非字面量：选项 key 是唯一事实来源，禁止再出现别的写法（Constants.php 已声明）
+    $options = get_option(ZHIJI_OPTION_KEY);
 
-    $options_backup = get_option($prefix . '_backup');
+    $options_backup = get_option(ZHIJI_BACKUP_KEY);
     if (!$options_backup) {
         $options_backup = array();
     }
@@ -54,7 +55,7 @@ function zhiji_options_backup($type = '自动备份')
         $options_backup = array_slice($options_backup, -20);
     }
 
-    return update_option($prefix . '_backup', $options_backup);
+    return update_option(ZHIJI_BACKUP_KEY, $options_backup);
 }
 
 function zhiji_csf_reset_to_backup()
@@ -74,8 +75,7 @@ add_action('csf_zhiji_options_reset_section_before', 'zhiji_csf_reset_section_to
 //主题更新自动备份
 function zhiji_new_zhiji_to_backup()
 {
-    $prefix         = 'zhiji_options';
-    $options_backup = get_option($prefix . '_backup');
+    $options_backup = get_option(ZHIJI_BACKUP_KEY);
     $time           = false;
 
     if ($options_backup) {
@@ -103,8 +103,7 @@ add_action('zhiji_update_notices', 'zhiji_new_zhiji_to_backup');
 //定期自动备份
 function zhiji_csf_save_section_to_backup()
 {
-    $prefix         = 'zhiji_options';
-    $options_backup = get_option($prefix . '_backup');
+    $options_backup = get_option(ZHIJI_BACKUP_KEY);
     $time           = false;
 
     if ($options_backup) {

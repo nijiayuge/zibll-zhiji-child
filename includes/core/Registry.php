@@ -80,6 +80,9 @@ class Zhiji_Registry
             'parent'   => '',
             'priority' => 100,
             'option'   => $key . '_enabled',
+            // 分节图标（可选）。2026-09-28 补：MailTemplate 由 legacy 路径迁入后仍能保留 icon，
+            // 否则「邮件模板」分节会丢掉 fa fa-envelope-o（可见回归）。
+            'icon'     => '',
         ));
     }
 
@@ -150,13 +153,19 @@ class Zhiji_Registry
         if (!isset(self::$modules[$key])) {
             return;
         }
-        $m = self::$modules[$key];
-        self::csf_section(array(
+        $m    = self::$modules[$key];
+        $args = array(
             'parent'   => $m['parent'],
             'title'    => $m['title'],
             'priority' => $m['priority'],
             'fields'   => $fields,
-        ));
+        );
+        // icon 为空时**不要**传该键：CSF 见到 'icon' => '' 仍会输出空图标节点，
+        // 会让所有未声明 icon 的分节多出一个空 <i>。
+        if (!empty($m['icon'])) {
+            $args['icon'] = $m['icon'];
+        }
+        self::csf_section($args);
     }
 
     /**
