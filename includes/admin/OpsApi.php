@@ -27,10 +27,18 @@ zhiji_api_register('zhiji_ops_clear', 'zhiji_ops_api_clear', false, 'zhiji_ops')
  */
 function zhiji_ops_api_query($request = array())
 {
+    // 2026-09-28：403 类**安全拒绝**要写进审计日志（outcome=denied）。
+    // 依据行业审计规范：权限拒绝/越权尝试是安全事件的第一指标，不留痕等于没有控制。
+    // ⚠️ 只记 403（权限/开关），**不记 400 参数校验失败** ——
+    //    后者任何人都可批量触发，会把审计日志刷满、淹没真正有价值的信号。
     if (!current_user_can('manage_options')) {
+        zhiji_ops_add_activity('ops_query', __('权限不足，已拒绝', 'zhiji'), '',
+            array('outcome' => 'denied', 'target' => '403'));
         wp_send_json_error(array('msg' => __('权限不足', 'zhiji')), 403);
     }
     if (!zhiji_ops_enabled()) {
+        zhiji_ops_add_activity('ops_query', __('运维页面未启用，已拒绝', 'zhiji'), '',
+            array('outcome' => 'denied', 'target' => '403'));
         wp_send_json_error(array('msg' => __('运维页面未启用', 'zhiji')), 403);
     }
 
@@ -75,6 +83,8 @@ function zhiji_ops_api_query($request = array())
 function zhiji_ops_api_clear($request = array())
 {
     if (!current_user_can('manage_options')) {
+        zhiji_ops_add_activity('ops_clear', __('权限不足，已拒绝', 'zhiji'), '',
+            array('outcome' => 'denied', 'target' => '403'));
         wp_send_json_error(array('msg' => __('权限不足', 'zhiji')), 403);
     }
 
@@ -83,6 +93,8 @@ function zhiji_ops_api_clear($request = array())
         wp_send_json_error(array('msg' => __('缺少或无效的 scene 参数', 'zhiji')), 400);
     }
     if (!zhiji_ops_can_clear($scene_id)) {
+        zhiji_ops_add_activity('ops_clear', __('「运维清除」已被关闭，已拒绝', 'zhiji'), $scene_id,
+            array('outcome' => 'denied', 'target' => '403'));
         wp_send_json_error(array('msg' => __('「运维清除」已被关闭', 'zhiji')), 403);
     }
 
@@ -110,6 +122,13 @@ function zhiji_ops_api_clear($request = array())
     ));
 
     if (!empty($ret['error'])) {
+        // 这是"尝试了但没做成"的**业务失败**，值得留痕（区别于 400 参数校验噪声）
+        zhiji_ops_add_activity(
+            'reset' === $mode ? 'reset' : 'delete',
+            $ret['error'],
+            $scene_id,
+            array('outcome' => 'error', 'target' => $email ? ('email=' . $email) : ('ids=' . count($ids)))
+        );
         wp_send_json_error(array('msg' => $ret['error']), 400);
     }
 
@@ -121,7 +140,17 @@ function zhiji_ops_api_clear($request = array())
             (int) $ret['affected'],
             $email ? $email : implode(',', $ids)
         ),
-        $scene_id
+        $scene_id,
+        array(
+            'outcome' => 'success',
+            // 影响面 + before→after 摘要：审计规范要求写操作可还原"改了什么"
+            'target'  => $email ? ('email=' . $email) : ('ids=' . implode(',', $ids)),
+            'changes' => array(
+                'mode'     => $mode,
+                'affected' => (int) $ret['affected'],
+                'status'   => 'reset' === $mode ? 'cleared(恢复可领取)' : 'deleted',
+            ),
+        )
     );
 
     wp_send_json_success(array(

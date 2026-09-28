@@ -189,7 +189,40 @@ function zhiji_ops_page_url($scene = '', array $extra = array())
  * @param string $scene  场景 ID
  * @return void
  */
-function zhiji_ops_add_activity($action, $detail = '', $scene = '')
+/**
+ * 写一条**运维审计日志**
+ *
+ * 2026-09-28 升级为「审计级」（对照行业标准 SOC 2 CC6.1/CC7.1 与常见后台审计规范）：
+ * 原实现只记 `time/user/scene/action/detail`，缺了溯源与安全分析最关键的几项 ——
+ * **事件 ID**、**UTC 时间**、**来源 IP**、**结果（成功/被拒/失败）**。
+ * 现已补齐，且**被拒绝的操作也会留痕**（权限拒绝是安全事件的第一指标）。
+ *
+ * 字段含义（对齐 OCSF 风格的审计要素）：
+ *   event_id  稳定事件 ID，可在工单/沟通里直接引用
+ *   time      站点本地时间（展示用，与旧数据一致）
+ *   time_utc  UTC ISO-8601（跨时区审计用，审计规范明确要求 UTC）
+ *   user/uid  操作者（0 = system）
+ *   ip/ua     来源 IP 与浏览器标识
+ *   outcome   success | denied | error
+ *   target    影响面描述（如 "ids=3"）
+ *   changes   关键字段的 before→after 摘要（可空）
+ *   reason    操作理由（可空；行业规范要求敏感操作可说明原因）
+ *
+ * ⚠️ 诚实说明存储局限：本日志存于 **option（autoload=false）**，
+ *    是"可审计的记录"而非"防篡改存证" —— 具备 manage_options 的人仍可改它，
+ *    且按 ZHIJI_OPS_ACTIVITY_MAX 做**环形截断**（只留最近 N 条）。
+ *    若要满足"不可篡改 + 保留 12 个月"，需外挂独立存储（独立表/WORM/外部日志），
+ *    当前规模（自有单站运维台）不引入这层复杂度。
+ *
+ * @param string $action 动作标识（如 reset / delete / purge_coupon）
+ * @param string $detail 说明
+ * @param string $scene  场景 ID
+ * @param array  $ctx    可选上下文：
+ *                       outcome(success|denied|error) · target · changes · reason
+ *                       ⚠️ outcome 为 denied/error 时**务必**传入，否则会被记成成功
+ * @return string 事件 ID（便于调用方回显/引用）
+ */
+function zhiji_ops_add_activity($action, $detail = '', $scene = '', array $ctx = array())
 {
     $list = get_option(ZHIJI_OPS_ACTIVITY_KEY, array());
     if (!is_array($list)) {
@@ -197,20 +230,49 @@ function zhiji_ops_add_activity($action, $detail = '', $scene = '')
     }
 
     $user = wp_get_current_user();
-    array_unshift($list, array(
-        'time'   => current_time('mysql'),
-        'user'   => $user && $user->ID ? $user->user_login : 'system',
-        'user_id' => $user ? (int) $user->ID : 0,
-        'scene'  => sanitize_key($scene),
-        'action' => sanitize_key($action),
-        'detail' => (string) $detail,
-    ));
+    $outcome = isset($ctx['outcome']) ? sanitize_key($ctx['outcome']) : 'success';
+    if (!in_array($outcome, array('success', 'denied', 'error'), true)) {
+        $outcome = 'success';
+    }
+
+    // 来源 IP：只用服务器直连地址（REMOTE_ADDR）。
+    // 不采信 X-Forwarded-For —— 它可被伪造，写进审计日志反而会误导溯源
+    // （业务侧领券用 XFF 是另一回事，那是风控输入不是审计证据）。
+    // ⚠️ CLI/cron 环境没有 REMOTE_ADDR → 记 'cli'，让审计条目**永远可判别调用渠道**
+    //   （而不是留一个空字段让人怀疑是采集遗漏）。
+    $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '';
+    if ('' === $ip) {
+        $ip = 'cli';
+    } elseif (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+        // 保留真实代理链信息仅作补充字段，不覆盖主 IP
+        $ip .= ' (via ' . sanitize_text_field(wp_unslash($_SERVER['HTTP_CLIENT_IP'])) . ')';
+    }
+    $ua = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '';
+
+    $entry = array(
+        'event_id' => wp_generate_uuid4(),
+        'time'     => current_time('mysql'),
+        'time_utc' => gmdate('c'),
+        'user'     => $user && $user->ID ? $user->user_login : 'system',
+        'user_id'  => $user ? (int) $user->ID : 0,
+        'ip'       => $ip,
+        'ua'       => mb_substr($ua, 0, 180),
+        'scene'    => sanitize_key($scene),
+        'action'   => sanitize_key($action),
+        'detail'   => (string) $detail,
+        'outcome'  => $outcome,
+        'target'   => isset($ctx['target']) ? (string) $ctx['target'] : '',
+        'changes'  => (isset($ctx['changes']) && is_array($ctx['changes'])) ? $ctx['changes'] : array(),
+        'reason'   => isset($ctx['reason']) ? (string) $ctx['reason'] : '',
+    );
+    array_unshift($list, $entry);
 
     if (count($list) > ZHIJI_OPS_ACTIVITY_MAX) {
         $list = array_slice($list, 0, ZHIJI_OPS_ACTIVITY_MAX);
     }
 
     update_option(ZHIJI_OPS_ACTIVITY_KEY, $list, false);
+    return $entry['event_id'];
 }
 
 /**

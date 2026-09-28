@@ -301,15 +301,42 @@ function zhiji_ops_render_activity($scene = '', $limit = 10)
         echo '</div>';
         return;
     }
+
+    // 结果徽标：success=绿 / denied=红 / error=红（与审计字段 outcome 对应）
+    $outcome_badge = function ($row) {
+        $outcome = isset($row['outcome']) ? (string) $row['outcome'] : '';
+        if ('denied' === $outcome) {
+            return ' <span class="zhiji-ops-tag active">' . esc_html__('已拒绝', 'zhiji') . '</span>';
+        }
+        if ('error' === $outcome) {
+            return ' <span class="zhiji-ops-tag active">' . esc_html__('失败', 'zhiji') . '</span>';
+        }
+        // 旧数据没有 outcome 字段 → 视作成功（不猜、不误标）
+        return '' === $outcome
+            ? ''
+            : ' <span class="zhiji-ops-tag cleared">' . esc_html__('成功', 'zhiji') . '</span>';
+    };
+
     echo '<ul style="margin:0;padding:0;list-style:none">';
     foreach ($rows as $row) {
+        // 溯源信息：IP + 稳定事件 ID（可直接在沟通里引用）
+        $trace = array();
+        if (!empty($row['ip'])) {
+            $trace[] = esc_html($row['ip']);
+        }
+        if (!empty($row['event_id'])) {
+            // 只显示前 8 位：够定位、又不占版面
+            $trace[] = '<code style="font-size:12px">' . esc_html(substr((string) $row['event_id'], 0, 8)) . '</code>';
+        }
         printf(
-            '<li><span class="zhiji-ops-time">%s</span><strong>%s</strong> · %s · %s%s</li>',
+            '<li><span class="zhiji-ops-time">%s</span><strong>%s</strong> · %s · %s%s%s%s</li>',
             esc_html($row['time']),
             esc_html($row['user']),
             esc_html(zhiji_ops_action_label($row['action'])),
             esc_html($row['detail']),
-            $row['scene'] ? ' <span class="zhiji-ops-code">' . esc_html($row['scene']) . '</span>' : ''
+            $outcome_badge($row),
+            $row['scene'] ? ' <span class="zhiji-ops-code">' . esc_html($row['scene']) . '</span>' : '',
+            $trace ? ' <span class="description" style="font-size:12px">(' . implode(' · ', $trace) . ')</span>' : ''
         );
     }
     echo '</ul></div>';
