@@ -54,6 +54,11 @@ if (!defined('ZHIJI_OPS_ACTIVITY_MAX')) {
  *                             primary => array( array('k'=>…,'v'=>…), … )   追加到概览区
  *                             fields  => array( array('k'=>…,'v'=>…,'pre'=>bool), … )  追加到明细区
  *                             status  => array('text'=>…,'tone'=>'ok|warn')  覆盖状态徽标
+ *                             replace => bool  **整体接管**（2026-09-29 新增）：
+ *                                              场景行形态不是 ClaimLog 形状时（如抽奖日志），
+ *                                              跳过通用字段循环，只用本回调提供的字段。
+ *                                              ⚠️ 不加 replace 时通用循环仍会把原始英文键
+ *                                              （uid/name/value…）原样列出，造成重复噪声。
  *                           ⚠️ 页面层负责通用分组与 JSON 编码；本回调只提供**内容**，不输出 HTML。
  *                           未声明时页面层走通用逻辑（仅行字段）。
  *   notice        string    页面顶部提示（可含 HTML 白名单外的纯文本）

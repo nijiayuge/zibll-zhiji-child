@@ -47,28 +47,64 @@ function zhiji_ops_api_query($request = array())
         wp_send_json_error(array('msg' => __('缺少或无效的 scene 参数', 'zhiji')), 400);
     }
 
-    $result = zhiji_claim_log_query(array(
-        'scene'     => $scene_id,
-        'email'     => zhiji_api_str($request, 'email', 100),
-        'status'    => zhiji_api_enum($request, 'status', array('', 'active', 'cleared'), ''),
-        'source'    => zhiji_api_str($request, 'source', 40),
-        'search'    => zhiji_api_str($request, 'search', 100),
-        'date_from' => zhiji_api_str($request, 'date_from', 10),
-        'date_to'   => zhiji_api_str($request, 'date_to', 10),
-        'page'      => max(1, zhiji_api_digits($request, 'page', 1)),
-        'per_page'  => min(200, max(1, zhiji_api_digits($request, 'per_page', 20))),
-        // 排序（2026-09-28）：与查询层白名单一致，非法值由查询层回退默认
-        'orderby'   => zhiji_api_enum($request, 'orderby', array('id', 'created', 'email', 'status'), 'id'),
-        'order'     => ('asc' === strtolower((string) ($request['order'] ?? ''))) ? 'ASC' : 'DESC',
-    ));
+    $scene = zhiji_ops_scene($scene_id);
+
+    // 2026-09-29：改为**场景优先** —— 场景声明了自己的 query/stats 回调就走它
+    //（抽奖等非 ClaimLog 场景此前会错误地查领取表，永远返回 0 行 —— K10 实测踩到）；
+    // 未声明 query 回调的历史 claim 场景保持原 ClaimLog 路径，行为不变。
+    // （与 zhiji_ops_handle_export 的「场景回调 + ClaimLog 兜底」模式对齐。）
+    $filters = array();
+    foreach ((array) $scene['filters'] as $f) {
+        $key = isset($f['key']) ? sanitize_key($f['key']) : '';
+        if ('' === $key || !isset($request[$key])) {
+            continue;
+        }
+        $raw = wp_unslash($request[$key]);
+        if (is_array($raw)) {
+            continue;
+        }
+        $val = sanitize_text_field((string) $raw);
+        if ('' === $val) {
+            continue;
+        }
+        $filters[$key] = (isset($f['type']) && 'date' === $f['type']) ? substr($val, 0, 10) : $val;
+    }
+
+    if (isset($scene['query']) && is_callable($scene['query'])) {
+        $result = (array) call_user_func($scene['query'], array_merge($filters, array(
+            'scene'    => $scene_id,
+            'page'     => max(1, zhiji_api_digits($request, 'page', 1)),
+            'per_page' => min(200, max(1, zhiji_api_digits($request, 'per_page', 20))),
+            'search'   => zhiji_api_str($request, 'search', 100),
+        )));
+        $stats = (isset($scene['stats']) && is_callable($scene['stats']))
+            ? (array) call_user_func($scene['stats'])
+            : array();
+    } else {
+        $result = zhiji_claim_log_query(array(
+            'scene'     => $scene_id,
+            'email'     => zhiji_api_str($request, 'email', 100),
+            'status'    => zhiji_api_enum($request, 'status', array('', 'active', 'cleared'), ''),
+            'source'    => zhiji_api_str($request, 'source', 40),
+            'search'    => zhiji_api_str($request, 'search', 100),
+            'date_from' => zhiji_api_str($request, 'date_from', 10),
+            'date_to'   => zhiji_api_str($request, 'date_to', 10),
+            'page'      => max(1, zhiji_api_digits($request, 'page', 1)),
+            'per_page'  => min(200, max(1, zhiji_api_digits($request, 'per_page', 20))),
+            // 排序（2026-09-28）：与查询层白名单一致，非法值由查询层回退默认
+            'orderby'   => zhiji_api_enum($request, 'orderby', array('id', 'created', 'email', 'status'), 'id'),
+            'order'     => ('asc' === strtolower((string) ($request['order'] ?? ''))) ? 'ASC' : 'DESC',
+        ));
+        $stats = zhiji_claim_log_stats($scene_id);
+    }
 
     wp_send_json_success(array(
         'scene' => $scene_id,
-        'stats' => zhiji_claim_log_stats($scene_id),
-        'rows'  => $result['rows'],
-        'total' => $result['total'],
-        'pages' => $result['pages'],
-        'page'  => $result['page'],
+        'stats' => $stats,
+        'rows'  => isset($result['rows']) ? $result['rows'] : array(),
+        'total' => isset($result['total']) ? $result['total'] : 0,
+        'pages' => isset($result['pages']) ? $result['pages'] : 1,
+        'page'  => isset($result['page']) ? $result['page'] : 1,
     ));
 }
 

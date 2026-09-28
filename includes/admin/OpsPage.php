@@ -777,6 +777,14 @@ function zhiji_ops_build_detail($row, $scene_id = '')
                 if (!empty($extra['status']) && is_array($extra['status'])) {
                     $out['status'] = $extra['status'];
                 }
+                // 2026-09-29 契约扩展：`replace => true` —— 场景行形态**不是** ClaimLog 形状时
+                // （如抽奖日志的 uid/name/value），场景整体接管字段，跳过通用字段循环，
+                // 否则会同时出现"原始英文键 + 场景中文字段"两套重复内容。
+                $replace = !empty($extra['replace']);
+                if ($replace) {
+                    $out['primary'] = array();
+                    $out['fields']  = array();
+                }
                 foreach (array('primary', 'fields') as $group) {
                     if (empty($extra[$group]) || !is_array($extra[$group])) {
                         continue;
