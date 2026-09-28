@@ -645,7 +645,11 @@ function zhiji_coupon_give_count_blocked() {
  * @return int|false
  */
 function zhiji_coupon_give_log_claim( $email, $code, $user_id, $ip, $source = 'direct', $meta = array() ) {
-	if ( ! zhiji_get_option( 'ops_console_log_enabled', 1 ) || ! function_exists( 'zhiji_claim_log_add' ) ) {
+	// 2026-09-28：原 `ops_console_log_enabled` 开关已按「开关评估 A3」移除，**恒记录**。
+	// 理由：该持久化是风控规则「同一邮箱仅限领取一次」的**唯一数据源** ——
+	// 关掉它等于规则失效，且运维台会查不到任何记录（用户被拦时无法放行）。
+	// 它不是独立偏好，而是与风控强耦合的基础设施，不应可关。
+	if ( ! function_exists( 'zhiji_claim_log_add' ) ) {
 		return false;
 	}
 	return zhiji_claim_log_add( array(

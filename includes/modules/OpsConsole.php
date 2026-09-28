@@ -6,7 +6,7 @@
  *          后台路径：后台左侧菜单「知集运维」。
  * @option  ops_console_enabled       运维页面总开关
  *          ops_console_clear_enabled 是否允许运维清除（总闸：关掉后只能查询）
- *          ops_console_log_enabled   是否记录领取日志（关掉则不做持久化校验）
+ *          ops_console_log_enabled   是否记录领取日志（2026-09-28 已移除 → 恒记录）
  *          ops_console_blocked_stat  是否统计被拦截次数（2026-09-28 已移除 → 恒统计）
  *          ops_console_per_page      列表每页条数
  *          ops_console_retention_days 记录保留天数（0=永久）
@@ -42,11 +42,13 @@ Zhiji_Registry::register_module('ops_console', array(
             'dependency' => array('ops_console_enabled', '==', '1'),
         ),
         array(
-            'id'         => 'ops_console_log_enabled',
-            'type'       => 'switcher',
-            'title'      => '记录领取日志',
-            'default'    => true,
-            'desc'       => '把每一次领取成功写入领取记录表（用于「同一邮箱仅一次」校验与运维查询）。关闭后不做此项校验。',
+            // 2026-09-28：「记录领取日志」开关已按「开关评估 A3」移除，改为常驻 + 说明。
+            // 它是风控规则「同一邮箱仅限领取一次」的唯一数据源，关掉会让规则失效且运维无法放行。
+            'type'       => 'submessage',
+            'style'      => 'info',
+            'content'    => __('领取记录 <strong>始终写入</strong>（2026-09-28 起不再可配置）。'
+                . '该记录是「同一邮箱仅限领取一次」校验与运维台查询/放行的唯一数据源，'
+                . '关闭会使风控规则形同失效，故开关已移除。', 'zhiji'),
             'dependency' => array('ops_console_enabled', '==', '1'),
         ),
         array(

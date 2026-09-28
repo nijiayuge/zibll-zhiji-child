@@ -169,7 +169,11 @@ function zhiji_comment_fortune_consume( $uid ) {
  * @return int|false 记录 ID
  */
 function zhiji_comment_fortune_log_claim( $uid, $count, $reward, $text ) {
-	if ( ! zhiji_get_option( 'comment_fortune_log_enabled', true ) || ! function_exists( 'zhiji_claim_log_add' ) ) {
+	// 2026-09-28：原 `comment_fortune_log_enabled` 开关已按「开关评估 A6」移除，**恒记录**。
+	// 理由：中奖弹窗标记原本只活在 2 小时 transient 里 —— 用户那段时间没打开页面，
+	// 弹窗就永久丢失（奖励已到账但用户无感知），运维侧也查不到、无法补发。
+	// 该持久化正是"中奖可查、可补发"能力的唯一基础，不应留下一个能把它关掉的开关。
+	if ( ! function_exists( 'zhiji_claim_log_add' ) ) {
 		return false;
 	}
 	return zhiji_claim_log_add( array(
@@ -560,12 +564,14 @@ function zhiji_comment_fortune_register_options() {
 					'desc'       => __( '命中后随机展示一句。留空使用内置 5 句默认文案。', 'zhiji' ),
 				),
 				array(
+					// 2026-09-28：「记录福袋领取日志」开关已按「开关评估 A6」移除，改为常驻 + 说明。
+					// 关掉它会让中奖弹窗只活在 2h transient → 错过即永久丢失且无法补发。
 					'dependency' => array( 'comment_fortune_enabled', '==', '1' ),
-					'id'         => 'comment_fortune_log_enabled',
-					'type'       => 'switcher',
-					'title'      => __( '记录福袋领取日志', 'zhiji' ),
-					'default'    => true,
-					'desc'       => __( '把每次福袋发放持久化为「待领取」记录（用户领到弹窗后转为已领取）。后台「知集运维 → 评论福袋待领取」可查询与补发。关闭后不做持久化。', 'zhiji' ),
+					'type'       => 'submessage',
+					'style'      => 'info',
+					'content'    => __( '福袋发放记录 <strong>始终持久化</strong>（2026-09-28 起不再可配置）。'
+						. '该记录是后台「知集运维 → 评论福袋待领取」查询与补发中奖弹窗的唯一依据；'
+						. '关闭它会导致用户错过弹窗后无法找回，故开关已移除。', 'zhiji' ),
 				),
 				array(
 					'type'    => 'content',
