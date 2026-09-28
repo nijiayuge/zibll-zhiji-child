@@ -176,30 +176,62 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_CLAIM, array(
             }
             echo '<span class="zhiji-ops-code">' . esc_html($row->object_id) . '</span>';
         }),
-        array('key' => 'discount', 'label' => __('优惠内容', 'zhiji'), 'width' => '11%', 'render' => function ($row) {
-            // 2026-09-28 新增：按券码解析优惠力度（免单/折扣/立减），与用户端口径一致
-            $text = zhiji_ops_scene_claim_discount_text($row->object_id);
-            if ('' === $text) {
-                echo '<span class="zhiji-ops-muted">—</span>';
-                return;
-            }
-            $is_free = __('免单', 'zhiji') === $text;
-            $cls     = $is_free ? 'zhiji-ops-tag cleared' : 'zhiji-ops-tag muted';
-            echo '<span class="' . esc_attr($cls) . '" title="' . esc_attr(sprintf(__('该券优惠内容：%s', 'zhiji'), $text)) . '">' . esc_html($text) . '</span>';
-        }),
-        array('key' => 'status', 'label' => __('状态', 'zhiji'), 'width' => '9%', 'render' => function ($row) {
-            if ('active' === $row->status) {
-                echo '<span class="zhiji-ops-tag active">' . esc_html__('占用中', 'zhiji') . '</span>';
-            } else {
-                echo '<span class="zhiji-ops-tag cleared">' . esc_html__('已放行', 'zhiji') . '</span>';
-            }
-        }),
-        array('key' => 'source', 'label' => __('来源', 'zhiji'), 'width' => '10%', 'render' => function ($row) {
-            // 2026-09-28：改用 ClaimLog 共享映射（9 种来源全量收录），未识别码不外泄英文
-            echo '<span class="zhiji-ops-tag muted">' . esc_html(zhiji_claim_log_source_label($row->source)) . '</span>';
-        }),
+        array('key' => 'discount', 'label' => __('优惠内容', 'zhiji'), 'width' => '11%',
+
+            // 导出：同一口径直接给文本（免单 / 8.8折 / 立减N元），空则 '—'
+            'export' => function ($row) {
+                $text = zhiji_ops_scene_claim_discount_text($row->object_id);
+                return '' === $text ? '—' : $text;
+            },
+
+            'render' => function ($row) {
+                // 2026-09-28 新增：按券码解析优惠力度（免单/折扣/立减），与用户端口径一致
+                $text = zhiji_ops_scene_claim_discount_text($row->object_id);
+                if ('' === $text) {
+                    echo '<span class="zhiji-ops-muted">—</span>';
+                    return;
+                }
+                $is_free = __('免单', 'zhiji') === $text;
+                $cls     = $is_free ? 'zhiji-ops-tag cleared' : 'zhiji-ops-tag muted';
+                echo '<span class="' . esc_attr($cls) . '" title="' . esc_attr(sprintf(__('该券优惠内容：%s', 'zhiji'), $text)) . '">' . esc_html($text) . '</span>';
+            },
+        ),
+        array('key' => 'status', 'label' => __('状态', 'zhiji'), 'width' => '9%',
+
+            // 导出：本地化状态，不外泄 active/cleared 内部值
+            'export' => function ($row) {
+                return 'active' === $row->status ? __('占用中', 'zhiji') : __('已放行', 'zhiji');
+            },
+
+            'render' => function ($row) {
+                if ('active' === $row->status) {
+                    echo '<span class="zhiji-ops-tag active">' . esc_html__('占用中', 'zhiji') . '</span>';
+                } else {
+                    echo '<span class="zhiji-ops-tag cleared">' . esc_html__('已放行', 'zhiji') . '</span>';
+                }
+            },
+        ),
+        array('key' => 'source', 'label' => __('来源', 'zhiji'), 'width' => '10%',
+
+            // 导出：走共享汉化映射，未识别码不外泄英文（与列表同口径）
+            'export' => function ($row) {
+                return zhiji_claim_log_source_label($row->source);
+            },
+
+            'render' => function ($row) {
+                // 2026-09-28：改用 ClaimLog 共享映射（9 种来源全量收录），未识别码不外泄英文
+                echo '<span class="zhiji-ops-tag muted">' . esc_html(zhiji_claim_log_source_label($row->source)) . '</span>';
+            },
+        ),
         array('key' => 'created', 'label' => __('领取时间', 'zhiji'), 'width' => '12%'),
-        array('key' => 'cleared', 'label' => __('放行时间', 'zhiji'), 'width' => '12%', 'render' => function ($row) {
+        array('key' => 'cleared', 'label' => __('放行时间', 'zhiji'), 'width' => '12%',
+
+            // 导出：时间归一（epoch 占位 / 空值 / 年份<2000 → '—'），避免 CSV 里出现 1970-01-01
+            'export' => function ($row) {
+                return zhiji_claim_log_time_text($row->cleared);
+            },
+
+            'render' => function ($row) {
             // 2026-09-28 修复 1970-01-01 显示：表 schema 默认值为 epoch 占位，统一走时间归一
             // （'1970-01-01 00:00:00' / 空值 / 年份<2000 → '—'，从未放行的记录不再显示 epoch）
             $t = zhiji_claim_log_time_text($row->cleared);
@@ -215,7 +247,14 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_CLAIM, array(
                 }
             }
         }),
-        array('key' => 'coupons', 'label' => __('名下券数', 'zhiji'), 'width' => '8%', 'render' => function ($row) {
+        array('key' => 'coupons', 'label' => __('名下券数', 'zhiji'), 'width' => '8%',
+
+            // 导出：计算列本会被导出跳过（行对象上没有该属性），显式给出
+            'export' => function ($row) {
+                return (string) zhiji_ops_scene_claim_coupon_count($row->email);
+            },
+
+            'render' => function ($row) {
             $n = zhiji_ops_scene_claim_coupon_count($row->email);
             $cls = $n > 0 ? 'zhiji-ops-tag muted' : 'zhiji-ops-tag cleared';
             echo '<span class="' . esc_attr($cls) . '">' . (int) $n . '</span>';

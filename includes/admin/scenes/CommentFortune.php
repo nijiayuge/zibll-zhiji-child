@@ -105,9 +105,21 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_FORTUNE, array(
     /* ---------- 表格列 ---------- */
     'columns'       => array(
         array('key' => 'id', 'label' => __('ID', 'zhiji'), 'width' => '56px'),
-        array('key' => 'user', 'label' => __('用户', 'zhiji'), 'width' => '16%', 'render' => function ($row) {
-            $uid = (int) $row->user_id;
-            $u   = $uid ? get_userdata($uid) : null;
+        array('key' => 'user', 'label' => __('用户', 'zhiji'), 'width' => '16%',
+
+            // 导出：用户名 + 昵称（纯文本，不复用 render 的 HTML）
+            'export' => function ($row) {
+                $uid = (int) $row->user_id;
+                $u   = $uid ? get_userdata($uid) : null;
+                if (!$u) {
+                    return sprintf(__('用户 #%d（已删除）', 'zhiji'), $uid);
+                }
+                return $u->user_login . '（' . $u->display_name . '）';
+            },
+
+            'render' => function ($row) {
+                $uid = (int) $row->user_id;
+                $u   = $uid ? get_userdata($uid) : null;
             if (!$u) {
                 echo '<span class="zhiji-ops-tag muted">' . esc_html(sprintf(__('用户 #%d（已删除）', 'zhiji'), $uid)) . '</span>';
                 return;
@@ -116,13 +128,26 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_FORTUNE, array(
             echo '<br><small>' . esc_html($u->display_name) . ' · #' . $uid . '</small>';
         }),
         array('key' => 'note', 'label' => __('序位', 'zhiji'), 'width' => '9%'),
-        array('key' => 'reward', 'label' => __('奖励', 'zhiji'), 'width' => '17%', 'render' => function ($row) {
-            echo esc_html(zhiji_ops_scene_fortune_reward_text($row));
-        }),
+        array('key' => 'reward', 'label' => __('奖励', 'zhiji'), 'width' => '17%',
+
+            'export' => function ($row) {
+                return zhiji_ops_scene_fortune_reward_text($row);
+            },
+
+            'render' => function ($row) {
+                echo esc_html(zhiji_ops_scene_fortune_reward_text($row));
+            }),
         array('key' => 'object_id', 'label' => __('券码', 'zhiji'), 'width' => '11%', 'render' => function ($row) {
             echo empty($row->object_id) ? '—' : '<span class="zhiji-ops-code">' . esc_html($row->object_id) . '</span>';
         }),
-        array('key' => 'status', 'label' => __('状态', 'zhiji'), 'width' => '9%', 'render' => function ($row) {
+        array('key' => 'status', 'label' => __('状态', 'zhiji'), 'width' => '9%',
+
+            // 导出：本地化状态，不外泄 active/cleared 内部值
+            'export' => function ($row) {
+                return 'active' === $row->status ? __('待领取', 'zhiji') : __('已领取', 'zhiji');
+            },
+
+            'render' => function ($row) {
             if ('active' === $row->status) {
                 echo '<span class="zhiji-ops-tag active">' . esc_html__('待领取', 'zhiji') . '</span>';
             } else {
@@ -130,7 +155,14 @@ zhiji_ops_register_scene(ZHIJI_OPS_SCENE_FORTUNE, array(
             }
         }),
         array('key' => 'created', 'label' => __('发放时间', 'zhiji'), 'width' => '13%'),
-        array('key' => 'cleared', 'label' => __('领取时间', 'zhiji'), 'width' => '13%', 'render' => function ($row) {
+        array('key' => 'cleared', 'label' => __('领取时间', 'zhiji'), 'width' => '13%',
+
+            // 导出：时间归一（epoch 占位 / 空值 / 年份<2000 → '—'），避免 CSV 里出现 1970-01-01
+            'export' => function ($row) {
+                return zhiji_claim_log_time_text($row->cleared);
+            },
+
+            'render' => function ($row) {
             // 2026-09-28 修复 1970-01-01 显示：统一走 ClaimLog 时间归一（epoch 占位 → '—'）
             $t = zhiji_claim_log_time_text($row->cleared);
             echo '—' === $t

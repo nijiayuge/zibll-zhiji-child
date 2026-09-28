@@ -168,11 +168,19 @@ function zhiji_ops_handle_export()
     }
     $rows = isset($result['rows']) ? (array) $result['rows'] : array();
 
-    // 导出列：只取标量字段（render 回调不参与导出），保证 CSV 稳定可解析
+    // 导出列解析优先级：
+    //   ① 列声明了 export 回调 → 用它（计算列：优惠内容 / 名下券数 / 奖励文本等）
+    //   ② 否则取行对象上的原始字段（render 回调产出的是 HTML，**不参与导出**）
+    // 这样渲染层的「527/1970 归一、来源汉化、状态本地化」能同样作用于 CSV，
+    // 而新增计算列只需在场景里补一个 export，不必改本文件。
     $cols = array();
     foreach ($scene['columns'] as $col) {
         $key = isset($col['key']) ? (string) $col['key'] : '';
         if ('' === $key) {
+            continue;
+        }
+        if (isset($col['export']) && is_callable($col['export'])) {
+            $cols[$key] = array('label' => $col['label'], 'export' => $col['export']);
             continue;
         }
         $has = false;
@@ -183,7 +191,7 @@ function zhiji_ops_handle_export()
             }
         }
         if ($has || !$rows) {
-            $cols[$key] = $col['label'];
+            $cols[$key] = array('label' => $col['label']);
         }
     }
 
@@ -199,8 +207,8 @@ function zhiji_ops_handle_export()
     fwrite($out, "\xEF\xBB\xBF");
 
     $head = array();
-    foreach ($cols as $label) {
-        $head[] = (string) $label;
+    foreach ($cols as $def) {
+        $head[] = (string) $def['label'];
     }
     fputcsv($out, $head);
 
@@ -217,8 +225,13 @@ function zhiji_ops_handle_export()
 
     foreach ($rows as $row) {
         $line = array();
-        foreach (array_keys($cols) as $key) {
-            $line[] = $safe(isset($row->{$key}) ? $row->{$key} : '');
+        foreach ($cols as $key => $def) {
+            if (isset($def['export'])) {
+                // 计算列：回调必须返回标量（由 $safe 兜底把非标量转为空串）
+                $line[] = $safe(call_user_func($def['export'], $row));
+            } else {
+                $line[] = $safe(isset($row->{$key}) ? $row->{$key} : '');
+            }
         }
         fputcsv($out, $line);
     }
