@@ -120,7 +120,7 @@ setInterval(run,60000);
  */
 function zhiji_countdown_shortcode()
 {
-    if (!zhiji_is_enabled('countdown_enabled')) {
+    if (!zhiji_is_enabled('countdown_enabled', true)) {
         return '';
     }
 
@@ -163,7 +163,7 @@ add_shortcode('zhiji_countdown', 'zhiji_countdown_shortcode');
             'type'    => 'switcher',
             'title'   => '启用人生倒计时',
             'desc'    => '通过短代码 [zhiji_countdown] 在页面/侧栏展示今日四维进度与运行天数。',
-            'default' => false,
+            'default' => true,
         ),
         array(
             'id'         => 'countdown_birth',

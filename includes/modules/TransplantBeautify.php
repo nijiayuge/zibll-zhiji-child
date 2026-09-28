@@ -68,7 +68,7 @@ function zhiji_wcr_output()
  * 正文注入（钩子常注册，回调内判开关）
  * ============================================================ */
 add_filter('the_content', function ($content) {
-    if (!zhiji_is_enabled('transplant_enabled') || !zhiji_is_enabled('transplant_wcr', true)) {
+    if (!zhiji_is_enabled('transplant_enabled', true) || !zhiji_is_enabled('transplant_wcr', true)) {
         return $content;
     }
     // 仅文章正文（不判断 in_the_loop：zibll 模板渲染上下文中该值为 false）
@@ -93,7 +93,7 @@ add_filter('the_content', function ($content) {
             'id'      => 'transplant_enabled',
             'type'    => 'switcher',
             'title'   => '启用文章信息增强',
-            'default' => false,
+            'default' => true,
         ),
         array(
             'id'         => 'transplant_wcr',

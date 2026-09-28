@@ -84,7 +84,7 @@ function zhiji_agent_parse($ua)
  * 新评论时记录 UA（仅对新评论生效）
  */
 add_action('wp_insert_comment', function ($comment_id, $comment) {
-    if (!zhiji_is_enabled('comment_agent_enabled')) {
+    if (!zhiji_is_enabled('comment_agent_enabled', true)) {
         return;
     }
     $ua = isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '';
@@ -102,7 +102,7 @@ add_action('wp_insert_comment', function ($comment_id, $comment) {
  * 评论底部追加设备信息（父主题 comment_footer_info 钩子）
  */
 add_filter('comment_footer_info', function ($info, $comment, $depth) {
-    if (!zhiji_is_enabled('comment_agent_enabled')) {
+    if (!zhiji_is_enabled('comment_agent_enabled', true)) {
         return $info;
     }
     $agent = get_comment_meta($comment->comment_ID, '_zhiji_agent', true);
@@ -116,7 +116,7 @@ add_filter('comment_footer_info', function ($info, $comment, $depth) {
  * 徽标样式
  */
 zhiji_footer_add( 'comment-agent', function () {
-    if (!zhiji_is_enabled('comment_agent_enabled')) {
+    if (!zhiji_is_enabled('comment_agent_enabled', true)) {
         return;
     }
     echo '<style id="zhiji-agent-css">'
@@ -135,6 +135,6 @@ zhiji_footer_add( 'comment-agent', function () {
             'type'    => 'switcher',
             'title'   => '启用评论设备显示',
             'desc'    => '评论底部显示评论者的操作系统与浏览器（仅对新评论生效）。',
-            'default' => false,
+            'default' => true,
         ),
     ), 20);

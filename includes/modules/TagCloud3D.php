@@ -33,7 +33,7 @@ Zhiji_Registry::register_module('tag_cloud_3d', array(
  */
 function zhiji_tag3d_shortcode()
 {
-    if (!zhiji_is_enabled('tag3d_enabled')) {
+    if (!zhiji_is_enabled('tag3d_enabled', true)) {
         return '';
     }
 
@@ -117,7 +117,7 @@ add_shortcode('zhiji_tag_cloud_3d', 'zhiji_tag3d_shortcode');
             'type'    => 'switcher',
             'title'   => '启用 3D 云标签',
             'desc'    => '通过短代码 [zhiji_tag_cloud_3d] 展示球面旋转标签云（纯 CSS 3D，无外部库）。',
-            'default' => false,
+            'default' => true,
         ),
         array(
             'id'         => 'tag3d_limit',

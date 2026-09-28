@@ -2,7 +2,8 @@
 /**
  * @module  MiscBeautify
  * @desc    杂项：手机端访问限制 / 区块 hover 跳动动画 / 长期未登录用户自动清理
- * @option  misc_mobile_only      仅手机端访问
+ * @option  misc_beautify_enabled 模块总闸（2026-09-28 新增，默认开）
+ *          misc_mobile_only      仅手机端访问
  *          misc_jump_selectors   跳动动画选择器（每行一个）
  *          misc_auto_clean_users 自动清理未登录用户
  *          misc_clean_days       未登录天数阈值
@@ -26,7 +27,10 @@ Zhiji_Registry::register_module('misc_beautify', array(
     'title'    => '杂项美化',
     'parent'   => 'zhiji_beautify',
     'priority' => 50,
-    'option'   => 'misc_mobile_only',
+    // ⚠️ 2026-09-28 修正：原为 'misc_mobile_only'（那是**子功能**"网站只允许手机端访问"），
+    // 导致本模块的"主开关"名不副实、且后台分节没有"关闭整个模块"的入口（违反契约第 6 条）。
+    // 现指向真正的总闸 misc_beautify_enabled（默认开 → 行为与修正前完全一致）。
+    'option'   => 'misc_beautify_enabled',
 ));
 
 /* ============================================================
@@ -46,7 +50,8 @@ add_action('init', function () {
  * 手机端访问限制
  * ============================================================ */
 add_action('template_redirect', function () {
-    if (!zhiji_is_enabled('misc_mobile_only')) {
+    // 2026-09-28：先过模块总闸（默认开，行为不变），再判子功能开关
+    if (!zhiji_is_enabled('misc_beautify_enabled', true) || !zhiji_is_enabled('misc_mobile_only')) {
         return;
     }
     if (wp_is_mobile()) {
@@ -117,6 +122,9 @@ add_action('template_redirect', function () {
  * 区块 hover 跳动动画
  * ============================================================ */
 add_action('wp_head', function () {
+    if (!zhiji_is_enabled('misc_beautify_enabled', true)) {
+        return;
+    }
     $selectors = array_filter(array_map('trim', explode("\n", (string) zhiji_get_option('misc_jump_selectors', ''))));
     if (empty($selectors)) {
         return;
@@ -158,7 +166,9 @@ add_action('wp_head', function () {
  * 自动清理长期未登录用户（每日 cron）
  * ============================================================ */
 add_action('init', function () {
-    if (!zhiji_is_enabled('misc_auto_clean_users')) {
+    // 2026-09-28：总闸关闭时同样要撤掉调度（否则总闸关了 cron 还在跑）
+    $on = zhiji_is_enabled('misc_beautify_enabled', true) && zhiji_is_enabled('misc_auto_clean_users');
+    if (!$on) {
         $ts = wp_next_scheduled('zhiji_auto_clean_users_event');
         if ($ts) {
             wp_unschedule_event($ts, 'zhiji_auto_clean_users_event');
@@ -171,7 +181,7 @@ add_action('init', function () {
 }, 20);
 
 add_action('zhiji_auto_clean_users_event', function () {
-    if (!zhiji_is_enabled('misc_auto_clean_users')) {
+    if (!zhiji_is_enabled('misc_beautify_enabled', true) || !zhiji_is_enabled('misc_auto_clean_users')) {
         return;
     }
     $clean_days = max(1, (int) zhiji_get_option('misc_clean_days', 90));
@@ -211,6 +221,13 @@ add_action('zhiji_auto_clean_users_event', function () {
  * ============================================================ */
     // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
     Zhiji_Registry::register_options('misc_beautify', array(
+        array(
+            'id'      => 'misc_beautify_enabled',
+            'type'    => 'switcher',
+            'title'   => '启用杂项功能',
+            'default' => true,
+            'desc'    => '本模块总闸：关闭后下方「手机端访问限制 / 区块跳动动画 / 自动清理未登录用户」全部不生效（默认开启，行为与旧版一致）。',
+        ),
         array(
             'id'      => 'misc_mobile_only',
             'type'    => 'switcher',

@@ -27,7 +27,7 @@ Zhiji_Registry::register_module('comment_beautify', array(
  * 评论区美化（圆角卡片 + hover 上浮）
  * ============================================================ */
 zhiji_footer_add( 'comment-beautify-1', function () {
-    if (!zhiji_is_enabled('comment_beautify_enabled')) {
+    if (!zhiji_is_enabled('comment_beautify_enabled', true)) {
         return;
     }
     echo '<style id="zhiji-comment-beautify-css">'
@@ -47,7 +47,7 @@ zhiji_footer_add( 'comment-beautify-1', function () {
  * B 站风格 UID 标签
  * ============================================================ */
 zhiji_footer_add( 'comment-beautify-2', function () {
-    if (!zhiji_is_enabled('comment_uid_enabled')) {
+    if (!zhiji_is_enabled('comment_uid_enabled', true)) {
         return;
     }
     echo '<style id="zhiji-comment-uid-css">'
@@ -64,7 +64,7 @@ zhiji_footer_add( 'comment-beautify-2', function () {
 }, 98 );
 
 add_filter('comment_footer_info', function ($info, $comment, $depth) {
-    if (!zhiji_is_enabled('comment_uid_enabled')) {
+    if (!zhiji_is_enabled('comment_uid_enabled', true)) {
         return $info;
     }
     // 随机背景色（B 站风格）
@@ -111,14 +111,14 @@ add_filter('comment_footer_info', function ($info, $comment, $depth) {
             'id'      => 'comment_beautify_enabled',
             'type'    => 'switcher',
             'title'   => '启用评论区美化',
-            'default' => false,
+            'default' => true,
             'desc'    => '评论区圆角卡片、hover 上浮与品牌色描边（自动适配暗色模式）。',
         ),
         array(
             'id'      => 'comment_uid_enabled',
             'type'    => 'switcher',
             'title'   => '启用 B 站风格 UID 标签',
-            'default' => false,
+            'default' => true,
             'desc'    => '评论底部显示随机背景的用户 ID 标签（背景图随主题分发）。',
         ),
         array(

@@ -36,7 +36,7 @@ Zhiji_Registry::register_module('article_expire', array(
  */
 function zhiji_article_expire_notice($content)
 {
-    if (!zhiji_is_enabled('article_expire_enabled')) {
+    if (!zhiji_is_enabled('article_expire_enabled', true)) {
         return $content;
     }
     // ⚠️ 只判断 is_singular：实测父主题 zibll 渲染文章时 the_content 触发点不在主循环里
@@ -100,7 +100,7 @@ add_filter('the_content', 'zhiji_article_expire_notice', 5);
             'id'      => 'article_expire_enabled',
             'type'    => 'switcher',
             'title'   => '启用文章过期提示',
-            'default' => false,
+            'default' => true,
         ),
         array(
             'id'         => 'article_expire_days',

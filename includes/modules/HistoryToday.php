@@ -34,7 +34,7 @@ Zhiji_Registry::register_module('history_today', array(
  */
 function zhiji_history_today_shortcode()
 {
-    if (!zhiji_is_enabled('history_today_enabled')) {
+    if (!zhiji_is_enabled('history_today_enabled', true)) {
         return '';
     }
 
@@ -106,7 +106,7 @@ add_shortcode('zhiji_history_today', 'zhiji_history_today_shortcode');
             'type'    => 'switcher',
             'title'   => '启用那年今日',
             'desc'    => '通过短代码 [zhiji_history_today] 展示往年今日发布的文章。',
-            'default' => false,
+            'default' => true,
         ),
         array(
             'id'         => 'history_today_title',

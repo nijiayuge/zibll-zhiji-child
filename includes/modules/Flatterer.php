@@ -83,7 +83,7 @@ add_shortcode('zhiji_flatterer', 'zhiji_flatterer_shortcode');
 
 function zhiji_flatterer_shortcode()
 {
-    if (!zhiji_is_enabled('flatterer_enabled')) {
+    if (!zhiji_is_enabled('flatterer_enabled', true)) {
         return '';
     }
     $pool = zhiji_flatterer_pool();
@@ -137,7 +137,7 @@ function zhiji_flatterer_script()
             'type'    => 'switcher',
             'title'   => '启用舔狗日记',
             'desc'    => '通过短代码 [zhiji_flatterer] 展示随机语录卡片。',
-            'default' => false,
+            'default' => true,
         ),
         array(
             'id'         => 'flatterer_custom',
