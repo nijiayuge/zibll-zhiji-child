@@ -183,6 +183,9 @@ function zhiji_ops_render_overview()
             </div>
         <?php endif; ?>
 
+        <?php zhiji_ops_section_title(__('运行健康', 'zhiji')); ?>
+        <?php zhiji_ops_render_health(); ?>
+
         <?php zhiji_ops_section_title(__('审计日志', 'zhiji')); ?>
         <?php zhiji_ops_render_audit_panel(); ?>
     </div>

@@ -356,6 +356,42 @@ function zhiji_ops_render_activity_rows($rows)
 }
 
 /**
+ * 总览页「运行健康」面板（2026-09-29 新增，附录 Y.6 ⭐⭐：System Health 视图）
+ *
+ * 数据层在 core/Ops.php::zhiji_ops_health_checks()（只读、确定性检查，不发测试邮件、不写状态）。
+ * 展示：色点 = tone（ok 绿 / warn 红 / info 灰），hover 提示 = hint。
+ *
+ * @return void
+ */
+function zhiji_ops_render_health()
+{
+    $checks = zhiji_ops_health_checks();
+    if (!$checks) {
+        return;
+    }
+    $dot = array('ok' => '#22c55e', 'warn' => '#ef4444', 'info' => '#94a3b8');
+
+    echo '<div class="zhiji-ops-health" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px">';
+    foreach ($checks as $c) {
+        $tone = isset($c['tone']) && isset($dot[$c['tone']]) ? $c['tone'] : 'info';
+        $color = $dot[$tone];
+        $hint = isset($c['hint']) ? (string) $c['hint'] : '';
+        printf(
+            '<div class="zhiji-ops-health-item" style="background:#fff;border:1px solid var(--zhiji-line);border-radius:var(--zhiji-radius);padding:8px 10px;display:flex;align-items:center;gap:8px"%s>'
+            . '<span style="flex:0 0 auto;width:8px;height:8px;border-radius:50%%;background:%s;display:inline-block"></span>'
+            . '<span style="color:var(--zhiji-muted);font-size:12px;white-space:nowrap">%s</span>'
+            . '<span style="font-size:13px;font-weight:500;margin-left:auto">%s</span>'
+            . '</div>',
+            $hint ? ' title="' . esc_attr($hint) . '"' : '',
+            esc_attr($color),
+            esc_html($c['label']),
+            esc_html($c['value'])
+        );
+    }
+    echo '</div>';
+}
+
+/**
  * 总览页「审计日志」面板（2026-09-29 新增，附录 Y ⭐⭐⭐：筛选 + 导出）
  *
  * 筛选维度（标准依据：后台审计视图应支持 actor / action-type / target-object / 时间窗）：

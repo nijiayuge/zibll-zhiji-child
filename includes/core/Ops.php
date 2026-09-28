@@ -402,6 +402,115 @@ function zhiji_ops_activities($limit = 10, $scene = '', array $args = array())
 }
 
 /**
+ * 运行健康自检（2026-09-29 新增，附录 Y.6 ⭐⭐：行业标准 System Health 视图）
+ *
+ * 全部为**只读、确定性**检查（不发测试邮件、不写任何状态），tone 三档：
+ *   ok   绿  —— 正常
+ *   warn 红  —— 需要关注（生产环境问题）
+ *   info 灰  —— 仅供知悉（无对错）
+ *
+ * @return array array( array('label'=>…, 'value'=>…, 'tone'=>ok|warn|info, 'hint'=>…), … )
+ */
+function zhiji_ops_health_checks()
+{
+    global $wpdb;
+    $checks = array();
+
+    // 1) 运行环境（info：版本本身无对错；PHP 低于 7.4 才 warn —— 主题最低要求）
+    $checks[] = array(
+        'label' => __('PHP 版本', 'zhiji'),
+        'value' => PHP_VERSION,
+        'tone'  => version_compare(PHP_VERSION, '7.4', '>=') ? 'info' : 'warn',
+        'hint'  => __('主题最低要求 7.4', 'zhiji'),
+    );
+    $checks[] = array(
+        'label' => __('WordPress', 'zhiji'),
+        'value' => get_bloginfo('version'),
+        'tone'  => 'info',
+        'hint'  => '',
+    );
+
+    // 2) HTTPS（生产应启用；本地 http 属预期 → info 而非 warn）
+    $checks[] = array(
+        'label' => __('HTTPS', 'zhiji'),
+        'value' => is_ssl() ? __('已启用', 'zhiji') : __('未启用', 'zhiji'),
+        'tone'  => is_ssl() ? 'ok' : 'info',
+        'hint'  => is_ssl() ? '' : __('生产环境建议启用（站点已列入 SSL 改造计划）', 'zhiji'),
+    );
+
+    // 3) 调试模式（生产必须关：否则 PHP 报错会直接打到页面，信息泄露 + 破坏布局）
+    $checks[] = array(
+        'label' => __('WP_DEBUG', 'zhiji'),
+        'value' => (defined('WP_DEBUG') && WP_DEBUG) ? __('开启', 'zhiji') : __('关闭', 'zhiji'),
+        'tone'  => (defined('WP_DEBUG') && WP_DEBUG) ? 'warn' : 'ok',
+        'hint'  => (defined('WP_DEBUG') && WP_DEBUG) ? __('生产环境必须关闭（见上线 Checklist §三 2.1）', 'zhiji') : '',
+    );
+
+    // 4) GD / imagewebp（WebP 模块的硬依赖；缺失则该模块静默不工作）
+    $checks[] = array(
+        'label' => __('GD / WebP', 'zhiji'),
+        'value' => function_exists('imagewebp') ? __('可用', 'zhiji') : __('不可用', 'zhiji'),
+        'tone'  => function_exists('imagewebp') ? 'ok' : 'warn',
+        'hint'  => function_exists('imagewebp') ? '' : __('WebP 转换模块依赖，需主机启用 GD WebP 支持', 'zhiji'),
+    );
+
+    // 5) 定时任务：逾期未执行的事件组（0 = 调度健康；大量积压 = cron 没在跑）
+    $ready = function_exists('wp_get_ready_cron_jobs') ? (array) wp_get_ready_cron_jobs() : array();
+    $ready_n = 0;
+    foreach ($ready as $hook_jobs) {
+        $ready_n += count((array) $hook_jobs);
+    }
+    $checks[] = array(
+        'label' => __('定时任务积压', 'zhiji'),
+        'value' => 0 === $ready_n ? __('无逾期', 'zhiji') : sprintf(__('%d 个逾期', 'zhiji'), $ready_n),
+        'tone'  => 0 === $ready_n ? 'ok' : ($ready_n > 50 ? 'warn' : 'info'),
+        'hint'  => $ready_n > 50 ? __('疑似 WP-Cron 长期未运行，需排查访问触发或改系统 cron', 'zhiji') : '',
+    );
+
+    // 6) 上传目录可写（媒体/WebP 输出的前提）
+    $up = wp_get_upload_dir();
+    $writable = !empty($up['basedir']) && wp_is_writable($up['basedir']);
+    $checks[] = array(
+        'label' => __('上传目录', 'zhiji'),
+        'value' => $writable ? __('可写', 'zhiji') : __('不可写', 'zhiji'),
+        'tone'  => $writable ? 'ok' : 'warn',
+        'hint'  => $writable ? '' : __('媒体上传与 WebP 输出会失败', 'zhiji'),
+    );
+
+    // 7) 审计日志水位（环形缓冲接近上限 = 老记录开始被挤掉）
+    $audit = get_option(ZHIJI_OPS_ACTIVITY_KEY, array());
+    $audit_n = is_array($audit) ? count($audit) : 0;
+    $checks[] = array(
+        'label' => __('审计日志水位', 'zhiji'),
+        'value' => sprintf(__('%d / %d 条', 'zhiji'), $audit_n, (int) ZHIJI_OPS_ACTIVITY_MAX),
+        'tone'  => $audit_n >= (int) ZHIJI_OPS_ACTIVITY_MAX ? 'warn' : 'info',
+        'hint'  => $audit_n >= (int) ZHIJI_OPS_ACTIVITY_MAX ? __('已满，最早的操作记录开始被环形淘汰', 'zhiji') : '',
+    );
+
+    // 8) 404 监控（表可能未建：模块未激活/父主题未建表 → 显示 — 而不是报错）
+    $t404 = $wpdb->prefix . 'zhiji_404_logs';
+    $n404 = $wpdb->get_var("SELECT COUNT(*) FROM {$t404}");
+    $checks[] = array(
+        'label' => __('404 监控记录', 'zhiji'),
+        'value' => (null !== $n404) ? number_format_i18n((int) $n404) . ' 行' : '—',
+        'tone'  => 'info',
+        'hint'  => '',
+    );
+
+    // 9) 抽奖日志体积（option 存储、autoload 已关；过大影响每次读写）
+    $lot = get_option('zhiji_lottery_log');
+    $lot_kb = $lot ? round(strlen(wp_json_encode($lot)) / 1024, 1) : 0;
+    $checks[] = array(
+        'label' => __('抽奖日志体积', 'zhiji'),
+        'value' => sprintf(__('%s KB（%d 条）', 'zhiji'), $lot_kb, is_array($lot) ? count($lot) : 0),
+        'tone'  => $lot_kb > 2048 ? 'warn' : 'info',
+        'hint'  => $lot_kb > 2048 ? __('建议裁剪历史记录，避免每次读写代价过大', 'zhiji') : '',
+    );
+
+    return $checks;
+}
+
+/**
  * 操作标识 → 中文名（页面展示用）
  *
  * @param string $action
