@@ -1580,33 +1580,97 @@ function zhiji_coupon_user_tab_content( $con, $opt ) {
 		return $ka['remain'] - $kb['remain'];
 	} );
 
+	// 2026-09-30：三页签分组（可使用 / 已使用 / 已过期），各页签独立表格与空状态
+	$groups = array(
+		'active'  => array(),
+		'used'    => array(),
+		'expired' => array(),
+	);
+	foreach ( $coupons as $row ) {
+		$meta    = is_array( $row->meta ) ? $row->meta : array();
+		$expired = ! empty( $meta['expire_time'] ) && current_time( 'timestamp' ) > strtotime( (string) $meta['expire_time'] );
+		if ( 'used' === $row->status ) {
+			$groups['used'][] = $row;
+		} elseif ( $expired ) {
+			$groups['expired'][] = $row;
+		} else {
+			$groups['active'][] = $row;
+		}
+	}
+	// 已使用页签需要「使用时间」：order_num → 父主题订单 pay_time
+	$used_map = zhiji_coupon_used_time_map( $groups['used'] );
+
 	$html  = '<div class="ajax-item"><div class="zib-widget">';
 	$html .= '<div class="box-body notop"><div class="title-theme"><b>' . esc_html__( '我的优惠码', 'zhiji' ) . '</b></div></div>';
-	$html .= '<div class="box-body">';
-	$html .= '<div class="table-responsive"><table class="table table-hover zhiji-coupon-table">';
-	$html .= '<thead><tr><th>' . esc_html__( '优惠码', 'zhiji' ) . '</th><th>' . esc_html__( '优惠内容', 'zhiji' ) . '</th><th>' . esc_html__( '来源', 'zhiji' ) . '</th><th>' . esc_html__( '到期时间', 'zhiji' ) . '</th><th>' . esc_html__( '状态', 'zhiji' ) . '</th><th>' . esc_html__( '领取时间', 'zhiji' ) . '</th></tr></thead><tbody>';
+	$html .= '<div class="box-body zhiji-coupon-box">';
 
-	foreach ( $coupons as $row ) {
+	// 页签栏（带数量；点击由页脚委托脚本切换，无刷新、PJAX/AJAX 注入均生效）
+	$tabs = array(
+		'active'  => array( __( '可使用', 'zhiji' ), count( $groups['active'] ) ),
+		'used'    => array( __( '已使用', 'zhiji' ), count( $groups['used'] ) ),
+		'expired' => array( __( '已过期', 'zhiji' ), count( $groups['expired'] ) ),
+	);
+	$html .= '<div class="zhiji-coupon-tabs">';
+	foreach ( $tabs as $tkey => $tinfo ) {
+		$html .= '<button type="button" class="zhiji-coupon-tab' . ( 'active' === $tkey ? ' on' : '' ) . '" data-tab="' . esc_attr( $tkey ) . '">'
+			. esc_html( $tinfo[0] ) . ' <i>(' . (int) $tinfo[1] . ')</i></button>';
+	}
+	$html .= '</div>';
+
+	// 三个独立面板：各自数据与字段（已使用页签展示「使用时间」）
+	$html .= '<div class="zhiji-coupon-panel" data-panel="active">' . zhiji_coupon_panel_table( $groups['active'], 'active', $used_map ) . '</div>';
+	$html .= '<div class="zhiji-coupon-panel" data-panel="used" style="display:none">' . zhiji_coupon_panel_table( $groups['used'], 'used', $used_map ) . '</div>';
+	$html .= '<div class="zhiji-coupon-panel" data-panel="expired" style="display:none">' . zhiji_coupon_panel_table( $groups['expired'], 'expired', $used_map ) . '</div>';
+
+	$html .= '</div></div></div>';
+	// 隐藏分页容器：父主题 post_ajax 提取内容时会寻找分页元素，
+	// 提供隐藏分页可避免加载后出现「没有更多内容」的空状态提示（与原生 rewards 结构一致）。
+	$html .= '<div class="ajax-pag hide"><div class="next-page ajax-next"><a href="#"></a></div></div>';
+
+	return $con . $html;
+}
+add_filter( 'main_user_tab_content_coupon', 'zhiji_coupon_user_tab_content', 10, 2 );
+
+/**
+ * 三页签共享的表格渲染（2026-09-30）
+ *
+ * 字段口径：金额=优惠内容、有效期=到期时间（7 天内红显/过期灰显）、
+ * 已使用页签以「使用时间」替换「领取时间」（order_num 反查父主题订单 pay_time）。
+ *
+ * @param array  $rows     该页签的券行（meta 已反序列化）
+ * @param string $mode     active | used | expired
+ * @param array  $used_map order_num => 使用时间
+ * @return string HTML（空数据时返回空状态提示）
+ */
+function zhiji_coupon_panel_table( $rows, $mode, $used_map ) {
+	if ( empty( $rows ) ) {
+		$msgs = array(
+			'active'  => __( '暂无可使用的优惠码，去参与活动领一张吧', 'zhiji' ),
+			'used'    => __( '暂无已使用的优惠码', 'zhiji' ),
+			'expired' => __( '暂无已过期的优惠码', 'zhiji' ),
+		);
+		return '<div class="zhiji-coupon-empty">' . esc_html( isset( $msgs[ $mode ] ) ? $msgs[ $mode ] : __( '暂无数据', 'zhiji' ) ) . '</div>';
+	}
+
+	$heads = 'used' === $mode
+		? array( __( '优惠码', 'zhiji' ), __( '优惠内容', 'zhiji' ), __( '来源', 'zhiji' ), __( '到期时间', 'zhiji' ), __( '使用时间', 'zhiji' ) )
+		: array( __( '优惠码', 'zhiji' ), __( '优惠内容', 'zhiji' ), __( '来源', 'zhiji' ), __( '到期时间', 'zhiji' ), __( '领取时间', 'zhiji' ) );
+
+	$html = '<div class="table-responsive"><table class="table table-hover zhiji-coupon-table"><thead><tr>';
+	foreach ( $heads as $h ) {
+		$html .= '<th>' . esc_html( $h ) . '</th>';
+	}
+	$html .= '</tr></thead><tbody>';
+
+	foreach ( $rows as $row ) {
 		$meta          = is_array( $row->meta ) ? $row->meta : array();
 		// 兼容两种 meta 结构：标准 discount 子键 / 直接 type+val（脚本发放等场景）
 		$discount_meta = ! empty( $meta['discount'] ) ? $meta['discount'] : ( ( ! empty( $meta['type'] ) && isset( $meta['val'] ) ) ? array( 'type' => $meta['type'], 'val' => $meta['val'] ) : null );
-		$discount_text = $discount_meta
-			? Zhiji_Adapter::coupon_discount_text( $discount_meta )
-			: '';
-		// 状态分开显示：已使用 / 已过期 / 未使用
-		if ( 'used' === $row->status ) {
-			$status = __( '已使用', 'zhiji' );
-		} elseif ( ! empty( $meta['expire_time'] ) && current_time( 'timestamp' ) > strtotime( (string) $meta['expire_time'] ) ) {
-			$status = __( '已过期', 'zhiji' );
-		} else {
-			$status = __( '未使用', 'zhiji' );
-		}
-
-		// 来源：业务来源优先（告别"来源=券标题"导致的清一色「奖励中心XXX」）
-		// 展示文案的唯一实现在 zhiji_coupon_give_source_label()
+		$discount_text = $discount_meta ? Zhiji_Adapter::coupon_discount_text( $discount_meta ) : '';
+		// 来源：业务来源优先，展示文案唯一实现在 zhiji_coupon_give_source_label()
 		$source_text = zhiji_coupon_give_source_label( $meta );
 
-		// 到期时间（2026-09-29 新增）：无 expire_time = 永久有效；7 天内到期红显
+		// 到期时间：无 expire_time = 永久有效；7 天内到期红显
 		$expire_raw   = ! empty( $meta['expire_time'] ) ? (string) $meta['expire_time'] : '';
 		$expire_text  = $expire_raw ? date_i18n( 'Y-m-d H:i', strtotime( $expire_raw ) ) : __( '永久有效', 'zhiji' );
 		$expire_style = '';
@@ -1619,35 +1683,171 @@ function zhiji_coupon_user_tab_content( $con, $opt ) {
 			}
 		}
 
+		// 使用时间（仅已使用页签）：order_num → 父主题订单 pay_time（缺省 create_time）
+		if ( 'used' === $mode ) {
+			$used_time = '';
+			if ( ! empty( $row->order_num ) && isset( $used_map[ $row->order_num ] ) ) {
+				$used_time = $used_map[ $row->order_num ];
+			} elseif ( ! empty( $meta['used_order_num'] ) && is_array( $meta['used_order_num'] ) ) {
+				foreach ( $meta['used_order_num'] as $on ) {
+					if ( $on && isset( $used_map[ $on ] ) ) {
+						$used_time = $used_map[ $on ];
+						break;
+					}
+				}
+			}
+			$last_col = $used_time ? mysql2date( 'Y-m-d H:i', $used_time ) : __( '—', 'zhiji' );
+		} else {
+			$last_col = $row->create_time;
+		}
+
 		$html .= '<tr>';
-		// 优惠码高亮样式与 CouponHighlight 的 .zhiji-cp 统一（2026-09-23）；
-		// 用内联样式保证任何情况下都可见（不依赖其它模块是否输出 CSS）
+		// 优惠码高亮（2026-09-23 口径）：内联样式保证任何主题下可见，点击复制由 CopyToast 委托接管
 		$html .= '<td><span class="zhiji-copy-code" data-code="' . esc_attr( $row->password ) . '" '
 			. zhiji_copy_attrs( $row->password, array( 'msg' => __( '券码已复制，下单粘贴即可抵扣', 'zhiji' ) ) )
 			. ' title="' . esc_attr__( '点一下即可复制', 'zhiji' ) . '" style="display:inline-block;background:#fff6ec;border:1px dashed #ffb366;color:#e8590c;font-weight:600;border-radius:6px;padding:0 7px;letter-spacing:.5px;cursor:pointer;user-select:all;transition:all .15s ease">' . esc_html( $row->password ) . '</span></td>';
 		$html .= '<td>' . esc_html( $discount_text ) . '</td>';
 		$html .= '<td>' . esc_html( $source_text ) . '</td>';
 		$html .= '<td' . $expire_style . '>' . esc_html( $expire_text ) . '</td>';
-		$html .= '<td>' . esc_html( $status ) . '</td>';
-		$html .= '<td>' . esc_html( $row->create_time ) . '</td>';
+		$html .= '<td>' . esc_html( $last_col ) . '</td>';
 		$html .= '</tr>';
 	}
 
 	$html .= '</tbody></table></div>';
-	$html .= '</div></div></div>';
-	// 隐藏分页容器：父主题 post_ajax 提取内容时会寻找分页元素，
-	// 提供隐藏分页可避免加载后出现「没有更多内容」的空状态提示（与原生 rewards 结构一致）。
-	$html .= '<div class="ajax-pag hide"><div class="next-page ajax-next"><a href="#"></a></div></div>';
-
-	return $con . $html;
+	return $html;
 }
-add_filter( 'main_user_tab_content_coupon', 'zhiji_coupon_user_tab_content', 10, 2 );
+
+/**
+ * 已使用券的「使用时间」映射：order_num → 父主题订单 pay_time（缺省 create_time）
+ *
+ * 一次 IN 查询批量取回，避免逐行查库。
+ *
+ * @param array $rows 已使用券行
+ * @return array order_num => datetime 字符串
+ */
+function zhiji_coupon_used_time_map( $rows ) {
+	global $wpdb;
+	$nums = array();
+	foreach ( (array) $rows as $row ) {
+		if ( ! empty( $row->order_num ) ) {
+			$nums[] = (string) $row->order_num;
+		}
+		$meta = is_array( $row->meta ) ? $row->meta : array();
+		if ( ! empty( $meta['used_order_num'] ) && is_array( $meta['used_order_num'] ) ) {
+			foreach ( $meta['used_order_num'] as $n ) {
+				if ( $n ) {
+					$nums[] = (string) $n;
+				}
+			}
+		}
+	}
+	$nums = array_values( array_unique( $nums ) );
+	if ( empty( $nums ) ) {
+		return array();
+	}
+	$t   = $wpdb->prefix . 'zibpay_order';
+	$ph  = implode( ',', array_fill( 0, count( $nums ), '%s' ) );
+	$ors = $wpdb->get_results( $wpdb->prepare( "SELECT order_num, pay_time, create_time FROM {$t} WHERE order_num IN ({$ph})", $nums ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	$map = array();
+	foreach ( (array) $ors as $o ) {
+		$map[ $o->order_num ] = ! empty( $o->pay_time ) ? $o->pay_time : $o->create_time;
+	}
+	return $map;
+}
 
 /**
  * 我的优惠码：点击复制（事件委托，兼容 Tab AJAX 加载内容）
  */
 	// 2026-09-26：改走页脚统一调度（P3-⑧），原优先级 99 保持
 	zhiji_footer_add( 'coupon-copy-script', 'zhiji_coupon_copy_script', 99 );
+	zhiji_footer_add( 'coupon-tabs-script', 'zhiji_coupon_tabs_script', 98 );
+/**
+ * 优惠码三页签切换脚本（2026-09-30）
+ *
+ * document 级事件委托：用户中心 Tab 内容为 AJAX 注入 / PJAX 切换，
+ * 委托在两种场景下都能命中，无需在每个面板上绑事件。
+ */
+function zhiji_coupon_tabs_script() {
+	static $done = false;
+	if ( $done ) {
+		return;
+	}
+	$done = true;
+	?>
+	<style id="zhiji-coupon-tabs-css">
+	.zhiji-coupon-tabs{display:flex;gap:4px;margin-bottom:12px;border-bottom:1px solid rgba(128,128,128,.18)}
+	.zhiji-coupon-tab{border:none;background:none;padding:8px 14px;font-size:14px;color:#888;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;font-family:inherit}
+	.zhiji-coupon-tab i{font-style:normal;font-size:12px;opacity:.75}
+	.zhiji-coupon-tab:hover{color:#e8590c}
+	.zhiji-coupon-tab.on{color:#e8590c;font-weight:600;border-bottom-color:#e8590c}
+	.zhiji-coupon-panel{-webkit-animation:zhijiTabIn .2s ease;animation:zhijiTabIn .2s ease}
+	@-webkit-keyframes zhijiTabIn{from{opacity:0;-webkit-transform:translateY(4px)}to{opacity:1;-webkit-transform:none}}
+	@keyframes zhijiTabIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+	.zhiji-coupon-empty{text-align:center;color:#999;padding:30px 0;font-size:13px}
+	</style>
+	<script>
+	(function () {
+		document.addEventListener('click', function (e) {
+			var tab = e.target.closest ? e.target.closest('.zhiji-coupon-tab') : null;
+			if (!tab) return;
+			var box = tab.closest('.zhiji-coupon-box');
+			if (!box) return;
+			var key = tab.getAttribute('data-tab');
+			box.querySelectorAll('.zhiji-coupon-tab').forEach(function (b) {
+				b.classList.toggle('on', b === tab);
+			});
+			// display:none → 显示会自动重放 CSS 入场动画，切换视觉平滑
+			box.querySelectorAll('.zhiji-coupon-panel').forEach(function (p) {
+				p.style.display = (p.getAttribute('data-panel') === key) ? '' : 'none';
+			});
+		});
+	})();
+	</script>
+	<?php
+}
+
+/**
+ * 存量券有效期批量补写（2026-09-30，用户确认执行）
+ *
+ * 背景：奖励中心渠道此前发放的券一律未写 expire_time（全显「永久有效」）。
+ * 本函数对**未使用**且无 expire_time 的存量券按现行规则（7 天/30 天/永久 三档随机）
+ * 补写有效期；已使用的券不再补写（券已核销无意义）。幂等：写入
+ * zhiji_coupon_expire_backfill_done 标记，只跑一次（$force=true 可重跑）。
+ *
+ * @param bool $force 强制重跑（忽略已完成标记）
+ * @return array array('permanent'=>补写为永久的张数,'with_expire'=>补写了到期时间的张数)
+ */
+function zhiji_coupon_expire_backfill( $force = false ) {
+	if ( ! $force && get_option( 'zhiji_coupon_expire_backfill_done' ) ) {
+		return array( 'permanent' => 0, 'with_expire' => 0 );
+	}
+	global $wpdb;
+	$t    = $wpdb->prefix . 'zibpay_card_password';
+	$rows = $wpdb->get_results( "SELECT id, meta FROM {$t} WHERE type='coupon' AND status='0'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	$perm = 0;
+	$set  = 0;
+	foreach ( (array) $rows as $r ) {
+		$m = maybe_unserialize( $r->meta );
+		if ( is_array( $m ) && ! empty( $m['expire_time'] ) ) {
+			continue; // 已有有效期，跳过
+		}
+		$days = function_exists( 'zhiji_reward_coupon_rand_expire' ) ? zhiji_reward_coupon_rand_expire() : 0;
+		if ( $days > 0 ) {
+			$expire = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) + $days * DAY_IN_SECONDS );
+			if ( class_exists( 'ZibCardPass' ) ) {
+				ZibCardPass::set_meta( (int) $r->id, 'expire_time', $expire );
+				$set++;
+			}
+		} else {
+			$perm++; // 恰好抽中「永久」：无需写 meta
+		}
+	}
+	update_option( 'zhiji_coupon_expire_backfill_done', 1, false );
+	return array( 'permanent' => $perm, 'with_expire' => $set );
+}
+// 后台初始化时幂等执行一次（部署后自动生效；CLI 亦可直接调用）
+add_action( 'admin_init', 'zhiji_coupon_expire_backfill', 20 );
+
 function zhiji_coupon_copy_script() {
 	static $done = false;
 	if ( $done ) {
