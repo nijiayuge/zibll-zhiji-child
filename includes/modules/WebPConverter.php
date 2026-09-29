@@ -144,6 +144,13 @@ add_filter('wp_handle_upload', function ($file) {
         $file['file'] = $result['path'];
         $file['url']  = $result['url'];
         $file['type'] = 'image/webp';
+    } else {
+        // 2026-09-29：转换失败进系统事件日志（附录 Y ⭐⭐）—— 此前失败完全无痕，
+        // 运营只能发现"图怎么没变 WebP"。节流由 zhiji_event_log 内置（60s 同内容只记一条）。
+        $err = is_wp_error($result) ? $result->get_error_message() : __('转换结果为空', 'zhiji');
+        if (function_exists('zhiji_event_log')) {
+            zhiji_event_log('webp', $err, array('file' => basename($file_path), 'quality' => $quality));
+        }
     }
     return $file;
 }, 20);

@@ -29,6 +29,7 @@ zib_require(array(
     'core/Assets',
     'core/ApiRegistry',
     'core/ClaimLog',
+    'core/EventLog',
     'core/Ops',
     'core/CopyToast',
 ), true, 'includes/');
