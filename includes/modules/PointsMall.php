@@ -21,6 +21,11 @@ Zhiji_Registry::register_module('points_mall', array(
     'parent'   => 'zhiji_user',
     'priority' => 145,
     'option'   => 'points_mall_enabled',
+    'enabled_default' => true,   // 商城默认开启（与原短码/入队逻辑一致）
+    // 前台入口页由统一建页基建 PageProvisioner 负责（2026-09-29 批3 迁入）
+    'pages'    => array(
+        array('slug' => 'points-mall', 'title' => '积分商城', 'content' => '[zhiji_points_mall]'),
+    ),
 ));
 
 /* ============================================================
@@ -363,53 +368,9 @@ function zhiji_pmall_enqueue()
 add_action('wp_enqueue_scripts', 'zhiji_pmall_enqueue', 20);
 
 /* ============================================================
- * 前台入口保障（2026-09-29 新增）：自动创建「积分商城」页面
+ * 前台入口页：由统一建页基建 PageProvisioner 负责（2026-09-29 批3 迁入）
  *
- * 背景：模块此前只有短码入口，用户启用后在前后台都找不到商城页面。
- * 方案：admin_init 时幂等自检——模块启用 且 (页面不存在或内容不含短码) 才创建，
- *       page id 存 zhiji_options（zhiji_pmall_page_id），绝不重复建页。
+ * 模块在 register_module() 的 'pages' 键声明 /points-mall 页（见上方注册块）。
+ * PageProvisioner 在 admin_init 幂等建页（回收站恢复 / slug 冲突后缀 / 禁用不删页），
+ * 手动同步入口见本主题设置页顶部按钮。旧 zhiji_pmall_ensure_page() 逻辑已废弃移除。
  * ============================================================ */
-
-/**
- * 确保前台入口页存在（幂等，可安全多次触发）
- *
- * @return int 页面 ID（0 = 未创建/不可用）
- */
-function zhiji_pmall_ensure_page()
-{
-    if (!function_exists('zhiji_is_enabled') || !zhiji_is_enabled('points_mall_enabled', true)) {
-        return 0;
-    }
-
-    $pid = (int) zhiji_get_option('zhiji_pmall_page_id', 0);
-
-    // 已有页且处于发布态且内容含短码 → 直接复用
-    if ($pid) {
-        $post = get_post($pid);
-        if ($post && 'publish' === $post->post_status && false !== strpos((string) $post->post_content, 'zhiji_points_mall')) {
-            return $pid;
-        }
-    }
-
-    // 兜底：按 slug 查已有页（防止重复建）
-    $slug_post = get_page_by_path('points-mall');
-    if ($slug_post && 'publish' === $slug_post->post_status && false !== strpos((string) $slug_post->post_content, 'zhiji_points_mall')) {
-        zhiji_update_option('zhiji_pmall_page_id', (int) $slug_post->ID);
-        return (int) $slug_post->ID;
-    }
-
-    $new_pid = wp_insert_post(array(
-        'post_title'   => __('积分商城', 'zhiji'),
-        'post_name'    => 'points-mall',
-        'post_status'  => 'publish',
-        'post_type'    => 'page',
-        'post_content' => '[zhiji_points_mall]',
-        'comment_status' => 'closed',
-    ));
-    if ($new_pid && !is_wp_error($new_pid)) {
-        zhiji_update_option('zhiji_pmall_page_id', (int) $new_pid);
-        return (int) $new_pid;
-    }
-    return 0;
-}
-add_action('admin_init', 'zhiji_pmall_ensure_page');

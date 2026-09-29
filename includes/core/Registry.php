@@ -124,7 +124,10 @@ class Zhiji_Registry
         if (!empty(self::$modules[$key]['always_on'])) {
             return true;
         }
-        return zhiji_is_enabled(self::$modules[$key]['option'], false);
+        // 允许模块声明"默认启用"：option 未设置时回落到 enabled_default（默认 false）。
+        // 2026-09-29 批3：积分商城默认开启（与原短码/入队逻辑一致，避免 option 未设时不建前台页）
+        $default = !empty(self::$modules[$key]['enabled_default']);
+        return zhiji_is_enabled(self::$modules[$key]['option'], $default);
     }
 
     /**
