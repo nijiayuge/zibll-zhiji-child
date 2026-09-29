@@ -1506,6 +1506,7 @@ function zhiji_coupon_give_source_label( $meta ) {
 		'points_mall'          => __( '积分商城兑换', 'zhiji' ),
 		'bargain'              => __( '砍价奖励', 'zhiji' ),
 		'email_subscribe'      => __( '邮件订阅', 'zhiji' ),
+		'seckill'              => __( '积分秒杀', 'zhiji' ),
 	) );
 
 	$source = isset( $meta['source'] ) ? trim( (string) $meta['source'] ) : '';

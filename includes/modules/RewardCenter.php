@@ -207,6 +207,19 @@ function zhiji_reward_center_register_options() {
 					'default' => 'login',
 					'desc'    => __( '调用 CouponGive 的 zhiji_coupon_give_discount_meta 生成随机立减/折扣优惠码。', 'zhiji' ),
 				),
+				array(
+					'id'      => 'reward_center_coupon_expire',
+					'type'    => 'select',
+					'title'   => __( '有效期规则', 'zhiji' ),
+					'options' => array(
+						'random' => __( '随机分配（7 天 / 30 天 / 永久 三档随机）', 'zhiji' ),
+						'7'      => __( '统一 7 天', 'zhiji' ),
+						'30'     => __( '统一 30 天', 'zhiji' ),
+						'0'      => __( '永久有效', 'zhiji' ),
+					),
+					'default' => 'random',
+					'desc'    => __( '2026-09-29 修复：此前奖励中心渠道发的券一律未写有效期（前台显示"永久有效"）。现按此规则写入 expire_time，覆盖积分商城兑换/砍价/注册迎新/评论福袋等全部奖励中心渠道；前台「我的优惠码 → 到期时间」即时生效。', 'zhiji' ),
+				),
 
 				// —— 分节三：等级（复用父主题）——
 				array(
@@ -472,6 +485,17 @@ function zhiji_reward_record_desc( $type, $overrides = array() ) {
 }
 
 /**
+ * 随机取一档优惠码有效期天数（7 / 30 / 0=永久）
+ *
+ * @return int
+ */
+function zhiji_reward_coupon_rand_expire() {
+	$pool = apply_filters( 'zhiji_reward_coupon_expire_pool', array( 7, 30, 0 ) );
+	$pool = is_array( $pool ) && ! empty( $pool ) ? $pool : array( 7, 30, 0 );
+	return (int) $pool[ array_rand( $pool, 1 ) ];
+}
+
+/**
  * 发放指定类型的一种奖励。
  *
  * @param int    $uid
@@ -524,6 +548,9 @@ function zhiji_reward_center_grant_one( $uid, $type, $source = '', $overrides = 
 			if ( class_exists( 'ZibCardPass' ) && function_exists( 'zhiji_coupon_give_discount_meta' ) && function_exists( 'zhiji_coupon_give_create_one' ) ) {
 				$scope    = isset( $overrides['coupon_scope'] ) ? $overrides['coupon_scope'] : zhiji_get_option( 'reward_center_coupon_scope', 'login' );
 				$discount = zhiji_coupon_give_discount_meta( $scope );
+				// 有效期（2026-09-29 修复"全部永久有效"）：默认 7 天/30 天/永久 三档随机，可在后台改规则
+				$expire_rule = (string) zhiji_get_option( 'reward_center_coupon_expire', 'random' );
+				$expire_days = ( 'random' === $expire_rule ) ? zhiji_reward_coupon_rand_expire() : (int) $expire_rule;
 				$meta     = array(
 					'discount' => $discount,
 					'title'    => '奖励中心专属优惠码',
@@ -531,6 +558,9 @@ function zhiji_reward_center_grant_one( $uid, $type, $source = '', $overrides = 
 					'user_id'  => $uid,
 					'source'   => $source ? $source : 'reward_center',
 				);
+				if ( $expire_days > 0 ) {
+					$meta['expire_time'] = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) + $expire_days * DAY_IN_SECONDS );
+				}
 				$code = zhiji_coupon_give_create_one( $meta, 0 );
 				if ( $code ) {
 					$dt = ( 'multiply' === $discount['type'] )

@@ -462,7 +462,14 @@ function zhiji_pmall_shortcode()
         }
         $out .= '</div></div>'; // 关闭 right + card
     }
-    $out .= '</div></div>';
+    $out .= '</div>';
+
+    // 积分秒杀专区（2026-09-29 新增商品类型）：Seckill 模块启用时自动追加到商城页
+    if (function_exists('zhiji_seckill_shortcode')) {
+        $out .= zhiji_seckill_shortcode();
+    }
+
+    $out .= '</div>';
     return $out;
 }
 add_shortcode('zhiji_points_mall', 'zhiji_pmall_shortcode');

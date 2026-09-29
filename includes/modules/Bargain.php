@@ -1,8 +1,9 @@
 <?php
 /**
  * @module  Bargain
- * @desc    砍价：用户发起砍价 → 分享链接 → 好友助力 → 权重曲线递减 → 归零发优惠码。
- *          v1 精简版：0 元拿优惠码（不做实物/支付/微信 SDK）。
+ * @desc    砍价：用户发起砍价 → 分享链接 → 好友助力 → 权重曲线递减 → 归零发奖励。
+ *          已对接父主题商城（2026-09-29，卡密方式）：配置商品 ID 后，归零发放「绑定该商品的
+ *          免单券」，商品页结账 0 元拿货；未配置则维持通用优惠码奖励（不做微信 SDK）。
  *          权重曲线（调研口径）：首刀 = 总额×60%；此后每刀 = max(0.01, 剩余×rand(0.10~0.18))；
  *          新注册用户 ×加权（默认 3）；剩余 ≤0.05 → 任意助力直接清零。
  * @option  bargain_enabled            总开关
@@ -34,8 +35,10 @@ Zhiji_Registry::register_options('bargain', array(
     array(
         'type'    => 'submessage',
         'style'   => 'info',
-        'content' => __('砍到 0 元发优惠码（不做实物/支付）。权重曲线：首刀 = 总额×首刀占比，此后递减，'
-            . '新用户助力加权。24 小时内未归零即失效。', 'zhiji'),
+        'content' => __('砍到 0 元发奖励。权重曲线：首刀 = 总额×首刀占比，此后递减，'
+            . '新用户助力加权。24 小时内未归零即失效。<b>已对接父主题商城</b>：填了下方商品 ID 后，'
+            . '砍价成功发放<b>绑定该商品的免单券</b>（卡密方式，不碰支付流程），到商品页结账输入券码 0 元拿货；'
+            . '商品 ID 填 0 则维持原「通用优惠码」奖励。', 'zhiji'),
     ),
     array('id' => 'bargain_hours', 'type' => 'number', 'title' => '时效（小时）', 'default' => 24, 'min' => 1, 'max' => 168),
     array('id' => 'bargain_assist_daily', 'type' => 'number', 'title' => '助力者每日助力上限', 'default' => 3, 'min' => 1, 'max' => 20),
@@ -45,6 +48,8 @@ Zhiji_Registry::register_options('bargain', array(
     array('id' => 'bargain_scope', 'type' => 'select', 'title' => '砍到 0 元优惠码档位', 'options' => array(
         'login'  => __('登录档', 'zhiji'), 'active' => __('活跃档', 'zhiji'), 'vip' => __('VIP 档', 'zhiji')),
         'default' => 'login'),
+    array('id' => 'bargain_product_id', 'type' => 'number', 'title' => '对接父主题商城商品 ID', 'default' => 0, 'min' => 0,
+        'desc' => __('填父主题商城付费商品的文章 ID（>0 生效）：砍价成功改发「绑定该商品的免单券」，用户到商品页结账 0 元拿货（卡密方式，不碰支付流程）；填 0 则发放上方的通用优惠码。', 'zhiji')),
 ), 135);
 
 /* ============================================================
@@ -297,17 +302,34 @@ function zhiji_bargain_ajax_assist()
     $done = ($new_rem <= 0);
     if ($done) {
         $b['status'] = 'done';
-        // 归零发码给发起人
-        $r = zhiji_reward_center_grant_one((int) $b['uid'], 'coupon', 'bargain', array(
-            'coupon_scope' => zhiji_get_option('bargain_scope', 'login'),
-        ));
+        // 归零发奖励给发起人（2026-09-29 对接父主题商城）：
+        // 配置了商品 ID → 发「绑定该商品的免单券」（卡密方式，商品页结账 0 元拿货）；
+        // 未配置（=0）→ 维持原通用优惠码奖励。
+        $pid      = (int) zhiji_get_option('bargain_product_id', 0);
+        $pid_post = ($pid > 0) ? get_post($pid) : null;
+        if ($pid_post && function_exists('zhiji_coupon_give_create_one')) {
+            $bargain_code = zhiji_coupon_give_create_one(array(
+                'discount' => array('type' => 'multiply', 'val' => 0), // 0 折 = 免单
+                'title'    => sprintf(__('砍价免单·%s', 'zhiji'), get_the_title($pid)),
+                'reuse'    => 1,
+                'user_id'  => (int) $b['uid'],
+                'source'   => 'bargain',
+            ), $pid);
+            $r = $bargain_code ? array('code' => $bargain_code) : array();
+        } else {
+            $r = zhiji_reward_center_grant_one((int) $b['uid'], 'coupon', 'bargain', array(
+                'coupon_scope' => zhiji_get_option('bargain_scope', 'login'),
+            ));
+        }
         $b['code'] = isset($r['code']) ? $r['code'] : '';
         // 通知发起人
         if (function_exists('zhiji_notify')) {
             zhiji_notify('bargain_success', array(
                 'user_id' => (int) $b['uid'],
                 'title'   => __('砍价成功！', 'zhiji'),
-                'content' => sprintf(__('你的砍价已归零，优惠码 %s 已发放。', 'zhiji'), $b['code']),
+                'content' => $pid_post
+                    ? sprintf(__('你的砍价已归零，商品免单券 %s 已发放（我的优惠码可见），到该商品页结账输入券码即可 0 元拿货。', 'zhiji'), $b['code'])
+                    : sprintf(__('你的砍价已归零，优惠码 %s 已发放。', 'zhiji'), $b['code']),
             ));
         }
         // FOMO 弹幕联动 + 勋章增强事件（2026-09-29 新增）
