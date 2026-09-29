@@ -321,15 +321,17 @@ function zhiji_pmall_shortcode()
         $bought = $uid ? zhiji_pmall_user_counts($uid, $it['id']) : array('bought' => 0, 'today' => 0);
         $limit_hit = ($it['limit'] > 0 && $uid && $bought['bought'] >= $it['limit']);
         $can = ($uid && !$soldout && !$limit_hit);
-        $out .= '<div class="zhiji-pmall-card">';
+        // 行业通行券版式：左侧渐变面额区 + 虚线撕票口 + 右侧信息/按钮区
+        $out .= '<div class="zhiji-pmall-card' . ($soldout ? ' is-off' : '') . '">';
+        $out .= '<div class="zhiji-pmall-left"><b>' . esc_html($it['cost']) . '</b><span>' . esc_html__('积分', 'zhiji') . '</span></div>';
+        $out .= '<div class="zhiji-pmall-right"><div class="zhiji-pmall-info">';
         $out .= '<h4>' . esc_html($it['name']) . '</h4>';
-        $out .= '<div class="zhiji-pmall-cost">' . esc_html(sprintf(__('%d 积分', 'zhiji'), $it['cost'])) . '</div>';
         $out .= '<div class="zhiji-pmall-meta">';
         $out .= (-1 === $it['stock']) ? esc_html__('库存充足', 'zhiji') : esc_html(sprintf(__('剩余 %d 件', 'zhiji'), max(0, $it['stock'])));
         if ($it['limit'] > 0) {
             $out .= ' · ' . esc_html(sprintf(__('每人限兑 %d 次', 'zhiji'), $it['limit']));
         }
-        $out .= '</div>';
+        $out .= '</div></div>'; // 关闭 meta + info
         if ($soldout) {
             $out .= '<button class="button" disabled>' . esc_html__('已兑完', 'zhiji') . '</button>';
         } elseif (!$uid) {
@@ -339,7 +341,7 @@ function zhiji_pmall_shortcode()
         } else {
             $out .= '<button class="button button-primary zhiji-pmall-buy" data-id="' . esc_attr($it['id']) . '"' . ($can ? '' : ' disabled') . '>' . esc_html__('立即兑换', 'zhiji') . '</button>';
         }
-        $out .= '</div>';
+        $out .= '</div></div>'; // 关闭 right + card
     }
     $out .= '</div></div>';
     return $out;
@@ -363,10 +365,10 @@ function zhiji_pmall_enqueue()
     zhiji_asset_add_js('points_mall', $js);
     zhiji_asset_add_js('points_mall_cfg', 'window.ZHIJI_PMALL={nonce:' . wp_json_encode(wp_create_nonce('zhiji_pmall'))
         . ',ajax:' . wp_json_encode(admin_url('admin-ajax.php')) . '};');
-    // 修复：① auto-fill 会保留空轨道 → 仅 2 个商品时右侧大片留白；
-    //        改用 auto-fit 让空轨道塌陷、已有卡片拉伸填满整行。
-    //      ② 按钮显式设色，不依赖父主题 .button（暗色模式下文字/背景失效 → 灰色空块）。
-    zhiji_asset_add_css('points_mall', '.zhiji-pmall-wrap{width:100%}.zhiji-pmall{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}.zhiji-pmall-card{border:1px solid #eee;border-radius:8px;padding:16px;background:#fff;min-width:0}.zhiji-pmall-card h4{margin:0 0 6px;font-size:15px}.zhiji-pmall-cost{color:#e8533f;font-weight:600;margin-bottom:8px}.zhiji-pmall-meta{font-size:12px;color:#999;margin-bottom:12px}.zhiji-pmall .button{display:block;width:100%;margin:0;padding:9px 14px;border:none;border-radius:6px;font-size:14px;line-height:1.4;text-align:center;cursor:pointer;color:#fff;background:#e8533f}.zhiji-pmall .button:disabled{background:#d4d4d4;color:#8a8a8a;cursor:not-allowed}');
+    // 券版式（行业通行做法）：横向 ticket —— 左侧渐变面额区 + 虚线撕票口 + 右侧信息/胶囊按钮。
+    // 撕票缺口用 radial-gradient mask 挖「真缺口」（透明露出页面底色，暗色/亮色模式都对），
+    // 上下两层各 51% 高取并集即可，无需 mask-composite；不支持 mask 的老浏览器自动降级为无缺口圆角券。
+    zhiji_asset_add_css('points_mall', '.zhiji-pmall-wrap{width:100%}.zhiji-pmall{display:flex;flex-direction:column;gap:14px}.zhiji-pmall-card{position:relative;display:flex;align-items:stretch;background:#fff;border-radius:12px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.15));-webkit-mask:radial-gradient(circle at 140px 0,#0000 9px,#000 9.5px) 0 0/100% 51% no-repeat,radial-gradient(circle at 140px 0,#0000 9px,#000 9.5px) 0 100%/100% 51% no-repeat;mask:radial-gradient(circle at 140px 0,#0000 9px,#000 9.5px) 0 0/100% 51% no-repeat,radial-gradient(circle at 140px 0,#0000 9px,#000 9.5px) 0 100%/100% 51% no-repeat}.zhiji-pmall-left{flex:0 0 140px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#ff7a45,#e8533f);color:#fff;text-align:center;padding:18px 10px}.zhiji-pmall-left b{font-size:30px;line-height:1.1;font-weight:700}.zhiji-pmall-left span{font-size:13px;opacity:.92;margin-top:2px}.zhiji-pmall-right{flex:1;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;border-left:1px dashed #ffd9cd;min-width:0}.zhiji-pmall-card h4{margin:0 0 6px;font-size:16px;font-weight:600;color:#222}.zhiji-pmall-meta{font-size:12px;color:#999}.zhiji-pmall .button{flex-shrink:0;margin:0;padding:9px 26px;border:none;border-radius:999px;font-size:14px;line-height:1.4;color:#fff;background:linear-gradient(135deg,#ff7a45,#e8533f);cursor:pointer}.zhiji-pmall .button:hover{opacity:.9}.zhiji-pmall .button:disabled{background:#d4d4d4;color:#8a8a8a;cursor:not-allowed}.zhiji-pmall-card.is-off .zhiji-pmall-left{background:linear-gradient(135deg,#cfcfcf,#b8b8b8)}.zhiji-pmall-card.is-off .zhiji-pmall-right{border-left-color:#ddd}@media(max-width:520px){.zhiji-pmall-left{flex-basis:104px}.zhiji-pmall-left b{font-size:24px}.zhiji-pmall-right{flex-wrap:wrap}}');
 }
 add_action('wp_enqueue_scripts', 'zhiji_pmall_enqueue', 20);
 
