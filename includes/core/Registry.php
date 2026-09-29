@@ -87,6 +87,9 @@ class Zhiji_Registry
             // 其开关已从后台移除、运行期不再判断。标记 always_on 后 module_enabled() 如实返回 true，
             // 避免它去读一个已不存在的键而误报"未启用"。
             'always_on' => false,
+            // 模块前台页面声明（2026-09-29 批次C 批2）：供 PageProvisioner 自动建页。
+            // 结构：array(array('slug'=>,'title'=>,'content'=>,'template'=>,''status'=>), ...)
+            'pages'   => array(),
         ));
     }
 
@@ -96,6 +99,17 @@ class Zhiji_Registry
     public static function modules()
     {
         return self::$modules;
+    }
+
+    /**
+     * 取模块声明的前台页面（2026-09-29 批次C 批2）
+     *
+     * @param string $key 模块 key
+     * @return array
+     */
+    public static function module_pages($key)
+    {
+        return isset(self::$modules[$key]['pages']) ? (array) self::$modules[$key]['pages'] : array();
     }
 
     /**
