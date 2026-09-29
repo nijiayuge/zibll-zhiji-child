@@ -187,10 +187,99 @@ class Zhiji_Registry
         );
         // icon 为空时**不要**传该键：CSF 见到 'icon' => '' 仍会输出空图标节点，
         // 会让所有未声明 icon 的分节多出一个空 <i>。
+        // 2026-09-29：模块未显式声明 icon 时，回退到集中图标映射（统一风格补齐）。
         if (!empty($m['icon'])) {
             $args['icon'] = $m['icon'];
+        } else {
+            $icon = self::section_icon($key);
+            if ('' !== $icon) {
+                $args['icon'] = $icon;
+            }
         }
         self::csf_section($args);
+    }
+
+    /**
+     * 分节图标统一映射（2026-09-29，用户需求「所有分类统一风格图标」）
+     *
+     * 模块可在 register_module 里显式传 'icon' 覆盖；未声明时按此映射补齐，
+     * 避免左侧菜单一半有一半没有。风格统一 FontAwesome 4（与顶层分类一致）。
+     *
+     * @param string $key 模块 key
+     * @return string 图标 class（未收录返回空串 → 不输出 icon 键）
+     */
+    public static function section_icon($key)
+    {
+        static $map = array(
+            // 全局&功能
+            'ops_console'             => 'fa fa-fw fa-dashboard',
+            'page_cache'              => 'fa fa-fw fa-bolt',
+            'webp_converter'          => 'fa fa-fw fa-picture-o',
+            'auto_delete_attachments' => 'fa fa-fw fa-trash-o',
+            'seed_pages'              => 'fa fa-fw fa-flask',
+            // 页面&显示
+            'friend_link_apply'       => 'fa fa-fw fa-link',
+            'history_today'           => 'fa fa-fw fa-calendar',
+            'infomation'              => 'fa fa-fw fa-newspaper-o',
+            'kanban'                  => 'fa fa-fw fa-smile-o',
+            'ticket'                  => 'fa fa-fw fa-ticket',
+            'weiyu'                   => 'fa fa-fw fa-commenting-o',
+            // 页面元素
+            'exit_intent'             => 'fa fa-fw fa-hand-paper-o',
+            'flatterer'               => 'fa fa-fw fa-heart-o',
+            'home_search_box'         => 'fa fa-fw fa-search',
+            'image_layout'            => 'fa fa-fw fa-file-image-o',
+            'life_countdown'          => 'fa fa-fw fa-hourglass-half',
+            'stats_widget'            => 'fa fa-fw fa-bar-chart',
+            'tag_cloud_3d'            => 'fa fa-fw fa-tags',
+            // 文章&列表
+            'article_expire'          => 'fa fa-fw fa-clock-o',
+            'auto_image_alt'          => 'fa fa-fw fa-camera',
+            'auto_keyword_link'       => 'fa fa-fw fa-chain',
+            'post_series'             => 'fa fa-fw fa-list-ol',
+            'reading_progress'        => 'fa fa-fw fa-line-chart',
+            'time_machine'            => 'fa fa-fw fa-history',
+            'transplant_beautify'     => 'fa fa-fw fa-magic',
+            'tts'                     => 'fa fa-fw fa-volume-up',
+            // 美化效果
+            'color_tokens'            => 'fa fa-fw fa-tint',
+            'danmu'                   => 'fa fa-fw fa-bullhorn',
+            'effects_beautify'        => 'fa fa-fw fa-star',
+            'misc_beautify'           => 'fa fa-fw fa-adjust',
+            'notfound_game'           => 'fa fa-fw fa-puzzle-piece',
+            'site_font'               => 'fa fa-fw fa-font',
+            // 用户&互动
+            'consume_rank'            => 'fa fa-fw fa-trophy',
+            'email_subscribe'         => 'fa fa-fw fa-envelope-o',
+            'lottery'                 => 'fa fa-fw fa-life-ring',
+            'mail_template'           => 'fa fa-fw fa-envelope',
+            'member_guide'            => 'fa fa-fw fa-compass',
+            'password_strength'       => 'fa fa-fw fa-key',
+            'points_mall'             => 'fa fa-fw fa-shopping-cart',
+            'reward_center'           => 'fa fa-fw fa-gift',
+            'reward_notify'           => 'fa fa-fw fa-bell-o',
+            'streak_guard'            => 'fa fa-fw fa-fire',
+            // 评论&互动
+            'comment_agent'           => 'fa fa-fw fa-laptop',
+            'comment_beautify'        => 'fa fa-fw fa-heart',
+            'comment_draw'            => 'fa fa-fw fa-pencil',
+            'comment_fortune'         => 'fa fa-fw fa-money',
+            'comment_guard'           => 'fa fa-fw fa-filter',
+            // 互动&趣味
+            'bargain'                 => 'fa fa-fw fa-handshake-o',
+            'easter_egg'              => 'fa fa-fw fa-lightbulb-o',
+            'quiz'                    => 'fa fa-fw fa-question-circle-o',
+            // 支付&付费
+            'coupon_give'             => 'fa fa-fw fa-tags',
+            'coupon_highlight'        => 'fa fa-fw fa-copy',
+            'download_quota'          => 'fa fa-fw fa-cloud-download',
+            // 扩展&增强
+            'baidu_seo'               => 'fa fa-fw fa-send-o',
+            'maintenance'             => 'fa fa-fw fa-wrench',
+            'monitor_404'             => 'fa fa-fw fa-crosshairs',
+            'security_scanner'        => 'fa fa-fw fa-shield',
+        );
+        return isset($map[$key]) ? $map[$key] : '';
     }
 
     /**

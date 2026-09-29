@@ -1500,6 +1500,12 @@ function zhiji_coupon_give_source_label( $meta ) {
 		'zhiji_lottery'        => __( '大转盘抽奖', 'zhiji' ),
 		'lottery'              => __( '大转盘抽奖', 'zhiji' ),
 		'manual_test'          => __( '后台发放', 'zhiji' ),
+		// 2026-09-29 补全：DB 实测 500 张券中 member_guide=340 / points_mall=55 / bargain=28
+		// 均因缺映射而回落显示 title「奖励中心专属优惠码」（占 84% 的"来源清一色"成因）
+		'member_guide'         => __( '注册迎新', 'zhiji' ),
+		'points_mall'          => __( '积分商城兑换', 'zhiji' ),
+		'bargain'              => __( '砍价奖励', 'zhiji' ),
+		'email_subscribe'      => __( '邮件订阅', 'zhiji' ),
 	) );
 
 	$source = isset( $meta['source'] ) ? trim( (string) $meta['source'] ) : '';
@@ -1518,6 +1524,27 @@ function zhiji_coupon_give_source_label( $meta ) {
 	}
 
 	return __( '其他', 'zhiji' );
+}
+
+/**
+ * 剩余有效期排序键（2026-09-29 新增）
+ *
+ * 分组：0=未过期（按剩余秒数升序，快到期在前）→ 1=永久有效 → 2=已过期（组内按过期时间倒序，最近过期在前）
+ *
+ * @param object $row 优惠码行（meta 已反序列化）
+ * @return array array('group'=>int,'remain'=>int)
+ */
+function zhiji_coupon_expire_sort_key( $row ) {
+	$meta   = is_array( $row->meta ) ? $row->meta : array();
+	$expire = ! empty( $meta['expire_time'] ) ? strtotime( (string) $meta['expire_time'] ) : 0;
+	if ( ! $expire ) {
+		return array( 'group' => 1, 'remain' => 0 );
+	}
+	$remain = $expire - current_time( 'timestamp' );
+	if ( $remain > 0 ) {
+		return array( 'group' => 0, 'remain' => $remain );
+	}
+	return array( 'group' => 2, 'remain' => - $remain );
 }
 
 /**
@@ -1542,11 +1569,21 @@ function zhiji_coupon_user_tab_content( $con, $opt ) {
 		return $con . $html;
 	}
 
+	// 2026-09-29：按到期时长排序（未过期升序 → 永久有效 → 已过期）
+	usort( $coupons, function ( $a, $b ) {
+		$ka = zhiji_coupon_expire_sort_key( $a );
+		$kb = zhiji_coupon_expire_sort_key( $b );
+		if ( $ka['group'] !== $kb['group'] ) {
+			return $ka['group'] - $kb['group'];
+		}
+		return $ka['remain'] - $kb['remain'];
+	} );
+
 	$html  = '<div class="ajax-item"><div class="zib-widget">';
 	$html .= '<div class="box-body notop"><div class="title-theme"><b>' . esc_html__( '我的优惠码', 'zhiji' ) . '</b></div></div>';
 	$html .= '<div class="box-body">';
 	$html .= '<div class="table-responsive"><table class="table table-hover zhiji-coupon-table">';
-	$html .= '<thead><tr><th>' . esc_html__( '优惠码', 'zhiji' ) . '</th><th>' . esc_html__( '优惠内容', 'zhiji' ) . '</th><th>' . esc_html__( '来源', 'zhiji' ) . '</th><th>' . esc_html__( '状态', 'zhiji' ) . '</th><th>' . esc_html__( '领取时间', 'zhiji' ) . '</th></tr></thead><tbody>';
+	$html .= '<thead><tr><th>' . esc_html__( '优惠码', 'zhiji' ) . '</th><th>' . esc_html__( '优惠内容', 'zhiji' ) . '</th><th>' . esc_html__( '来源', 'zhiji' ) . '</th><th>' . esc_html__( '到期时间', 'zhiji' ) . '</th><th>' . esc_html__( '状态', 'zhiji' ) . '</th><th>' . esc_html__( '领取时间', 'zhiji' ) . '</th></tr></thead><tbody>';
 
 	foreach ( $coupons as $row ) {
 		$meta          = is_array( $row->meta ) ? $row->meta : array();
@@ -1568,6 +1605,19 @@ function zhiji_coupon_user_tab_content( $con, $opt ) {
 		// 展示文案的唯一实现在 zhiji_coupon_give_source_label()
 		$source_text = zhiji_coupon_give_source_label( $meta );
 
+		// 到期时间（2026-09-29 新增）：无 expire_time = 永久有效；7 天内到期红显
+		$expire_raw   = ! empty( $meta['expire_time'] ) ? (string) $meta['expire_time'] : '';
+		$expire_text  = $expire_raw ? date_i18n( 'Y-m-d H:i', strtotime( $expire_raw ) ) : __( '永久有效', 'zhiji' );
+		$expire_style = '';
+		if ( $expire_raw ) {
+			$diff = strtotime( $expire_raw ) - current_time( 'timestamp' );
+			if ( $diff <= 0 ) {
+				$expire_style = ' style="color:#999"';
+			} elseif ( $diff < 7 * DAY_IN_SECONDS ) {
+				$expire_style = ' style="color:#e8533f;font-weight:600"';
+			}
+		}
+
 		$html .= '<tr>';
 		// 优惠码高亮样式与 CouponHighlight 的 .zhiji-cp 统一（2026-09-23）；
 		// 用内联样式保证任何情况下都可见（不依赖其它模块是否输出 CSS）
@@ -1576,6 +1626,7 @@ function zhiji_coupon_user_tab_content( $con, $opt ) {
 			. ' title="' . esc_attr__( '点一下即可复制', 'zhiji' ) . '" style="display:inline-block;background:#fff6ec;border:1px dashed #ffb366;color:#e8590c;font-weight:600;border-radius:6px;padding:0 7px;letter-spacing:.5px;cursor:pointer;user-select:all;transition:all .15s ease">' . esc_html( $row->password ) . '</span></td>';
 		$html .= '<td>' . esc_html( $discount_text ) . '</td>';
 		$html .= '<td>' . esc_html( $source_text ) . '</td>';
+		$html .= '<td' . $expire_style . '>' . esc_html( $expire_text ) . '</td>';
 		$html .= '<td>' . esc_html( $status ) . '</td>';
 		$html .= '<td>' . esc_html( $row->create_time ) . '</td>';
 		$html .= '</tr>';

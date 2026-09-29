@@ -51,7 +51,14 @@ Zhiji_Registry::register_options('points_mall', array(
         'rows'       => 6,
         'sanitize'   => false,
         'placeholder' => "10 元优惠码|100|50|2\n30 元优惠码|300|10|1",
-        'desc'       => __('每行一条，竖线分隔。库存扣完即显示「已兑完」。', 'zhiji'),
+        'desc'       => __('每行一条，竖线分隔。库存扣完即显示「已兑完」。下方已提供可视化表格编辑器，无需手写竖线格式。', 'zhiji'),
+    ),
+    // 可视化表格编辑器（2026-09-29，对齐行业主流做法）：
+    // 调研结论 —— 主流积分商城后台均为「结构化商品字段」（名称/积分/库存/限兑逐项填写），
+    // 而非裸文本行。此处提供表格编辑，落盘仍为原「名称|积分|库存|限兑」行格式，config key 不变。
+    array(
+        'type'    => 'content',
+        'content' => zhiji_pmall_items_editor_html(),
     ),
     array(
         'id'         => 'points_mall_scope',
@@ -79,6 +86,115 @@ Zhiji_Registry::register_options('points_mall', array(
 /* ============================================================
  * 数据层
  * ============================================================ */
+
+/**
+ * 后台兑换品可视化编辑器（2026-09-29）
+ *
+ * 表格化增删改兑换品，实时同步回 textarea（仍存「名称|积分|库存|限兑」行格式，
+ * 兼容既有 zhiji_pmall_items() 解析与 zibpay 侧扣库存逻辑）。
+ *
+ * @return string HTML+JS（nowdoc，避免转义坑）
+ */
+function zhiji_pmall_items_editor_html()
+{
+    return <<<'HTML'
+<style>
+.zhiji-pmall-ed table{width:100%;border-collapse:collapse}
+.zhiji-pmall-ed th{font-size:12px;color:#888;font-weight:600;text-align:left;padding:6px 8px;background:#f7f8fa;border-bottom:1px solid #eee}
+.zhiji-pmall-ed td{padding:5px 8px;border-bottom:1px solid #f2f3f5;vertical-align:middle}
+.zhiji-pmall-ed input{width:100%;box-sizing:border-box;border:1px solid #d9dce1;border-radius:4px;padding:5px 8px;font-size:13px}
+.zhiji-pmall-ed input:focus{border-color:#2e7cf6;outline:none}
+.zhiji-pmall-ed .zhiji-pm-del{border:none;background:none;color:#e8533f;cursor:pointer;font-size:16px;line-height:1;padding:4px 6px}
+.zhiji-pmall-ed .zhiji-pm-add{margin-top:10px;border:1px dashed #2e7cf6;color:#2e7cf6;background:#fff;border-radius:6px;padding:6px 16px;font-size:13px;cursor:pointer}
+.zhiji-pmall-ed .zhiji-pm-add:hover{background:#eef4ff}
+.zhiji-pmall-ed .zhiji-pm-empty{padding:14px 8px;color:#999;font-size:13px}
+</style>
+<div id="zhiji-pmall-ed" class="zhiji-pmall-ed"></div>
+<script>
+(function () {
+  var ta = document.querySelector('textarea[name="zhiji_options[points_mall_items]"]');
+  if (!ta) return;
+  var wrap = ta.closest('.csf-field');
+  if (wrap) { wrap.style.display = 'none'; }
+  var box = document.getElementById('zhiji-pmall-ed');
+  if (!box) return;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  }
+  function parse() {
+    var rows = [];
+    ta.value.split(/\r?\n/).forEach(function (line) {
+      line = line.trim();
+      if (!line || line.charAt(0) === '#') return;
+      var p = line.split('|');
+      rows.push({
+        name:  (p[0] || '').trim(),
+        cost:  (p[1] || '').trim(),
+        stock: (p[2] === undefined || p[2] === '') ? '-1' : p[2].trim(),
+        limit: (p[3] === undefined || p[3] === '') ? '0'  : p[3].trim()
+      });
+    });
+    return rows;
+  }
+  function save(rows) {
+    ta.value = rows.map(function (r) {
+      return [r.name || '', r.cost || '', (r.stock === '' ? '-1' : r.stock), (r.limit === '' ? '0' : r.limit)].join('|');
+    }).join('\n');
+  }
+
+  function render() {
+    var rows = parse();
+    var h = '<table><thead><tr><th style="width:40px">#</th><th>商品名称</th><th style="width:120px">所需积分</th><th style="width:130px">库存（-1=无限）</th><th style="width:140px">每人限兑（0=不限）</th><th style="width:50px">操作</th></tr></thead><tbody>';
+    if (!rows.length) {
+      h += '<tr><td colspan="6" class="zhiji-pm-empty">暂无兑换品，点击下方按钮添加。兑换所得为优惠码（档位见下方选择）。</td></tr>';
+    }
+    rows.forEach(function (r, i) {
+      h += '<tr>'
+        + '<td>' + (i + 1) + '</td>'
+        + '<td><input type="text" data-k="name" value="' + esc(r.name) + '" placeholder="如：10 元优惠码"></td>'
+        + '<td><input type="number" min="1" data-k="cost" value="' + esc(r.cost) + '"></td>'
+        + '<td><input type="number" data-k="stock" value="' + esc(r.stock) + '"></td>'
+        + '<td><input type="number" min="0" data-k="limit" value="' + esc(r.limit) + '"></td>'
+        + '<td><button type="button" class="zhiji-pm-del" data-i="' + i + '" title="删除">&times;</button></td>'
+        + '</tr>';
+    });
+    h += '</tbody></table><button type="button" class="zhiji-pm-add">＋ 添加兑换品</button>';
+    box.innerHTML = h;
+
+    box.querySelectorAll('input').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        var tr = inp.closest('tr');
+        var i = Array.prototype.indexOf.call(box.querySelectorAll('tbody tr'), tr);
+        var rows = parse();
+        if (!rows[i]) return;
+        rows[i][inp.getAttribute('data-k')] = inp.value;
+        save(rows);
+      });
+    });
+    box.querySelectorAll('.zhiji-pm-del').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var i = parseInt(btn.getAttribute('data-i'), 10);
+        var rows = parse();
+        rows.splice(i, 1);
+        save(rows);
+        render();
+      });
+    });
+    box.querySelector('.zhiji-pm-add').addEventListener('click', function () {
+      var rows = parse();
+      rows.push({ name: '', cost: '100', stock: '-1', limit: '0' });
+      save(rows);
+      render();
+      var inputs = box.querySelectorAll('tbody tr:last-child input');
+      if (inputs.length) { inputs[0].focus(); }
+    });
+  }
+  render();
+})();
+</script>
+HTML;
+}
 
 /**
  * 解析兑换品列表（容错：格式错误的行跳过）
@@ -371,7 +487,7 @@ function zhiji_pmall_enqueue()
     // 券版式（行业通行做法）：横向 ticket —— 左侧渐变面额区 + 虚线撕票口 + 右侧信息/胶囊按钮。
     // 撕票缺口用 radial-gradient mask 挖「真缺口」（透明露出页面底色，暗色/亮色模式都对），
     // 上下两层各 51% 高取并集即可，无需 mask-composite；不支持 mask 的老浏览器自动降级为无缺口圆角券。
-    zhiji_asset_add_css('points_mall', '.zhiji-pmall-wrap{width:100%}.zhiji-pmall{display:flex;flex-direction:column;gap:14px}.zhiji-pmall-card{position:relative;display:flex;align-items:stretch;background:#fff;border-radius:12px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.15));-webkit-mask:radial-gradient(circle at 140px 0,#0000 9px,#000 9.5px) 0 0/100% 51% no-repeat,radial-gradient(circle at 140px 0,#0000 9px,#000 9.5px) 0 100%/100% 51% no-repeat;mask:radial-gradient(circle at 140px 0,#0000 9px,#000 9.5px) 0 0/100% 51% no-repeat,radial-gradient(circle at 140px 0,#0000 9px,#000 9.5px) 0 100%/100% 51% no-repeat}.zhiji-pmall-left{flex:0 0 140px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#ff7a45,#e8533f);color:#fff;text-align:center;padding:18px 10px}.zhiji-pmall-left b{font-size:30px;line-height:1.1;font-weight:700}.zhiji-pmall-left span{font-size:13px;opacity:.92;margin-top:2px}.zhiji-pmall-right{flex:1;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;border-left:1px dashed #ffd9cd;min-width:0}.zhiji-pmall-card h4{margin:0 0 6px;font-size:16px;font-weight:600;color:#222}.zhiji-pmall-meta{font-size:12px;color:#999}.zhiji-pmall .button{flex-shrink:0;margin:0;padding:9px 26px;border:none;border-radius:999px;font-size:14px;line-height:1.4;color:#fff;background:linear-gradient(135deg,#ff7a45,#e8533f);cursor:pointer}.zhiji-pmall .button:hover{opacity:.9}.zhiji-pmall .button:disabled{background:#d4d4d4;color:#8a8a8a;cursor:not-allowed}.zhiji-pmall-card.is-off .zhiji-pmall-left{background:linear-gradient(135deg,#cfcfcf,#b8b8b8)}.zhiji-pmall-card.is-off .zhiji-pmall-right{border-left-color:#ddd}@media(max-width:520px){.zhiji-pmall-left{flex-basis:104px}.zhiji-pmall-left b{font-size:24px}.zhiji-pmall-right{flex-wrap:wrap}}');
+    zhiji_asset_add_css('points_mall', '.zhiji-pmall-wrap{width:100%}.zhiji-pmall{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:18px}.zhiji-pmall-card{position:relative;display:flex;align-items:stretch;background:#fff;border-radius:12px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.15));-webkit-mask:radial-gradient(circle at 140px 0,#0000 9px,#000 9.5px) 0 0/100% 51% no-repeat,radial-gradient(circle at 140px 0,#0000 9px,#000 9.5px) 0 100%/100% 51% no-repeat;mask:radial-gradient(circle at 140px 0,#0000 9px,#000 9.5px) 0 0/100% 51% no-repeat,radial-gradient(circle at 140px 0,#0000 9px,#000 9.5px) 0 100%/100% 51% no-repeat}.zhiji-pmall-left{flex:0 0 140px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#ff7a45,#e8533f);color:#fff;text-align:center;padding:18px 10px}.zhiji-pmall-left b{font-size:30px;line-height:1.1;font-weight:700}.zhiji-pmall-left span{font-size:13px;opacity:.92;margin-top:2px}.zhiji-pmall-right{flex:1;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;border-left:1px dashed #ffd9cd;min-width:0}.zhiji-pmall-card h4{margin:0 0 6px;font-size:16px;font-weight:600;color:#222}.zhiji-pmall-meta{font-size:12px;color:#999}.zhiji-pmall .button{flex-shrink:0;margin:0;padding:9px 24px;border:none;border-radius:999px;font-size:14px;line-height:1.4;color:#fff;background:linear-gradient(135deg,#ff7a45,#e8533f);cursor:pointer}.zhiji-pmall .button:hover{opacity:.9}.zhiji-pmall .button:disabled{background:#d4d4d4;color:#8a8a8a;cursor:not-allowed}.zhiji-pmall-card.is-off .zhiji-pmall-left{background:linear-gradient(135deg,#cfcfcf,#b8b8b8)}.zhiji-pmall-card.is-off .zhiji-pmall-right{border-left-color:#ddd}@media(max-width:520px){.zhiji-pmall{grid-template-columns:1fr}.zhiji-pmall-left{flex-basis:104px}.zhiji-pmall-left b{font-size:24px}.zhiji-pmall-right{flex-wrap:wrap}}');
 }
 add_action('wp_enqueue_scripts', 'zhiji_pmall_enqueue', 20);
 

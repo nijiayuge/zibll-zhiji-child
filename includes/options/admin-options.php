@@ -31,11 +31,14 @@ function zhiji_csf_admin_options()
     ));
 
     /**
-     * 9 大顶层分类（顺序即后台菜单顺序；分类内分节顺序由各分节的 priority 决定）
+     * 顶层分类（顺序即后台菜单顺序；分类内分节顺序由各分节的 priority 决定）
      * 2026-09-26 重构：拆分过大的 zhiji_user(12)/zhiji_page(12)，
      * 新增 zhiji_comment（评论&互动）、zhiji_element（页面元素）；
      * 合并单模块分类 zhiji_shop → zhiji_pay、zhiji_forum → zhiji_page；
      * 移除空分类 zhiji_cap。
+     * 2026-09-29：补回缺失的 zhiji_interact（互动&趣味）—— bargain/easter_egg/quiz
+     * 三个模块的 parent 指向它却从未注册该分类，CSF pre_tabs 会把未知 parent 的
+     * 分节整个从导航丢弃（字段能保存但后台无入口，设置页不可达）。
      */
     $cats = array(
         'zhiji_basic'    => array('全局&功能', 'fa fa-fw fa-bullseye'),
@@ -45,6 +48,7 @@ function zhiji_csf_admin_options()
         'zhiji_beautify' => array('美化效果', 'fa fa-fw fa-paint-brush'),
         'zhiji_user'     => array('用户&互动', 'fa fa-fw fa-users'),
         'zhiji_comment'  => array('评论&互动', 'fa fa-fw fa-comments-o'),
+        'zhiji_interact' => array('互动&趣味', 'fa fa-fw fa-gamepad'),
         'zhiji_pay'      => array('支付&付费', 'fa fa-fw fa-credit-card'),
         'zhiji_over'     => array('扩展&增强', 'fa fa-fw fa-cubes'),
     );

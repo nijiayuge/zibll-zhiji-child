@@ -325,10 +325,14 @@ function zhiji_email_subscribe_send_notification( $post_id ) {
         }
 
         foreach ( $batch as $user ) {
-            // 个性化邮件内容（用户名问候 + 兜底占位替换）
-            $user_content = zhiji_email_subscribe_render_email_content( $post, $user->display_name );
+            // 个性化邮件内容（用户名问候 + 兜底占位替换 + 一键退订链接）
+            $unsub_url    = zhiji_email_sub_unsub_url( (int) $user->ID );
+            $user_content = zhiji_email_subscribe_render_email_content( $post, $user->display_name, $unsub_url );
             $user_content = str_replace( '{{username}}', esc_html( $user->display_name ), $user_content );
             $user_content = str_replace( '{{user_email}}', esc_html( $user->user_email ), $user_content );
+
+            // List-Unsubscribe 头（Gmail/Yahoo 批量发件人合规）：仅在本封邮件发送期间生效
+            $GLOBALS['zhiji_email_sub_unsub_url'] = $unsub_url;
 
             // 发送邮件
             if ( function_exists( 'zhiji_mail_send' ) ) {
@@ -336,6 +340,7 @@ function zhiji_email_subscribe_send_notification( $post_id ) {
             } else {
                 wp_mail( $user->user_email, $subject, $user_content, array( 'Content-Type: text/html; charset=UTF-8' ) );
             }
+            unset( $GLOBALS['zhiji_email_sub_unsub_url'] );
         }
     }
 }
@@ -343,10 +348,12 @@ function zhiji_email_subscribe_send_notification( $post_id ) {
 /**
  * 渲染新文章通知邮件内容
  *
- * @param WP_Post $post 文章对象
+ * @param WP_Post $post      文章对象
+ * @param string  $name      收件人称呼
+ * @param string  $unsub_url 一键退订链接（2026-09-29 新增；空则回退「登录个人中心退订」文案）
  * @return string
  */
-function zhiji_email_subscribe_render_email_content( $post, $name = '' ) {
+function zhiji_email_subscribe_render_email_content( $post, $name = '', $unsub_url = '' ) {
     $permalink = get_permalink( $post->ID );
     $title = wp_strip_all_tags( $post->post_title );
     $excerpt = wp_trim_words( wp_strip_all_tags( $post->post_content ), 50, '...' );
@@ -363,6 +370,10 @@ function zhiji_email_subscribe_render_email_content( $post, $name = '' ) {
         }
         $body_html .= '<h2 style="color:#111827;font-size:18px;line-height:1.5;margin:0 0 12px;text-align:center;">' . esc_html( $title ) . '</h2>';
         $body_html .= '<p style="color:#6b7280;font-size:13px;line-height:1.8;margin:0;">' . esc_html( $excerpt ) . '</p>';
+        // 一键退订（行业最佳实践：邮件正文必须带可点击的退订入口）
+        if ( $unsub_url ) {
+            $body_html .= '<p style="color:#9ca3af;font-size:12px;line-height:1.8;margin:14px 0 0;text-align:center;">如果不想再收到此类通知，<a href="' . esc_url( $unsub_url ) . '" style="color:#9ca3af;text-decoration:underline;">点此一键退订</a>。</p>';
+        }
         return zhiji_mail_template_render( array(
             'headline'  => '您订阅的内容有新更新',
             'subline'   => '您关注的站点发布了新文章，第一时间为您送达：',
@@ -400,7 +411,11 @@ function zhiji_email_subscribe_render_email_content( $post, $name = '' ) {
             </div>
             <p style="color:#999;font-size:12px;text-align:center;margin-top:30px;">
                 您收到此邮件是因为在 <?php echo esc_html( $site_name ); ?> 订阅了邮件通知。<br>
-                如需退订，请登录网站在个人中心取消订阅。
+                <?php if ( $unsub_url ) : ?>
+                    如不想再收到通知，<a href="<?php echo esc_url( $unsub_url ); ?>" style="color:#999;">点此一键退订</a>；也可登录后在个人中心管理订阅。
+                <?php else : ?>
+                    如需退订，请登录网站在个人中心取消订阅。
+                <?php endif; ?>
             </p>
         </div>
     </body>
@@ -586,7 +601,7 @@ function zhiji_email_subscribe_user_center_card() {
 					'<span class="flex ac"><svg class="em16 mr6 zhiji-sub-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg><span class="em095 font-bold">邮件订阅</span></span>' +
 					'<span class="zhiji-sub-badge <?php echo esc_attr( $badge_cls ); ?>">● <?php echo esc_html( $status_txt ); ?></span>' +
 				'</div>' +
-				'<div class="em12 muted-color mb10">新文章发布时邮件通知</div>' +
+				'<div class="em12 muted-color mb10">每发布一篇新文章通知一封 · 可随时一键退订</div>' +
 				'<button type="button" class="zhiji-sub-btn" data-op="<?php echo esc_attr( $op ); ?>" data-nonce="<?php echo esc_attr( $nonce ); ?>" data-url="<?php echo esc_url( $ajax_url ); ?>"><?php echo esc_html( $btn_txt ); ?></button>';
 			box.insertBefore(div, box.firstChild);
 			div.querySelector('.zhiji-sub-btn').addEventListener('click', function(){
@@ -647,6 +662,99 @@ function zhiji_email_subscribe_ajax_toggle() {
 		wp_send_json_success( array( 'status' => 'subscribed' ) );
 	}
 	wp_send_json_error( array( 'msg' => 'bad op' ) );
+}
+
+/* ============================================================
+ * 一键退订（2026-09-29，对齐行业最佳实践）
+ *
+ * 业界通行（Gmail / Yahoo 批量发件人硬要求）：每封订阅通知邮件
+ * ① 携带 List-Unsubscribe / List-Unsubscribe-Post 头；② 正文给一键退订链接。
+ * 点击即退订、无需登录。退订令牌为每用户随机 32 位（user_meta 惰性生成），
+ * 仅用于退订这一件事，泄露影响面最小。
+ * ============================================================ */
+
+/**
+ * 用户退订令牌（惰性生成，永久有效）
+ *
+ * @param int $uid 用户ID
+ * @return string
+ */
+function zhiji_email_sub_token( $uid ) {
+	$token = get_user_meta( $uid, 'zhiji_email_sub_token', true );
+	if ( ! is_string( $token ) || strlen( $token ) < 16 ) {
+		$token = wp_generate_password( 32, false, false );
+		update_user_meta( $uid, 'zhiji_email_sub_token', $token );
+	}
+	return $token;
+}
+
+/**
+ * 一键退订链接
+ *
+ * @param int $uid 用户ID
+ * @return string
+ */
+function zhiji_email_sub_unsub_url( $uid ) {
+	return add_query_arg( 'zhiji_email_unsub', zhiji_email_sub_token( $uid ), home_url( '/' ) );
+}
+
+/**
+ * init 阶段处理一键退订（GET 与 One-Click POST 均带同一 query 参数）
+ *
+ * @return void
+ */
+add_action( 'init', 'zhiji_email_sub_oneclick_unsub' );
+function zhiji_email_sub_oneclick_unsub() {
+	if ( empty( $_GET['zhiji_email_unsub'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- 令牌本身即凭据
+		return;
+	}
+	$token = sanitize_text_field( wp_unslash( $_GET['zhiji_email_unsub'] ) );
+	$users = get_users( array(
+		'meta_key'   => 'zhiji_email_sub_token',
+		'meta_value' => $token,
+		'number'     => 1,
+	) );
+	header( 'Content-Type: text/html; charset=UTF-8' );
+	if ( empty( $users ) ) {
+		status_header( 404 );
+		echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>链接无效</title></head>'
+			. '<body style="font-family:sans-serif;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">'
+			. '<div style="background:#fff;border-radius:12px;padding:36px 40px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.08)">'
+			. '<div style="font-size:40px;">&#9888;&#65039;</div>'
+			. '<h1 style="font-size:18px;color:#333;margin:12px 0 8px;">链接无效或已失效</h1>'
+			. '<p style="color:#888;font-size:13px;margin:0;">请登录后在个人中心管理邮件订阅。</p>'
+			. '</div></body></html>';
+		exit;
+	}
+	$uid = (int) $users[0]->ID;
+	update_user_meta( $uid, 'zhiji_email_subscribe', 0 );
+	$site = get_bloginfo( 'name' );
+	echo '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>已退订</title></head>'
+		. '<body style="font-family:sans-serif;background:#f5f5f5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">'
+		. '<div style="background:#fff;border-radius:12px;padding:36px 40px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.08)">'
+		. '<div style="font-size:40px;">&#9989;</div>'
+		. '<h1 style="font-size:18px;color:#333;margin:12px 0 8px;">已为您取消邮件订阅</h1>'
+		. '<p style="color:#888;font-size:13px;margin:0 0 18px;">您将不再收到' . esc_html( $site ) . '的新文章通知邮件。</p>'
+		. '<a href="' . esc_url( home_url( '/user/' ) ) . '" style="display:inline-block;padding:9px 26px;border-radius:999px;background:#2e7cf6;color:#fff;text-decoration:none;font-size:13px;">前往个人中心</a>'
+		. '<p style="color:#bbb;font-size:12px;margin:16px 0 0;">如属误操作，可随时在个人中心重新订阅。</p>'
+		. '</div></body></html>';
+	exit;
+}
+
+/**
+ * List-Unsubscribe 头注入：仅在发送订阅通知期间生效（见发送循环内设置的全局标记）
+ *
+ * @param PHPMailer $phpmailer
+ * @return void
+ */
+add_action( 'phpmailer_init', 'zhiji_email_sub_list_unsub_header' );
+function zhiji_email_sub_list_unsub_header( $phpmailer ) {
+	if ( empty( $GLOBALS['zhiji_email_sub_unsub_url'] ) || ! is_string( $GLOBALS['zhiji_email_sub_unsub_url'] ) ) {
+		return;
+	}
+	$url = $GLOBALS['zhiji_email_sub_unsub_url'];
+	$phpmailer->addCustomHeader( 'List-Unsubscribe', '<' . $url . '>' );
+	$phpmailer->addCustomHeader( 'List-Unsubscribe-Post', 'List-Unsubscribe=One-Click' );
 }
 /**
  * 订阅状态切换通知邮件（取消订阅 / 重新订阅确认，品牌模板）
