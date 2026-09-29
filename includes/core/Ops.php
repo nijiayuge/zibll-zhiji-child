@@ -516,6 +516,54 @@ function zhiji_ops_health_checks()
 }
 
 /**
+ * 近 N 天领取记录趋势（2026-09-29 新增，附录 Y.6 ⭐⭐：标准要求"趋势而不只快照"）
+ *
+ * 数据源：ClaimLog（coupon_give + comment_fortune 两场景**合并口径**）。
+ * 只读查询；按天聚合后**补零对齐**到连续 N 天（没有记录的日子也要有 0，否则图会错位）。
+ *
+ * @param int $days 天数（1..30，越界收敛）
+ * @return array array( array('date'=>Y-m-d,'label'=>MM-DD,'total'=>n,'cleared'=>n,'active'=>n), … )，时间升序
+ */
+function zhiji_ops_trend($days = 7)
+{
+    global $wpdb;
+    $days  = max(1, min(30, (int) $days));
+    $table = $wpdb->prefix . 'zhiji_claim_log';
+
+    $map = array();
+    // 表可能未建（模块从未激活）→ 全零序列，渲染仍可出面板而不报错
+    if ($wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table)) === $table) {
+        $since = date('Y-m-d 00:00:00', current_time('timestamp') - ($days - 1) * DAY_IN_SECONDS);
+        $rows  = $wpdb->get_results($wpdb->prepare(
+            "SELECT DATE(created) AS d, COUNT(*) AS n,
+                    SUM(CASE WHEN status = 'cleared' THEN 1 ELSE 0 END) AS cleared,
+                    SUM(CASE WHEN status = 'active'  THEN 1 ELSE 0 END) AS active
+             FROM {$table}
+             WHERE created >= %s
+             GROUP BY DATE(created)",
+            $since
+        ));
+        foreach ((array) $rows as $r) {
+            $map[(string) $r->d] = $r;
+        }
+    }
+
+    $out = array();
+    for ($i = $days - 1; $i >= 0; $i--) {
+        $day = date('Y-m-d', current_time('timestamp') - $i * DAY_IN_SECONDS);
+        $r   = isset($map[$day]) ? $map[$day] : null;
+        $out[] = array(
+            'date'    => $day,
+            'label'   => substr($day, 5),
+            'total'   => $r ? (int) $r->n : 0,
+            'cleared' => $r ? (int) $r->cleared : 0,
+            'active'  => $r ? (int) $r->active : 0,
+        );
+    }
+    return $out;
+}
+
+/**
  * 操作标识 → 中文名（页面展示用）
  *
  * @param string $action

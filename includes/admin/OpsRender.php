@@ -392,6 +392,67 @@ function zhiji_ops_render_health()
 }
 
 /**
+ * 总览页「近 7 天趋势」面板（2026-09-29 新增，附录 Y.6 ⭐⭐）
+ *
+ * 纯 CSS 柱状图（服务端算好高度），零 JS、零图表库。
+ * 数据层 core/Ops.php::zhiji_ops_trend()（ClaimLog 两场景合并口径，按天补零对齐）。
+ *
+ * @param int $days
+ * @return void
+ */
+function zhiji_ops_render_trend($days = 7)
+{
+    $data = zhiji_ops_trend($days);
+    $max  = 0;
+    foreach ($data as $d) {
+        $max = max($max, (int) $d['total']);
+    }
+    $sum    = array_sum(array_column($data, 'total'));
+    $sum_ok = array_sum(array_column($data, 'cleared'));
+    $sum_on = array_sum(array_column($data, 'active'));
+
+    echo '<div class="zhiji-ops-trend">';
+    if (0 === $max) {
+        echo '<p class="description" style="margin:0">' . esc_html(sprintf(__('近 %d 天暂无领取记录。', 'zhiji'), count($data))) . '</p>';
+        echo '</div>';
+        return;
+    }
+
+    // 柱状区：7 列，高度 ∝ 当日总量（64px 满高），柱内不写字、数字悬于柱顶
+    echo '<div style="display:flex;align-items:flex-end;gap:10px;height:96px;margin:4px 0 2px">';
+    foreach ($data as $d) {
+        $h = max(4, (int) round($d['total'] / max(1, $max) * 64));
+        printf(
+            '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%%">'
+            . '<span style="font-size:11px;color:var(--zhiji-muted)">%s</span>'
+            . '<div style="width:100%%;max-width:46px;height:%dpx;background:var(--zhiji-ok);opacity:.75;border-radius:4px 4px 0 0"></div>'
+            . '</div>',
+            esc_html($d['total'] ? $d['total'] : ''),
+            (int) $h
+        );
+    }
+    echo '</div>';
+
+    // 日期轴
+    echo '<div style="display:flex;gap:10px;border-top:1px solid var(--zhiji-line-soft);padding-top:4px">';
+    foreach ($data as $d) {
+        printf(
+            '<div style="flex:1;text-align:center;font-size:11px;color:var(--zhiji-muted)">%s</div>',
+            esc_html($d['label'])
+        );
+    }
+    echo '</div>';
+
+    printf(
+        '<p class="description" style="margin:6px 0 0">%s · <span style="color:var(--zhiji-ok)">%s</span> · <span style="color:var(--zhiji-danger)">%s</span></p>',
+        esc_html(sprintf(__('近 %d 天共 %d 条', 'zhiji'), count($data), $sum)),
+        esc_html(sprintf(__('已完结 %d', 'zhiji'), $sum_ok)),
+        esc_html(sprintf(__('处理中 %d', 'zhiji'), $sum_on))
+    );
+    echo '</div>';
+}
+
+/**
  * 总览页「审计日志」面板（2026-09-29 新增，附录 Y ⭐⭐⭐：筛选 + 导出）
  *
  * 筛选维度（标准依据：后台审计视图应支持 actor / action-type / target-object / 时间窗）：
