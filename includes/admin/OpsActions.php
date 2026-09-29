@@ -158,15 +158,29 @@ function zhiji_ops_handle_export()
 
     // 复用页面同一套筛选白名单
     $filters = zhiji_ops_collect_filters($scene);
-    $args    = array_merge($filters, array('scene' => $scene_id, 'page' => 1, 'per_page' => 5000));
+    // 2026-09-29 修复：查询层 per_page 封顶 200（防拖库），单次 5000 会被截断 →
+    // 记录超 200 后导出丢行（实测：CSV 200 行 vs 库 206 条）。改为**循环分页拉取全量**。
+    $args    = array_merge($filters, array('scene' => $scene_id, 'page' => 1, 'per_page' => 200));
     if (is_callable($scene['query'])) {
-        $result = (array) call_user_func($scene['query'], $args);
+        $rows = array();
+        $page = 1;
+        do {
+            $args['page'] = $page;
+            $result = (array) call_user_func($scene['query'], $args);
+            $batch  = isset($result['rows']) ? (array) $result['rows'] : array();
+            $rows   = array_merge($rows, $batch);
+            $pages  = isset($result['pages']) ? (int) $result['pages'] : 1;
+            $page++;
+        } while ($page <= $pages && $batch);
+        $total_rows = count($rows);
     } elseif (function_exists('zhiji_claim_log_query')) {
         $result = zhiji_claim_log_query($args);
+        $rows   = isset($result['rows']) ? (array) $result['rows'] : array();
+        $total_rows = count($rows);
     } else {
-        $result = array();
+        $rows = array();
+        $total_rows = 0;
     }
-    $rows = isset($result['rows']) ? (array) $result['rows'] : array();
 
     // 导出列解析优先级：
     //   ① 列声明了 export 回调 → 用它（计算列：优惠内容 / 名下券数 / 奖励文本等）

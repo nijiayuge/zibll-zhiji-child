@@ -325,6 +325,8 @@ function zhiji_claim_log_query(array $args = array())
     $orderby  = in_array($args['orderby'], array('id', 'created', 'email', 'status'), true) ? $args['orderby'] : 'id';
     $order    = ('ASC' === strtoupper((string) $args['order'])) ? 'ASC' : 'DESC';
     $page     = max(1, (int) $args['page']);
+    // per_page 上限 200：分页 UI 的防拖库上限；
+    // 导出场景（zhiji_ops_handle_export）需要全量 → 由调用方循环分页拉取，不走单次 5000
     $per_page = min(200, max(1, (int) $args['per_page']));
 
     list($where_sql, $params) = zhiji_claim_log_build_where($args);
