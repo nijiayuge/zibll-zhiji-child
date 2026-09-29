@@ -38,7 +38,7 @@ function zhiji_medal_icon($name)
 {
     static $map = null;
     if (null === $map) {
-        $json = get_theme_file_path() . '/assets/zhiji/img/medals/manifest.json';
+        $json = get_theme_file_path() . '/assets/zhiji/img/medals/medal-manifest.json';
         if (file_exists($json)) {
             $dec = json_decode(file_get_contents($json), true);
             $map = (is_array($dec) && !empty($dec['medals'])) ? $dec['medals'] : array();
@@ -55,7 +55,9 @@ function zhiji_medal_icon($name)
         }
     }
     // 兜底：父主题 medal-background（已购商用授权，合法复用）
-    return get_theme_file_uri() . '/img/medal/medal-background.svg';
+    // ⚠️ 必须把路径作为参数传入 get_theme_file_uri()：无参调用返回子主题 URI，
+    //    子主题没有 img/medal/ 目录会 404 破图；带参会自动回退父主题文件。
+    return get_theme_file_uri('img/medal/medal-background.svg');
 }
 
 /**
