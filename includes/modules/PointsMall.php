@@ -210,6 +210,14 @@ function zhiji_pmall_exchange($uid, $item_id)
     }
     update_option('zhiji_pmall_records', $log, false);
 
+    // FOMO 弹幕联动（2026-09-29 新增）
+    if (function_exists('zhiji_danmu_push')) {
+        zhiji_danmu_push('exchange', $uid, sprintf('用 %d 积分兑换了「%s」', $item['cost'], $item['name']));
+    }
+
+    // 勋章增强事件（2026-09-29 新增）
+    do_action('zhiji_pmall_exchanged', $uid);
+
     // 库存 -1（-1 无限不动）
     if ($item['stock'] > 0) {
         $items[$item_id]['stock'] = $item['stock'] - 1;

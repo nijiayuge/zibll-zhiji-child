@@ -41,6 +41,19 @@ class Zhiji_Adapter
     }
 
     /**
+     * 为用户添加勋章（父主题 zib_add_user_medal）
+     *
+     * @param int    $user_id
+     * @param string $medal_name
+     * @param string $remarks
+     * @return bool
+     */
+    public static function add_user_medal($user_id, $medal_name, $remarks = '')
+    {
+        return function_exists('zib_add_user_medal') ? (bool) zib_add_user_medal($user_id, $medal_name, $remarks) : false;
+    }
+
+    /**
      * 文章 meta 读取（父主题封装，兼容其序列化与默认值逻辑）
      */
     public static function post_meta_get($post_id, $key, $default = '')

@@ -785,6 +785,12 @@ function zhiji_coupon_give_ajax() {
 	// 8.3 站内通知联动：登录用户领取后发送系统通知（复用父主题 ZibMsg）
 	zhiji_coupon_give_notify_user( $user_id, $code, $discount_text, $expire_time, 'direct' );
 
+	// 8.4 FOMO 弹幕联动（2026-09-29 新增）：领取成功推弹幕（匿名化处理）
+	if ( function_exists( 'zhiji_danmu_push' ) ) {
+		$masked  = substr( $email, 0, 2 ) . '***' . substr( strrchr( $email, '@' ), 0 );
+		zhiji_danmu_push( 'claim', $user_id, sprintf( '刚刚领取了「%s」优惠码', $meta['title'] ), '', array( 'email' => $masked ) );
+	}
+
 	// 8.5 分享裂变：若开启了裂变且好友通过邀请链接提交了 ref，给邀请者发奖励码
 	if ( zhiji_get_option( 'coupon_give_ref_enabled', 0 ) && ! empty( $_POST['ref'] ) ) {
 		$ref = sanitize_text_field( wp_unslash( $_POST['ref'] ) );

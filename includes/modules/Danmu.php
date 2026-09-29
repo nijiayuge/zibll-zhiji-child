@@ -415,9 +415,16 @@ function zhiji_danmu_enqueue() {
 	}
 
 	$danmu_css = <<<'ZHIJI_DANMU_CSS'
-/* 知集 · 弹幕容器（右下角固定浮层） */
+/* 知集 · 弹幕容器（右下角固定浮层）—— 2026-09-29 修复：移除 display:none，恢复弹幕显示 */
 #zhiji-danmu {
-	display: none !important; /* v1.9.8: 旧固定位置弹幕已废弃，统一走 NotificationCenter 滚动弹幕 */
+	position: fixed;
+	bottom: 80px;
+	right: 16px;
+	z-index: 9999;
+	pointer-events: none;
+	list-style: none;
+	margin: 0;
+	padding: 0;
 }
 #zhiji-danmu li {
 	display: flex;
@@ -435,6 +442,7 @@ function zhiji_danmu_enqueue() {
 	margin-bottom: 8px;
 	box-shadow: 0 4px 14px rgba(17,24,39,.18);
 	pointer-events: auto;
+	background: rgba(17,24,39,.85);
 }
 #zhiji-danmu li .zhiji-danmu-user {
 	display: inline-flex;
@@ -500,8 +508,13 @@ ZHIJI_DANMU_CSS;
 		if (typeof window.jQuery === 'undefined') { setTimeout(zhijiDanmuBoot, 80); return; }
 		if (typeof window.ZHIJI_DANMU_AJAX === 'undefined') { return; }
 		jQuery(function ($) {
-			// v1.9.8: 不再创建固定位置弹幕容器，统一走 NotificationCenter
-			var box = $('<div id="zhiji-danmu" style="display:none;"></div>');
+			// 2026-09-29 修复：容器直接 append 到 body，不再依赖 NotificationCenter
+			var box = $('#zhiji-danmu');
+			if (!box.length) {
+				box = $('<ul id="zhiji-danmu"></ul>');
+				$('body').append(box);
+			}
+			box.show();
 			var shown = {};
 			var rowMax = 3; // 同时最多显示行数（普通弹幕）
 			var noticeHold = 8; // 公告置顶停留秒数（秒）
@@ -521,55 +534,41 @@ ZHIJI_DANMU_CSS;
 				}
 			}
 
-			// 公告：v1.9.8 统一走 NotificationCenter 滚动弹幕
+			// 公告（特殊弹幕：置顶 + 长停留 + 不同样式）
 			function showNotice(item) {
 				var name = '知集公告';
 				var text = '📢 ' + (item.content || '');
-				function pushNotice() {
-					if (typeof window.zhijiAddDanmu === 'function') {
-						window.zhijiAddDanmu(name, text, 'notice', '');
-					} else if (typeof window.zhijiDanmu === 'function') {
-						window.zhijiDanmu(name, text);
-					}
-				}
-				if (typeof window.zhijiAddDanmu === 'function' || typeof window.zhijiDanmu === 'function') {
-					pushNotice();
-				} else {
-					if (document.readyState === 'loading') {
-						document.addEventListener('DOMContentLoaded', function() { setTimeout(pushNotice, 300); });
-					} else {
-						setTimeout(pushNotice, 500);
-					}
-				}
+				var li = $('<li class="zhiji-danmu-notice" style="background:rgba(99,102,241,.9)"><span style="font-weight:600">' + escHtml(text) + '</span></li>');
+				box.prepend(li);
+				li.animate({ opacity: 1 }, 400);
+				setTimeout(function () {
+					li.animate({ opacity: 0 }, 300, function () { li.remove(); });
+				}, noticeHold * 1000);
 			}
 
 			function show(item) {
 				var key = item.type + '|' + (item.name || '') + '|' + (item.content || '');
 				if (shown[key]) return; // 同一条不重复展示
 				shown[key] = 1;
-				// v1.9.8: 统一走 NotificationCenter 滚动弹幕接口
+				// 2026-09-29 修复：直接往容器加 <li>（不再依赖未定义的 window.zhijiAddDanmu）
 				var name = item.name || '知集公告';
 				var text = item.content || '';
+				var avatar = item.avatar || '';
 				if (item.type_label) {
 					text = (item.type_icon || '') + item.type_label + ' ' + text;
 				}
-				function pushDanmu() {
-					if (typeof window.zhijiAddDanmu === 'function') {
-						window.zhijiAddDanmu(name, text, item.type, item.avatar);
-					} else if (typeof window.zhijiDanmu === 'function') {
-						window.zhijiDanmu(name, text);
-					}
-				}
-				if (typeof window.zhijiAddDanmu === 'function' || typeof window.zhijiDanmu === 'function') {
-					pushDanmu();
-				} else {
-					// NotificationCenter 尚未加载（在wp_footer输出），延迟到DOM就绪后推送
-					if (document.readyState === 'loading') {
-						document.addEventListener('DOMContentLoaded', function() { setTimeout(pushDanmu, 300); });
-					} else {
-						setTimeout(pushDanmu, 500);
-					}
-				}
+				var avatar_html = avatar
+					? '<img src="' + avatar + '" style="width:22px;height:22px;border-radius:50%;margin-right:6px;object-fit:cover">'
+					: '';
+				var li = $('<li>' + avatar_html + '<span class="zhiji-danmu-user">' + escHtml(name) + '</span>'
+					+ '<span style="margin:0 6px">·</span><span>' + escHtml(text) + '</span></li>');
+				box.prepend(li);
+				li.animate({ opacity: 1 }, 400);
+				trim();
+			}
+
+			function escHtml(s) {
+				return $('<span>').text(s || '').html();
 			}
 
 			function fetchLatest() {

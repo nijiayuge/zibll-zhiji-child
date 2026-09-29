@@ -310,6 +310,11 @@ function zhiji_bargain_ajax_assist()
                 'content' => sprintf(__('你的砍价已归零，优惠码 %s 已发放。', 'zhiji'), $b['code']),
             ));
         }
+        // FOMO 弹幕联动 + 勋章增强事件（2026-09-29 新增）
+        if (function_exists('zhiji_danmu_push')) {
+            zhiji_danmu_push('bargain', (int) $b['uid'], sprintf('砍价成功！获得了 %s 的优惠码', (string) ($b['code'] ?? '')));
+        }
+        do_action('zhiji_bargain_success', (int) $b['uid']);
     }
 
     zhiji_bargain_update($b);

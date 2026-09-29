@@ -113,6 +113,62 @@ add_filter('user_has_cap', function ($allcaps, $caps, $args) {
     }
     return $allcaps;
 }, 10, 3);
+
+/* ============================================================
+ * 〇·B、勋章增强（2026-09-29 新增）：事件驱动自动授予
+ * ============================================================ */
+
+/**
+ * 向父主题勋章系统注册新模块勋章（通过 user_medal_args filter 注入）
+ *
+ * 父主题勋章引擎支持事件驱动自动判定（get_type + get_val），
+ * 但预置类型不包含 v2 新模块事件。通过 filter 注入让引擎自动判定与展示。
+ */
+add_filter('user_medal_args', function ($args) {
+    if (empty($args) || !is_array($args)) {
+        $args = array(array('cat_name' => __('知集互动', 'zhiji'), 'items' => array()));
+    }
+    $cat_label = __('知集互动', 'zhiji');
+    $found = false;
+    foreach ($args as $i => $cat) {
+        if (isset($cat['cat_name']) && $cat_label === $cat['cat_name']) { $found = true; break; }
+    }
+    if (!$found) {
+        $args[] = array('cat_name' => $cat_label, 'items' => array());
+        $i = count($args) - 1;
+    }
+    $img = get_theme_file_path() . '/img/medal/';
+    $new = array(
+        array('name' => '首兑新人', 'desc' => '首次在积分商城兑换', 'icon' => $img . 'medal-1.svg', 'get_type' => 'points_mall_exchange', 'get_val' => 1),
+        array('name' => '兑换达人', 'desc' => '累计兑换 10 次', 'icon' => $img . 'medal-2.svg', 'get_type' => 'points_mall_exchange', 'get_val' => 10),
+        array('name' => '谈判专家', 'desc' => '砍价成功 1 次', 'icon' => $img . 'medal-3.svg', 'get_type' => 'bargain_success', 'get_val' => 1),
+        array('name' => '学神认证', 'desc' => '答题满分 3 次', 'icon' => $img . 'medal-4.svg', 'get_type' => 'quiz_perfect', 'get_val' => 3),
+    );
+    $existing = array_column($args[$i]['items'] ?? array(), 'name');
+    foreach ($new as $item) {
+        if (!in_array($item['name'], $existing)) {
+            $args[$i]['items'][] = $item;
+        }
+    }
+    return $args;
+}, 20);
+
+/**
+ * 事件监听：v2 新模块关键行为 → 计数 + 自动授予勋章
+ */
+add_action('zhiji_pmall_exchanged', function ($uid) {
+    if (!function_exists('zib_add_user_medal')) { return; }
+    $n = (int) get_user_meta($uid, 'zhiji_pmall_exchange_count', true) + 1;
+    update_user_meta($uid, 'zhiji_pmall_exchange_count', $n);
+    if (1 === $n)       { Zhiji_Adapter::add_user_medal($uid, '首兑新人', '首次在积分商城兑换'); }
+    if (10 === $n)      { Zhiji_Adapter::add_user_medal($uid, '兑换达人', '累计兑换 10 次'); }
+}, 10, 1);
+
+add_action('zhiji_bargain_success', function ($uid) {
+    if (!function_exists('zib_add_user_medal')) { return; }
+    Zhiji_Adapter::add_user_medal($uid, '谈判专家', '砍价成功');
+}, 10, 1);
+
 function zhiji_ops_register_scene($id, array $args = array())
 {
     $id = sanitize_key($id);
