@@ -74,8 +74,9 @@ function zhiji_seckill_items($with_unpriced = false)
         if (!$post) {
             continue; // 商品不存在 → 跳过
         }
-        // 积分价读父主题商品配置（商品编辑页 → 价格&选项 → 价格类型=积分商品 时的起始价格）
-        $cfg          = function_exists('zib_shop_get_product_config') ? zib_shop_get_product_config($pid) : array();
+        // 积分价读父主题商品配置 meta（商品编辑页 → 价格&选项 → 价格类型=积分商品 时的起始价格）
+        // 直接读 product_config meta（纯 WP API，不经父主题函数，符合 Adapter 架构红线）
+        $cfg          = get_post_meta($pid, 'product_config', true);
         $is_points    = is_array($cfg) && isset($cfg['pay_modo']) && 'points' === $cfg['pay_modo'];
         $points_price = $is_points ? (int) $cfg['start_price'] : 0;
         if ($points_price < 1 && !$with_unpriced) {
