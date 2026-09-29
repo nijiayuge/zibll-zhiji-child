@@ -103,6 +103,66 @@ defined( 'ABSPATH' ) || exit;
 				'default'    => true,
 				'dependency' => array( 'danmu_enabled', '==', '1' ),
 			),
+		array(
+			'type'  => 'subheading',
+			'title' => '① 展示样式',
+		),
+		array(
+			'id'      => 'danmu_font_size',
+			'type'    => 'number',
+			'title'   => '弹幕字号（px）',
+			'desc'    => '覆盖默认 13px，0 表示不改。',
+			'default' => 0,
+			'dependency' => array( 'danmu_enabled', '==', '1' ),
+		),
+		array(
+			'id'      => 'danmu_radius',
+			'type'    => 'number',
+			'title'   => '弹幕圆角（px）',
+			'desc'    => '覆盖默认 22px，0 表示不改。',
+			'default' => 0,
+			'dependency' => array( 'danmu_enabled', '==', '1' ),
+		),
+		array(
+			'type'  => 'subheading',
+			'title' => '② 内容安全 · 审核模式',
+		),
+		array(
+			'id'      => 'danmu_review_mode',
+			'type'    => 'switcher',
+			'title'   => '弹幕审核模式（先审后发）',
+			'desc'    => '开启后，新弹幕进入待审队列，审核通过才公开展示；关闭则实时上墙（管理员公告始终即时）。',
+			'default' => false,
+			'dependency' => array( 'danmu_enabled', '==', '1' ),
+		),
+		array(
+			'id'      => 'danmu_blacklist',
+			'type'    => 'textarea',
+			'title'   => '关键词黑名单',
+			'desc'    => '命中关键词的弹幕直接拦截（不展示、不进队列）。一行一个，逗号也可分隔。',
+			'default' => '',
+			'dependency' => array( 'danmu_enabled', '==', '1' ),
+		),
+		array(
+			'id'      => 'danmu_mute_users',
+			'type'    => 'textarea',
+			'title'   => '禁言用户 ID',
+			'desc'    => '这些用户产生的弹幕被屏蔽。多个 ID 用逗号或空格分隔。',
+			'default' => '',
+			'dependency' => array( 'danmu_enabled', '==', '1' ),
+		),
+		array(
+			'id'      => 'danmu_max_len',
+			'type'    => 'number',
+			'title'   => '单条最大字数',
+			'desc'    => '超过则截断并加省略号，0 表示不限制。',
+			'default' => 0,
+			'dependency' => array( 'danmu_enabled', '==', '1' ),
+		),
+		array(
+			'type'    => 'content',
+			'content' => zhiji_danmu_review_panel_html(),
+		),
 		), 20);
 
 
@@ -147,21 +207,15 @@ function zhiji_danmu_push( $type, $user_id, $content, $link = '', $meta = array(
 		return;
 	}
 
-	$pool = zhiji_danmu_pool_read();
-	if ( ! is_array( $pool ) ) {
-		$pool = array();
+	// 内容安全：禁言用户 / 关键词黑名单 直接拦截（两种模式都生效）
+	if ( zhiji_danmu_is_blocked( $type, $user_id, $content ) ) {
+		return;
 	}
+	// 单条字数上限
+	$content = zhiji_danmu_truncate( $content );
 
-	// 去重：同一用户 + 同一类型 + 同一内容 60 秒内不重复（防止连点刷屏）
 	$now    = time();
 	$sig    = md5( $type . '|' . $user_id . '|' . $content );
-	$recent = wp_list_filter( $pool, array( 'sig' => $sig ) );
-	if ( ! empty( $recent ) ) {
-		$last = reset( $recent );
-		if ( $now - (int) $last['time'] < 60 ) {
-			return;
-		}
-	}
 
 	$item = array(
 		'type'    => sanitize_key( $type ),
@@ -173,10 +227,26 @@ function zhiji_danmu_push( $type, $user_id, $content, $link = '', $meta = array(
 		'meta'    => $meta,
 	);
 
-	array_unshift( $pool, $item );
-	$pool = array_slice( $pool, 0, ZHIJI_DANMU_POOL_MAX );
+	// 审核模式（管理员公告 notice 除外，始终即时上墙）：先入待审队列
+	if ( zhiji_get_option( 'danmu_review_mode', 0 ) && 'notice' !== $type ) {
+		zhiji_danmu_review_enqueue( $item );
+		return;
+	}
 
-	set_transient( ZHIJI_DANMU_POOL_KEY, $pool, ZHIJI_DANMU_POOL_TTL );
+	// 实时上墙（去重：同用户 + 同类型 + 同内容 60 秒内不重复）
+	$pool = zhiji_danmu_pool_read();
+	if ( ! is_array( $pool ) ) {
+		$pool = array();
+	}
+	$recent = wp_list_filter( $pool, array( 'sig' => $sig ) );
+	if ( ! empty( $recent ) ) {
+		$last = reset( $recent );
+		if ( $now - (int) $last['time'] < 60 ) {
+			return;
+		}
+	}
+
+	zhiji_danmu_to_live( $item );
 }
 
 /**
@@ -220,6 +290,188 @@ function zhiji_danmu_clear() {
  *
  * @return array
  */
+define( 'ZHIJI_DANMU_REVIEW_KEY', 'zhiji_danmu_review_queue' ); // 审核队列（option 持久化，非 transient）
+define( 'ZHIJI_DANMU_REVIEW_MAX', 200 );                        // 审核队列最大保留条数
+
+/**
+ * 实时上墙：把一条弹幕写入事件池 transient（抽取自原 push，供审核通过复用）。
+ */
+function zhiji_danmu_to_live( $item ) {
+	$pool = zhiji_danmu_pool_read();
+	if ( ! is_array( $pool ) ) {
+		$pool = array();
+	}
+	array_unshift( $pool, $item );
+	$pool = array_slice( $pool, 0, ZHIJI_DANMU_POOL_MAX );
+	set_transient( ZHIJI_DANMU_POOL_KEY, $pool, ZHIJI_DANMU_POOL_TTL );
+}
+
+/**
+ * 禁言用户 / 关键词黑名单 命中检测（两种模式都生效）。
+ *
+ * @return bool
+ */
+function zhiji_danmu_is_blocked( $type, $user_id, $content ) {
+	$mute = trim( (string) zhiji_get_option( 'danmu_mute_users', '' ) );
+	if ( '' !== $mute && $user_id > 0 ) {
+		$ids = array_filter( array_map( 'intval', preg_split( '/[\s,，]+/', $mute ) ) );
+		if ( in_array( (int) $user_id, $ids, true ) ) {
+			return true;
+		}
+	}
+	$bl = trim( (string) zhiji_get_option( 'danmu_blacklist', '' ) );
+	if ( '' !== $bl ) {
+		$words = array_filter( array_map( 'trim', preg_split( '/[\r\n,，]+/', $bl ) ) );
+		$lc    = function_exists( 'mb_strtolower' ) ? mb_strtolower( $content ) : strtolower( $content );
+		foreach ( $words as $w ) {
+			$lw = function_exists( 'mb_strtolower' ) ? mb_strtolower( $w ) : strtolower( $w );
+			if ( '' !== $lw && false !== strpos( $lc, $lw ) ) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/**
+ * 单条弹幕字数上限截断。
+ */
+function zhiji_danmu_truncate( $content ) {
+	$max = (int) zhiji_get_option( 'danmu_max_len', 0 );
+	if ( $max > 0 && function_exists( 'mb_substr' ) && mb_strlen( $content ) > $max ) {
+		$content = mb_substr( $content, 0, $max ) . '…';
+	}
+	return $content;
+}
+
+/* ---------- 审核队列（待审 / 通过 / 驳回，持久化） ---------- */
+
+function zhiji_danmu_review_queue_read() {
+	$q = get_option( ZHIJI_DANMU_REVIEW_KEY, array() );
+	return is_array( $q ) ? $q : array();
+}
+
+function zhiji_danmu_review_enqueue( $item ) {
+	$q  = zhiji_danmu_review_queue_read();
+	$id = md5( $item['type'] . '|' . $item['user_id'] . '|' . $item['content'] . '|' . $item['time'] );
+	foreach ( $q as $e ) {
+		if ( isset( $e['id'] ) && $e['id'] === $id ) {
+			return;
+		}
+	}
+	array_unshift( $q, array(
+		'id'       => $id,
+		'status'   => 'pending',
+		'reason'   => '',
+		'item'     => $item,
+		'created'  => time(),
+		'reviewed' => 0,
+		'reviewer' => 0,
+	) );
+	$q = array_slice( $q, 0, ZHIJI_DANMU_REVIEW_MAX );
+	update_option( ZHIJI_DANMU_REVIEW_KEY, $q );
+}
+
+function zhiji_danmu_review_approve( $id ) {
+	$q = zhiji_danmu_review_queue_read();
+	foreach ( $q as &$e ) {
+		if ( isset( $e['id'] ) && $e['id'] === $id && 'pending' === $e['status'] ) {
+			$e['status']   = 'approved';
+			$e['reviewed'] = time();
+			$e['reviewer'] = get_current_user_id();
+			zhiji_danmu_to_live( $e['item'] );
+			update_option( ZHIJI_DANMU_REVIEW_KEY, $q );
+			return true;
+		}
+	}
+	unset( $e );
+	return false;
+}
+
+function zhiji_danmu_review_reject( $id, $reason = '' ) {
+	$q = zhiji_danmu_review_queue_read();
+	foreach ( $q as &$e ) {
+		if ( isset( $e['id'] ) && $e['id'] === $id && 'pending' === $e['status'] ) {
+			$e['status']   = 'rejected';
+			$e['reason']   = $reason;
+			$e['reviewed'] = time();
+			$e['reviewer'] = get_current_user_id();
+			update_option( ZHIJI_DANMU_REVIEW_KEY, $q );
+			return true;
+		}
+	}
+	unset( $e );
+	return false;
+}
+
+function zhiji_danmu_review_counts() {
+	$q = zhiji_danmu_review_queue_read();
+	$c = array( 'pending' => 0, 'approved' => 0, 'rejected' => 0 );
+	foreach ( $q as $e ) {
+		if ( isset( $e['status'], $c[ $e['status'] ] ) ) {
+			$c[ $e['status'] ]++;
+		}
+	}
+	return $c;
+}
+
+/**
+ * 审核面板（后台设置内联，AJAX 拉取待审列表，无需单独前台页）。
+ */
+function zhiji_danmu_review_panel_html() {
+	$nonce = wp_create_nonce( 'zhiji_danmu_review' );
+	$ajax  = admin_url( 'admin-ajax.php' );
+	$html  = <<<'HTML'
+<div id="zhiji-danmu-review">
+  <p class="description">审核模式开启后，新弹幕先进入待审队列，审核通过才公开展示。下方自动刷新待审列表（无需刷新本页）。</p>
+  <p>待审：<b id="zjd-rv-pending">…</b> ｜ 已通过：<b id="zjd-rv-approved">…</b> ｜ 已驳回：<b id="zjd-rv-rejected">…</b></p>
+  <div id="zjd-rv-list"><p>加载中…</p></div>
+</div>
+<script>
+(function(){
+  if (typeof window.jQuery === 'undefined') { return; }
+  var NONCE = '__NONCE__';
+  var AJAX  = '__AJAX__';
+  jQuery(function($){
+    function esc(s){ return $('<span>').text(s||'').html(); }
+    function load(){
+      $.post(AJAX, {action:'zhiji_api', api:'zhiji_danmu_review_list', nonce:NONCE}, function(res){
+        if(!res || !res.success) return;
+        var d = res.data;
+        $('#zjd-rv-pending').text(d.pending||0);
+        $('#zjd-rv-approved').text(d.approved||0);
+        $('#zjd-rv-rejected').text(d.rejected||0);
+        var $l = $('#zjd-rv-list').empty();
+        if(!d.mode){ $l.html('<p style="color:#a00">审核模式未开启，弹幕将实时上墙（无需审核）。</p>'); return; }
+        if(!d.items || !d.items.length){ $l.html('<p>暂无待审弹幕。</p>'); return; }
+        d.items.forEach(function(it){
+          var row = $('<div class="zjd-rv-row" style="border:1px solid #ddd;border-radius:8px;padding:8px;margin-bottom:8px"></div>');
+          row.append($('<div>').html('['+esc(it.type_label)+'] '+esc(it.content)+' <small>'+esc(it.time_str)+'</small>'));
+          var act = $('<div style="margin-top:6px"></div>');
+          var ok = $('<button class="button button-primary">通过</button>').click(function(){ doAct('zhiji_danmu_review_approve', it.id, row); });
+          var no = $('<button class="button">驳回</button>').css('margin-left','6px').click(function(){ doAct('zhiji_danmu_review_reject', it.id, row); });
+          act.append(ok).append(no);
+          row.append(act);
+          $l.append(row);
+        });
+      }, 'json');
+    }
+    function doAct(api, id, row){
+      $.post(AJAX, {action:'zhiji_api', api:api, nonce:NONCE, id:id}, function(res){
+        if(res && res.success){ row.fadeOut(200, function(){ row.remove(); load(); }); }
+        else { alert('操作失败'); }
+      }, 'json');
+    }
+    load();
+    setInterval(load, 15000);
+  });
+})();
+</script>
+HTML;
+	$html = str_replace( '__NONCE__', $nonce, $html );
+	$html = str_replace( '__AJAX__', $ajax, $html );
+	return $html;
+}
 function zhiji_danmu_type_config() {
 	return array(
 		'pay'      => array( 'label' => '购买', 'color' => '#fc6976', 'icon' => '🛒' ),
@@ -406,6 +658,72 @@ function zhiji_danmu_fetch() {
 }
 // 2026-09-26：注册到网关（P2-⑥），旧端点保留为转发入口
 zhiji_api_register( 'zhiji_danmu_fetch', 'zhiji_danmu_fetch', true, '' );
+/**
+ * AJAX 后台拉取待审弹幕列表（JSON）。
+ */
+function zhiji_danmu_review_list_ajax() {
+	check_ajax_referer( 'zhiji_danmu_review', 'nonce' );
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( 'no_permission' );
+	}
+	$q      = zhiji_danmu_review_queue_read();
+	$pending = array();
+	$counts = array( 'pending' => 0, 'approved' => 0, 'rejected' => 0 );
+	$cfg    = zhiji_danmu_type_config();
+	foreach ( $q as $e ) {
+		if ( isset( $e['status'], $counts[ $e['status'] ] ) ) {
+			$counts[ $e['status'] ]++;
+		}
+		if ( 'pending' === $e['status'] ) {
+			$it   = isset( $e['item'] ) ? $e['item'] : array();
+			$type = isset( $it['type'] ) ? $it['type'] : 'notice';
+			$c    = isset( $cfg[ $type ] ) ? $cfg[ $type ] : array( 'label' => '' );
+			$pending[] = array(
+				'id'         => isset( $e['id'] ) ? $e['id'] : '',
+				'type_label' => isset( $c['label'] ) ? $c['label'] : '',
+				'content'    => isset( $it['content'] ) ? $it['content'] : '',
+				'time_str'   => isset( $it['time'] ) ? wp_date( 'm-d H:i', (int) $it['time'] ) : '',
+			);
+		}
+	}
+	wp_send_json_success( array(
+		'mode'     => (int) zhiji_get_option( 'danmu_review_mode', 0 ),
+		'pending'  => $counts['pending'],
+		'approved' => $counts['approved'],
+		'rejected' => $counts['rejected'],
+		'items'    => $pending,
+	) );
+}
+zhiji_api_register( 'zhiji_danmu_review_list', 'zhiji_danmu_review_list_ajax', false, '' );
+
+function zhiji_danmu_review_approve_ajax() {
+	check_ajax_referer( 'zhiji_danmu_review', 'nonce' );
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( 'no_permission' );
+	}
+	$id = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
+	if ( ! $id ) {
+		wp_send_json_error( 'empty_id' );
+	}
+	$ok = zhiji_danmu_review_approve( $id );
+	$ok ? wp_send_json_success( array( 'approved' => true ) ) : wp_send_json_error( 'not_pending' );
+}
+zhiji_api_register( 'zhiji_danmu_review_approve', 'zhiji_danmu_review_approve_ajax', false, '' );
+
+function zhiji_danmu_review_reject_ajax() {
+	check_ajax_referer( 'zhiji_danmu_review', 'nonce' );
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_send_json_error( 'no_permission' );
+	}
+	$id     = isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
+	$reason = isset( $_POST['reason'] ) ? sanitize_text_field( wp_unslash( $_POST['reason'] ) ) : '';
+	if ( ! $id ) {
+		wp_send_json_error( 'empty_id' );
+	}
+	$ok = zhiji_danmu_review_reject( $id, $reason );
+	$ok ? wp_send_json_success( array( 'rejected' => true ) ) : wp_send_json_error( 'not_pending' );
+}
+zhiji_api_register( 'zhiji_danmu_review_reject', 'zhiji_danmu_review_reject_ajax', false, '' );
 add_action( 'wp_ajax_nopriv_zhiji_danmu_fetch', 'zhiji_danmu_fetch' );
 
 /* ===================== 前端资源（head 内联） ===================== */
@@ -532,6 +850,18 @@ function zhiji_danmu_enqueue() {
 ZHIJI_DANMU_CSS;
 	// 2026-09-26：改走统一内联资源服务（Assets.php）
 	zhiji_asset_add_css( 'danmu', $danmu_css );
+	$zhiji_danmu_style = '';
+	$zhiji_fs = (int) zhiji_get_option( 'danmu_font_size', 0 );
+	if ( $zhiji_fs > 0 ) {
+		$zhiji_danmu_style .= '#zhiji-danmu li{font-size:' . $zhiji_fs . 'px;}';
+	}
+	$zhiji_r = (int) zhiji_get_option( 'danmu_radius', 0 );
+	if ( $zhiji_r > 0 ) {
+		$zhiji_danmu_style .= '#zhiji-danmu li{border-radius:' . $zhiji_r . 'px;}';
+	}
+	if ( $zhiji_danmu_style !== '' ) {
+		zhiji_asset_add_css( 'danmu-style', $zhiji_danmu_style );
+	}
 
 	zhiji_asset_add_js( 'danmu-ajax', 'window.ZHIJI_DANMU_AJAX=' . wp_json_encode( admin_url( 'admin-ajax.php' ) ) . ';' );
 
