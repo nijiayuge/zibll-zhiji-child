@@ -25,19 +25,75 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /* ============================================================
- * 1. 后台 CSF 分区：用户&互动 → 奖励中心
+ * 1. 后台 CSF 分区：用户&互动 → 奖励中心（聚合 5 分节：积分规则/勋章/等级/兑换/日志）
  * ============================================================ */
+
+/**
+ * 取父主题已启用的会员等级选项（复用 zibll 会员体系，不自建等级）
+ *
+ * 父主题 VIP 等级用 vip_level meta（与奖励中心发放一致），等级名称/开关在
+ * 子比设置 → 会员 中配置：_pz('pay_user_vip_'.$i.'_name') / _pz('pay_user_vip_'.$i.'_s')。
+ * 此处只读已启用等级，保证奖励中心可选的会员等级与父主题实时同步（变量⑦）。
+ *
+ * @return array level(int) => 名称
+ */
+function zhiji_reward_center_vip_level_options() {
+	if ( ! function_exists( '_pz' ) ) {
+		// 父主题未加载时的兜底（理论上不会触发，子主题依赖 zibll）
+		return array(
+			1 => __( '月卡会员（LV1）', 'zhiji' ),
+			2 => __( '年卡会员（LV2）', 'zhiji' ),
+		);
+	}
+	$opts = array();
+	// 父主题默认 2 个会员等级（options-module.php:1336 $vip_max=2），循环到 3 以兼容自定义扩展
+	for ( $i = 1; $i <= 3; $i++ ) {
+		if ( ! _pz( 'pay_user_vip_' . $i . '_s', $i === 1 ) ) {
+			continue; // 该等级未启用
+		}
+		$name = _pz( 'pay_user_vip_' . $i . '_name', '' );
+		$opts[ $i ] = $name ? $name : sprintf( __( 'VIP%d', 'zhiji' ), $i );
+	}
+	return $opts ? $opts : array( 1 => __( '月卡会员（LV1）', 'zhiji' ) );
+}
+
+/**
+ * 渲染「已注册勋章」展示块（只读；勋章定义见 Ops.php user_medal_args）
+ *
+ * @return string HTML
+ */
+function zhiji_reward_center_medals_html() {
+	$public = array(
+		'首兑新人' => '首次在积分商城兑换',
+		'兑换达人' => '累计兑换 10 次',
+		'谈判专家' => '砍价成功 1 次',
+		'学神认证' => '答题满分 3 次',
+	);
+	$hidden = array( '夜猫子', '彩蛋猎人', '坚持之王' );
+	$rows   = '';
+	foreach ( $public as $name => $desc ) {
+		$icon = function_exists( 'zhiji_medal_icon' ) ? zhiji_medal_icon( $name ) : '';
+		$img  = $icon ? '<img src="' . esc_url( $icon ) . '" width="28" height="28" style="vertical-align:middle;margin-right:8px;border-radius:6px">' : '';
+		$rows .= '<div style="padding:4px 0">' . $img . '<b>' . esc_html( $name ) . '</b> <span class="opacity7">— ' . esc_html( $desc ) . '</span></div>';
+	}
+	$hidden_line = '<div style="padding:4px 0" class="opacity8">隐藏成就（触发条件不对外公示，仅由事件授予）：' . esc_html( implode( ' / ', $hidden ) ) . '</div>';
+	return '<div style="line-height:1.8">' . $rows . $hidden_line
+		. '<div class="opacity7" style="margin-top:6px">勋章图标为子主题自绘（版权归知集），由 Ops.php 的 user_medal_args 注册、事件自动判定授予。</div></div>';
+}
 
 function zhiji_reward_center_register_options() {
 	if ( ! class_exists( 'CSF' ) || ! is_admin() ) {
 		return;
 	}
 
+	
+	$vip_options = zhiji_reward_center_vip_level_options();
+
 	Zhiji_Registry::register_options( 'reward_center', array(
 
 				array(
 					'type'    => 'subheading',
-					'title'   => __( '随机模式权重（数值越大越容易抽中，可为 0；全 0 时保底积分）', 'zhiji' ),
+					'title'   => __( '① 积分规则 / 随机模式权重（数值越大越容易抽中，可为 0；全 0 时保底积分）', 'zhiji' ),
 					'desc'    => __( '适用于评论福袋、抽奖等「随机抽一种奖励」的场景。', 'zhiji' ),
 				),
 				array(
@@ -83,7 +139,7 @@ function zhiji_reward_center_register_options() {
 
 				array(
 					'type'  => 'subheading',
-					'title' => __( '积分奖励参数', 'zhiji' ),
+					'title' => __( '① 积分规则 / 积分奖励参数', 'zhiji' ),
 				),
 				array(
 					'id'      => 'reward_center_points_min',
@@ -104,7 +160,7 @@ function zhiji_reward_center_register_options() {
 
 				array(
 					'type'  => 'subheading',
-					'title' => __( '余额奖励参数', 'zhiji' ),
+					'title' => __( '① 积分规则 / 余额奖励参数', 'zhiji' ),
 				),
 				array(
 					'id'      => 'reward_center_balance_min',
@@ -123,9 +179,20 @@ function zhiji_reward_center_register_options() {
 					'min'     => 0,
 				),
 
+				// —— 分节二：勋章（只读展示）——
 				array(
 					'type'  => 'subheading',
-					'title' => __( '优惠码奖励参数（复用 CouponGive 差异化面值体系）', 'zhiji' ),
+					'title' => __( '② 勋章墙（当前已注册，由 Ops.php 事件自动授予）', 'zhiji' ),
+					'desc'  => __( '勋章无需在此配置；以下为站点当前已注册勋章。', 'zhiji' ),
+				),
+				array(
+					'type'    => 'content',
+					'content' => zhiji_reward_center_medals_html(),
+				),
+
+				array(
+					'type'  => 'subheading',
+					'title' => __( '④ 兑换 / 优惠码奖励参数（复用 CouponGive 差异化面值体系）', 'zhiji' ),
 				),
 				array(
 					'id'      => 'reward_center_coupon_scope',
@@ -141,9 +208,11 @@ function zhiji_reward_center_register_options() {
 					'desc'    => __( '调用 CouponGive 的 zhiji_coupon_give_discount_meta 生成随机立减/折扣优惠码。', 'zhiji' ),
 				),
 
+				// —— 分节三：等级（复用父主题）——
 				array(
 					'type'  => 'subheading',
-					'title' => __( '会员权益奖励参数', 'zhiji' ),
+					'title' => __( '③ 等级 / 会员权益奖励参数（复用父主题 zibll 会员体系）', 'zhiji' ),
+					'desc'  => __( '会员等级名称与开关在「子比设置 → 会员」中配置；此处仅选择奖励发放的等级。', 'zhiji' ),
 				),
 				array(
 					'id'      => 'reward_center_vip_days',
@@ -157,17 +226,14 @@ function zhiji_reward_center_register_options() {
 					'id'      => 'reward_center_vip_level',
 					'type'    => 'select',
 					'title'   => __( '会员等级', 'zhiji' ),
-					'desc'       => __( '会员奖励的等级。', 'zhiji' ),
-					'options' => array(
-						1 => __( '月卡会员（LV1）', 'zhiji' ),
-						2 => __( '年卡会员（LV2）', 'zhiji' ),
-					),
+					'desc'       => __( '会员奖励的等级（取自父主题已启用会员等级，复用 zibll 会员体系）。', 'zhiji' ),
+					'options' => $vip_options,
 					'default' => 1,
 				),
 
 				array(
 					'type'  => 'subheading',
-					'title' => __( '全发模式（答题/砍价等达标后发放哪些奖励）', 'zhiji' ),
+					'title' => __( '④ 兑换 / 全发模式（答题/砍价等达标后发放哪些奖励）', 'zhiji' ),
 					'desc'  => __( '开启的奖励类型在「全发模式」下会全部发放；关闭则不发。随机模式不受此开关影响。', 'zhiji' ),
 				),
 				array(
@@ -204,6 +270,16 @@ function zhiji_reward_center_register_options() {
 					'title'   => __( '发放免单券', 'zhiji' ),
 					'default' => false,
 					'desc'    => __( '免单券（multiply=0 全免）价值较高，建议谨慎开启。', 'zhiji' ),
+				),
+
+				// —— 分节五：日志 ——
+				array(
+					'type'  => 'subheading',
+					'title' => __( '⑤ 发放记录与来源标签', 'zhiji' ),
+				),
+				array(
+					'type'    => 'content',
+					'content' => __( '奖励发放记录在用户中心「余额 / 积分明细」查看；来源标签由 zhiji_reward_source_label() 统一归一为中文（如「评论福袋」「大转盘抽奖」），历史英文标识已通过 zhiji_reward_records_migrate() 一次性迁移修正，不会再把内部码暴露给用户。', 'zhiji' ),
 				),
 
 			), 20 );
