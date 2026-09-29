@@ -304,7 +304,10 @@ function zhiji_pmall_shortcode()
     $items = zhiji_pmall_items();
 
     // 前台 JS/CSS 由 zhiji_pmall_enqueue() 在 wp_enqueue_scripts 统一注册（head 内联）
-    $out = '<div class="zhiji-pmall-wrap">';
+    // ⚠️ nonce 同时写在 body 的 data-nonce 上：zibll 为 PJAX 站，head 内联的
+    //    window.ZHIJI_PMALL 在 PJAX 切页时不重新执行，标签页放久/重新登录后即过期；
+    //    body 内容每次导航都会刷新，以前台 JS 优先读取 data-nonce 为准（2026-09-29 修复「页面已过期」）。
+    $out = '<div class="zhiji-pmall-wrap" data-nonce="' . esc_attr(wp_create_nonce('zhiji_pmall')) . '">';
     if (!$uid) {
         $out .= '<p class="description">' . esc_html__('登录后即可用积分兑换奖品。', 'zhiji') . '</p>';
     } else {
@@ -361,7 +364,7 @@ function zhiji_pmall_enqueue()
     if (!zhiji_is_enabled('points_mall_enabled', true)) {
         return;
     }
-    $js = "(function(){var C=window.ZHIJI_PMALL||{};document.addEventListener('click',function(e){var b=e.target.closest?e.target.closest('.zhiji-pmall-buy'):null;if(!b)return;e.preventDefault();if(b.disabled)return;b.disabled=true;b.textContent='兑换中…';var d=new FormData();d.append('action','zhiji_api');d.append('api','zhiji_pmall_exchange');d.append('item',b.getAttribute('data-id'));d.append('nonce',C.nonce||'');fetch(C.ajax||'/wp-admin/admin-ajax.php',{method:'POST',credentials:'same-origin',body:d}).then(function(r){return r.json()}).then(function(j){var m=(j.data&&j.data.msg)||'操作失败';alert(m);if(j.success){location.reload()}}).catch(function(){alert('网络异常，请重试');b.disabled=false;b.textContent='立即兑换'})})})();";
+    $js = "(function(){var C=window.ZHIJI_PMALL||{};document.addEventListener('click',function(e){var b=e.target.closest?e.target.closest('.zhiji-pmall-buy'):null;if(!b)return;e.preventDefault();if(b.disabled)return;b.disabled=true;var t=b.textContent;b.textContent='兑换中…';var w=document.querySelector('.zhiji-pmall-wrap');var d=new FormData();d.append('action','zhiji_api');d.append('api','zhiji_pmall_exchange');d.append('item',b.getAttribute('data-id'));d.append('nonce',(w&&w.getAttribute('data-nonce'))||C.nonce||'');fetch(C.ajax||'/wp-admin/admin-ajax.php',{method:'POST',credentials:'same-origin',body:d}).then(function(r){return r.json().then(function(j){return{code:r.status,j:j}})}).then(function(o){var j=o.j;if(j.success){alert((j.data&&j.data.msg)||'兑换成功');location.reload();return}alert((j.data&&j.data.msg)||'操作失败');b.disabled=false;b.textContent=t;if(403===o.code){setTimeout(function(){location.reload()},800)}}).catch(function(){alert('网络异常，请重试');b.disabled=false;b.textContent=t})})})();";
     zhiji_asset_add_js('points_mall', $js);
     zhiji_asset_add_js('points_mall_cfg', 'window.ZHIJI_PMALL={nonce:' . wp_json_encode(wp_create_nonce('zhiji_pmall'))
         . ',ajax:' . wp_json_encode(admin_url('admin-ajax.php')) . '};');
