@@ -363,7 +363,10 @@ function zhiji_pmall_enqueue()
     zhiji_asset_add_js('points_mall', $js);
     zhiji_asset_add_js('points_mall_cfg', 'window.ZHIJI_PMALL={nonce:' . wp_json_encode(wp_create_nonce('zhiji_pmall'))
         . ',ajax:' . wp_json_encode(admin_url('admin-ajax.php')) . '};');
-    zhiji_asset_add_css('points_mall', '.zhiji-pmall{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}.zhiji-pmall-card{border:1px solid #eee;border-radius:8px;padding:14px;background:#fff}.zhiji-pmall-card h4{margin:0 0 6px;font-size:15px}.zhiji-pmall-cost{color:#e8533f;font-weight:600;margin-bottom:8px}.zhiji-pmall-meta{font-size:12px;color:#999;margin-bottom:10px}');
+    // 修复：① auto-fill 会保留空轨道 → 仅 2 个商品时右侧大片留白；
+    //        改用 auto-fit 让空轨道塌陷、已有卡片拉伸填满整行。
+    //      ② 按钮显式设色，不依赖父主题 .button（暗色模式下文字/背景失效 → 灰色空块）。
+    zhiji_asset_add_css('points_mall', '.zhiji-pmall-wrap{width:100%}.zhiji-pmall{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}.zhiji-pmall-card{border:1px solid #eee;border-radius:8px;padding:16px;background:#fff;min-width:0}.zhiji-pmall-card h4{margin:0 0 6px;font-size:15px}.zhiji-pmall-cost{color:#e8533f;font-weight:600;margin-bottom:8px}.zhiji-pmall-meta{font-size:12px;color:#999;margin-bottom:12px}.zhiji-pmall .button{display:block;width:100%;margin:0;padding:9px 14px;border:none;border-radius:6px;font-size:14px;line-height:1.4;text-align:center;cursor:pointer;color:#fff;background:#e8533f}.zhiji-pmall .button:disabled{background:#d4d4d4;color:#8a8a8a;cursor:not-allowed}');
 }
 add_action('wp_enqueue_scripts', 'zhiji_pmall_enqueue', 20);
 
