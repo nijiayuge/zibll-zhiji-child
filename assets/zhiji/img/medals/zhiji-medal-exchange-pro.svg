@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="兑换达人">
+  <path d="M22 44 L17 63 L30 56 Z" fill="#e0566a"/>
+  <path d="M42 44 L47 63 L34 56 Z" fill="#c63f56"/>
+  <circle cx="32" cy="27" r="21" fill="#f6b400" stroke="#e09c00" stroke-width="2.5"/>
+  <circle cx="32" cy="27" r="15.5" fill="#ffd84d"/>
+  <g fill="#ffffff">
+    <path d="M24 17 h16 v6 a8 8 0 0 1 -16 0 Z"/>
+    <rect x="29.5" y="29" width="5" height="6"/>
+    <rect x="25" y="35" width="14" height="3.5" rx="1.5"/>
+    <path d="M24 18 h-4 a4 4 0 0 0 4 7" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+    <path d="M40 18 h4 a4 4 0 0 1 -4 7" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+  </g>
+</svg>

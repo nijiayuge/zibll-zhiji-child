@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "updated": "2026-09-29",
+  "note": "知集 v2 勋章图标清单。own=子主题自绘(版权归知集),parent=本地化的父主题 zibll 9.1 兜底图(已购商用授权)。解析函数 zhiji_medal_icon($name) 本地优先,缺失回退 parent medal-background。",
+  "fallback_parent": "medal-background.svg",
+  "medals": {
+    "首兑新人": { "file": "zhiji-medal-first-exchange.svg", "label": "首兑新人", "source": "own", "concept": "首次兑换礼品盒" },
+    "兑换达人": { "file": "zhiji-medal-exchange-pro.svg", "label": "兑换达人", "source": "own", "concept": "兑换奖杯" },
+    "谈判专家": { "file": "zhiji-medal-bargain.svg", "label": "谈判专家", "source": "own", "concept": "砍价价签" },
+    "学神认证": { "file": "zhiji-medal-quiz-master.svg", "label": "学神认证", "source": "own", "concept": "答题学位帽" },
+    "夜猫子":   { "file": "zhiji-medal-night-owl.svg",   "label": "夜猫子",   "source": "own", "concept": "凌晨猫头鹰" },
+    "彩蛋猎人": { "file": "zhiji-medal-egg-hunter.svg",  "label": "彩蛋猎人", "source": "own", "concept": "复活节彩蛋" },
+    "坚持之王": { "file": "zhiji-medal-persistence-king.svg", "label": "坚持之王", "source": "own", "concept": "坚持皇冠" }
+  }
+}

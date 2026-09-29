@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="学神认证">
+  <path d="M22 44 L17 63 L30 56 Z" fill="#e0566a"/>
+  <path d="M42 44 L47 63 L34 56 Z" fill="#c63f56"/>
+  <circle cx="32" cy="27" r="21" fill="#f6b400" stroke="#e09c00" stroke-width="2.5"/>
+  <circle cx="32" cy="27" r="15.5" fill="#ffd84d"/>
+  <g fill="#ffffff">
+    <path d="M16 27 L32 20 L48 27 L32 34 Z"/>
+    <path d="M32 34 L32 42" stroke="#ffffff" stroke-width="3" fill="none"/>
+    <path d="M40 37 L40 43" stroke="#ffffff" stroke-width="2.5" fill="none"/>
+    <path d="M48 27 L48 34" stroke="#ffffff" stroke-width="2"/>
+    <circle cx="48" cy="35" r="2" fill="#ffffff"/>
+  </g>
+</svg>

@@ -26,6 +26,39 @@ if (!defined('ZHIJI_OPS_ACTIVITY_MAX')) {
 }
 
 /**
+ * 解析勋章图标 URL（2026-09-29 勋章本地化）
+ *
+ * 子主题自绘 SVG 优先（assets/zhiji/img/medals/，版权归知集）；
+ * 清单见同目录 medal-manifest.json；缺失时回退父主题 medal-background（已购 zibll 9.1 商用授权）。
+ *
+ * @param string $name 勋章名（须与 user_medal_args / manifest 的 name 一致）
+ * @return string 图标 URL
+ */
+function zhiji_medal_icon($name)
+{
+    static $map = null;
+    if (null === $map) {
+        $json = get_theme_file_path() . '/assets/zhiji/img/medals/manifest.json';
+        if (file_exists($json)) {
+            $dec = json_decode(file_get_contents($json), true);
+            $map = (is_array($dec) && !empty($dec['medals'])) ? $dec['medals'] : array();
+        } else {
+            $map = array();
+        }
+    }
+    $dir  = '/assets/zhiji/img/medals/';
+    $base = get_theme_file_uri() . $dir;
+    if (isset($map[$name]) && !empty($map[$name]['file'])) {
+        $file = $map[$name]['file'];
+        if (file_exists(get_theme_file_path() . $dir . $file)) {
+            return $base . $file;
+        }
+    }
+    // 兜底：父主题 medal-background（已购商用授权，合法复用）
+    return get_theme_file_uri() . '/img/medal/medal-background.svg';
+}
+
+/**
  * 注册一个运维场景
  *
  * $args 契约：
@@ -137,16 +170,16 @@ add_filter('user_medal_args', function ($args) {
         $args[] = array('cat_name' => $cat_label, 'items' => array());
         $i = count($args) - 1;
     }
-    $img = get_theme_file_path() . '/img/medal/';
+    // 图标走 zhiji_medal_icon()：子主题自绘优先，缺失回退父主题兜底（2026-09-29 勋章本地化）
     $new = array(
-        array('name' => '首兑新人', 'desc' => '首次在积分商城兑换', 'icon' => $img . 'medal-1.svg', 'get_type' => 'points_mall_exchange', 'get_val' => 1),
-        array('name' => '兑换达人', 'desc' => '累计兑换 10 次', 'icon' => $img . 'medal-2.svg', 'get_type' => 'points_mall_exchange', 'get_val' => 10),
-        array('name' => '谈判专家', 'desc' => '砍价成功 1 次', 'icon' => $img . 'medal-3.svg', 'get_type' => 'bargain_success', 'get_val' => 1),
-        array('name' => '学神认证', 'desc' => '答题满分 3 次', 'icon' => $img . 'medal-4.svg', 'get_type' => 'quiz_perfect', 'get_val' => 3),
+        array('name' => '首兑新人', 'desc' => '首次在积分商城兑换', 'icon' => zhiji_medal_icon('首兑新人'), 'get_type' => 'points_mall_exchange', 'get_val' => 1),
+        array('name' => '兑换达人', 'desc' => '累计兑换 10 次', 'icon' => zhiji_medal_icon('兑换达人'), 'get_type' => 'points_mall_exchange', 'get_val' => 10),
+        array('name' => '谈判专家', 'desc' => '砍价成功 1 次', 'icon' => zhiji_medal_icon('谈判专家'), 'get_type' => 'bargain_success', 'get_val' => 1),
+        array('name' => '学神认证', 'desc' => '答题满分 3 次', 'icon' => zhiji_medal_icon('学神认证'), 'get_type' => 'quiz_perfect', 'get_val' => 3),
         // 隐藏成就（2026-09-29）：触发条件不公示，desc 仅作解锁后注解；无 get_type → 只能由事件授予
-        array('name' => '夜猫子', 'desc' => '隐藏成就 · 凌晨的秘密行动', 'icon' => $img . 'medal-5.svg'),
-        array('name' => '彩蛋猎人', 'desc' => '隐藏成就 · 站点里藏着一个小秘密', 'icon' => $img . 'medal-6.svg'),
-        array('name' => '坚持之王', 'desc' => '隐藏成就 · 连续坚持整整一个月', 'icon' => $img . 'medal-7.svg'),
+        array('name' => '夜猫子', 'desc' => '隐藏成就 · 凌晨的秘密行动', 'icon' => zhiji_medal_icon('夜猫子')),
+        array('name' => '彩蛋猎人', 'desc' => '隐藏成就 · 站点里藏着一个小秘密', 'icon' => zhiji_medal_icon('彩蛋猎人')),
+        array('name' => '坚持之王', 'desc' => '隐藏成就 · 连续坚持整整一个月', 'icon' => zhiji_medal_icon('坚持之王')),
     );
     $existing = array_column($args[$i]['items'] ?? array(), 'name');
     foreach ($new as $item) {

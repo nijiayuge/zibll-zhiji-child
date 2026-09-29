@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="彩蛋猎人">
+  <path d="M22 44 L17 63 L30 56 Z" fill="#e0566a"/>
+  <path d="M42 44 L47 63 L34 56 Z" fill="#c63f56"/>
+  <circle cx="32" cy="27" r="21" fill="#f6b400" stroke="#e09c00" stroke-width="2.5"/>
+  <circle cx="32" cy="27" r="15.5" fill="#ffd84d"/>
+  <g fill="#ffffff">
+    <path d="M32 17 C24 17 22 30 22 36 a10 10 0 0 0 20 0 C42 30 40 17 32 17 Z"/>
+  </g>
+  <path d="M22 32 h20 M24 37 h16 M26 42 h12" stroke="#f6b400" stroke-width="2.2" fill="none"/>
+</svg>
