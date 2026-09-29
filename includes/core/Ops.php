@@ -492,6 +492,14 @@ function zhiji_ops_health_checks()
         'hint'  => $audit_n >= (int) ZHIJI_OPS_ACTIVITY_MAX ? __('已满，最早的操作记录开始被环形淘汰', 'zhiji') : '',
     );
 
+    // 7.5) 应急模式（开启时全页置顶横幅 + 此处 warn，确保一眼可见）
+    $checks[] = array(
+        'label' => __('应急模式', 'zhiji'),
+        'value' => zhiji_ops_kill_active() ? __('已开启（前台互动暂停）', 'zhiji') : __('未开启', 'zhiji'),
+        'tone'  => zhiji_ops_kill_active() ? 'warn' : 'ok',
+        'hint'  => zhiji_ops_kill_active() ? __('在总览页顶部可一键关闭', 'zhiji') : '',
+    );
+
     // 8) 404 监控（表可能未建：模块未激活/父主题未建表 → 显示 — 而不是报错）
     $t404 = $wpdb->prefix . 'zhiji_404_logs';
     $n404 = $wpdb->get_var("SELECT COUNT(*) FROM {$t404}");
@@ -564,6 +572,24 @@ function zhiji_ops_trend($days = 7)
 }
 
 /**
+ * 应急开关是否开启（2026-09-29 新增，附录 Y 最后一个候选：kill switch）
+ *
+ * 效果：开启后**前台互动三入口**（邮箱领券 / 评论福袋领取 / 抽奖）立即暂停，
+ * 返回「应急模式已开启」。用于突发情况下一键止血（如奖励配置出错、被刷）。
+ *
+ * ⚠️ 边界（刻意设计）：
+ *  - **不触碰收款**（zibpay 支付/卡密不受任何影响 —— 红线）；
+ *  - 不影响后台、运维台、记录查询与导出（运维照常取证）；
+ *  - 每次开/关都会写入操作审计（操作者/IP/事件 ID）。
+ *
+ * @return bool
+ */
+function zhiji_ops_kill_active()
+{
+    return (bool) zhiji_is_enabled('ops_kill_switch', false);
+}
+
+/**
  * 操作标识 → 中文名（页面展示用）
  *
  * @param string $action
@@ -585,6 +611,7 @@ function zhiji_ops_action_label($action)
         'export_audit' => '导出审计日志（CSV）',
         'ops_query'    => '查询接口（被拒绝）',
         'ops_clear'    => '清除接口',
+        'kill_switch'  => '应急模式开关',
     );
     $action = sanitize_key($action);
     return isset($map[$action]) ? $map[$action] : $action;

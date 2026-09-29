@@ -365,3 +365,42 @@ function zhiji_ops_handle_export_audit()
     exit;
 }
 
+
+add_action('admin_post_zhiji_ops_kill_toggle', 'zhiji_ops_handle_kill_toggle');
+
+/**
+ * 应急开关切换（2026-09-29 新增，附录 Y 最后一个候选：kill switch）
+ *
+ * 开：前台互动三入口（邮箱领券 / 评论福袋 / 抽奖）立即暂停；
+ * 关：恢复正常。**不触碰收款（zibpay）与后台/运维台**。
+ * 每次 toggle 都写入操作审计（操作者 / IP / 事件 ID）。
+ *
+ * 安全：登录 + zhiji_ops_manage 能力 + nonce `zhiji_ops_kill_toggle`。
+ *
+ * @return void
+ */
+function zhiji_ops_handle_kill_toggle()
+{
+    if (!is_user_logged_in() || !current_user_can(zhiji_ops_manage_cap()) /* 2026-09-29 RBAC */) {
+        wp_die(__('您没有权限执行该操作', 'zhiji'));
+    }
+    check_admin_referer('zhiji_ops_kill_toggle');
+
+    // 目标状态：缺省 = 翻转当前值（按钮语义：一键切换）
+    $cur = zhiji_ops_kill_active();
+    $to  = isset($_GET['to']) ? sanitize_key(wp_unslash($_GET['to'])) : '';
+    $to  = ('1' === $to || '0' === $to) ? $to : ($cur ? '0' : '1');
+
+    zhiji_update_option('ops_kill_switch', $to);
+
+    zhiji_ops_add_activity(
+        'kill_switch',
+        '1' === $to ? __('已开启应急模式：前台领券/福袋/抽奖暂停', 'zhiji')
+                    : __('已关闭应急模式：前台互动恢复正常', 'zhiji'),
+        '',
+        array('outcome' => 'success', 'target' => 'ops_kill_switch=' . $to)
+    );
+
+    wp_safe_redirect(zhiji_ops_page_url());
+    exit;
+}

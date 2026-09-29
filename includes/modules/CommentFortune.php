@@ -292,6 +292,10 @@ function zhiji_comment_fortune_pick_text() {
  * admin-ajax：查询当前登录用户的福袋标记（只读本人，消费后删除）。
  */
 function zhiji_comment_fortune_ajax_check() {
+	// 0. 应急开关（2026-09-29）：一键暂停前台互动 —— 置于一切校验之前
+	if ( function_exists( 'zhiji_ops_kill_active' ) && zhiji_ops_kill_active() ) {
+		wp_send_json_error( array( 'msg' => __( '应急模式已开启，互动功能暂停', 'zhiji' ) ), 503 );
+	}
 	if ( ! is_user_logged_in() ) {
 		wp_send_json_success( array( 'fortune' => false ) );
 	}

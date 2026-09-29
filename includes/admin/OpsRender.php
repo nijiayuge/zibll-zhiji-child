@@ -356,6 +356,44 @@ function zhiji_ops_render_activity_rows($rows)
 }
 
 /**
+ * 总览页「应急模式」面板（2026-09-29 新增，附录 Y：kill switch）
+ *
+ * 一键暂停/恢复前台互动三入口（邮箱领券 / 评论福袋 / 抽奖）。
+ * 边界：不触碰收款（zibpay）、不影响后台与运维台。每次切换写入操作审计。
+ * 仅 zhiji_ops_manage 能力可见切换按钮（只读用户只看到状态）。
+ *
+ * @return void
+ */
+function zhiji_ops_render_kill()
+{
+    $active = zhiji_ops_kill_active();
+
+    echo '<div class="zhiji-ops-kill" style="background:#fff;border:1px solid ' . ($active ? '#f5c2c0' : 'var(--zhiji-line)') . ';border-radius:var(--zhiji-radius);padding:10px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+
+    if ($active) {
+        echo '<span class="zhiji-ops-tag active">' . esc_html__('应急模式已开启', 'zhiji') . '</span>'
+           . '<span style="font-size:13px;color:var(--zhiji-body)">' . esc_html__('前台领券 / 评论福袋 / 抽奖已全部暂停，收款与后台不受影响。', 'zhiji') . '</span>';
+    } else {
+        echo '<span class="zhiji-ops-tag cleared">' . esc_html__('运行正常', 'zhiji') . '</span>'
+           . '<span style="font-size:13px;color:var(--zhiji-muted)">' . esc_html__('突发情况可一键暂停前台互动（领券 / 福袋 / 抽奖），收款与后台不受影响。', 'zhiji') . '</span>';
+    }
+
+    if (current_user_can(zhiji_ops_manage_cap())) {
+        $url = wp_nonce_url(
+            add_query_arg(array('action' => 'zhiji_ops_kill_toggle', 'to' => $active ? '0' : '1'), admin_url('admin-post.php')),
+            'zhiji_ops_kill_toggle'
+        );
+        printf(
+            '<a class="button %s" style="margin-left:auto" href="%s">%s</a>',
+            $active ? '' : 'button-primary',
+            esc_url($url),
+            $active ? esc_html__('关闭应急模式', 'zhiji') : esc_html__('开启应急模式', 'zhiji')
+        );
+    }
+    echo '</div>';
+}
+
+/**
  * 总览页「运行健康」面板（2026-09-29 新增，附录 Y.6 ⭐⭐：System Health 视图）
  *
  * 数据层在 core/Ops.php::zhiji_ops_health_checks()（只读、确定性检查，不发测试邮件、不写状态）。

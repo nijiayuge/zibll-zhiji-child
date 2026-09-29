@@ -673,6 +673,10 @@ function zhiji_coupon_give_log_claim( $email, $code, $user_id, $ip, $source = 'd
  * 支持：每日限量、指定商品、差异化面值、分享裂变（ref 邀请码）
  */
 function zhiji_coupon_give_ajax() {
+	// 0. 应急开关（2026-09-29）：一键暂停前台领取 —— 置于一切校验之前，突发情况先止血
+	if ( function_exists( 'zhiji_ops_kill_active' ) && zhiji_ops_kill_active() ) {
+		wp_send_json_error( array( 'msg' => __( '应急模式已开启，领取功能暂停', 'zhiji' ) ), 503 );
+	}
 	// 1. 权限与开关
 	check_ajax_referer( 'zhiji_coupon_give', 'nonce' );
 	if ( ! zhiji_get_option( 'coupon_give_enabled', 0 ) ) {

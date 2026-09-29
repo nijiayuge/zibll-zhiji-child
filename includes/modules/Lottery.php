@@ -1933,6 +1933,10 @@ function zhiji_lottery_render_log() {
 /* ===================== AJAX：抽奖 ===================== */
 
 function zhiji_lottery_ajax_draw() {
+	// 0. 应急开关（2026-09-29）：一键暂停前台抽奖 —— 置于 nonce 校验之前先止血
+	if ( function_exists( 'zhiji_ops_kill_active' ) && zhiji_ops_kill_active() ) {
+		wp_send_json( array( 'error' => 1, 'msg' => '应急模式已开启，抽奖功能暂停' ) );
+	}
 	check_ajax_referer( 'zhiji_lottery_draw', 'nonce' );
 	$uid     = get_current_user_id();
 	$today   = current_time( 'Y-m-d' );

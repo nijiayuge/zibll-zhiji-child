@@ -146,10 +146,13 @@ function zhiji_ops_render_overview()
         </div>
         <?php zhiji_ops_print_notice(); ?>
 
+        <?php zhiji_ops_section_title(__('应急模式', 'zhiji')); ?>
+        <?php zhiji_ops_render_kill(); ?>
+
         <?php if (!$scenes) : ?>
             <div class="notice notice-warning"><p><?php esc_html_e('当前没有可用的运维场景，请检查模块开关。', 'zhiji'); ?></p></div>
         <?php else : ?>
-            <?php zhiji_ops_section_title(__('运维场景', 'zhiji'), sprintf(__('共 %d 个', 'zhiji'), count($scenes))); ?>
+        <?php zhiji_ops_section_title(__('运维场景', 'zhiji'), sprintf(__('共 %d 个', 'zhiji'), count($scenes))); ?>
             <div class="zhiji-ops-scene-cards">
                 <?php foreach ($scenes as $id => $scene) : ?>
                     <?php
