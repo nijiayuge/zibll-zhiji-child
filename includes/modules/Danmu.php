@@ -33,7 +33,19 @@ defined( 'ABSPATH' ) || exit;
 				'type'    => 'switcher',
 				'title'   => '启用弹幕',
 				'default' => false,
-				'desc'    => '开启后页面右下角实时展示网站动态弹幕。',
+				'desc'    => '开启后页面实时展示网站动态弹幕。',
+			),
+			array(
+				'id'         => 'danmu_mode',
+				'type'       => 'select',
+				'title'      => '展示模式',
+				'options'    => array(
+					'float'  => __('右→左飘过（视频平台风格，默认）', 'zhiji'),
+					'corner' => __('右下角列表（气泡堆叠）', 'zhiji'),
+				),
+				'default'    => 'float',
+				'desc'       => __('飘过模式：弹幕从屏幕右侧飞入、向左划过整屏后消失（B 站/主流视频平台做法），最多 3 车道并行。', 'zhiji'),
+				'dependency' => array( 'danmu_enabled', '==', '1' ),
 			),
 			array(
 				'id'         => 'danmu_limit',
@@ -216,6 +228,8 @@ function zhiji_danmu_type_config() {
 		'lottery'  => array( 'label' => '中奖', 'color' => '#f78da7', 'icon' => '🎉' ),
 		'download' => array( 'label' => '下载', 'color' => '#3b82f6', 'icon' => '📥' ),
 		'bargain'  => array( 'label' => '砍价', 'color' => '#f2760b', 'icon' => '🔪' ),
+		'exchange' => array( 'label' => '兑换', 'color' => '#e8533f', 'icon' => '🎁' ),
+		'egg'      => array( 'label' => '彩蛋', 'color' => '#f7b500', 'icon' => '🥚' ),
 		'notice'   => array( 'label' => '公告', 'color' => '#6366f1', 'icon' => '📢' ),
 	);
 }
@@ -415,7 +429,7 @@ function zhiji_danmu_enqueue() {
 	}
 
 	$danmu_css = <<<'ZHIJI_DANMU_CSS'
-/* 知集 · 弹幕容器（右下角固定浮层）—— 2026-09-29 修复：移除 display:none，恢复弹幕显示 */
+/* 知集 · 弹幕容器 —— 2026-09-29 方向修正：新增「右→左飘过」模式（默认，视频平台风格），保留右下角列表模式 */
 #zhiji-danmu {
 	position: fixed;
 	bottom: 80px;
@@ -426,23 +440,47 @@ function zhiji_danmu_enqueue() {
 	margin: 0;
 	padding: 0;
 }
+/* 飘过模式：容器拉通为全宽车道区（贴近屏幕下方，避开右下角悬浮按钮） */
+#zhiji-danmu.zhiji-danmu-float {
+	left: 0;
+	right: 0;
+	bottom: 120px;
+	z-index: 9998;
+}
+/* 通用条目外观 */
 #zhiji-danmu li {
 	display: flex;
 	align-items: center;
 	white-space: nowrap;
-	opacity: 0;
 	border-radius: 22px;
 	color: #fff;
 	padding: 4px 12px 4px 4px;
 	font-size: 13px;
 	height: 30px;
 	line-height: 30px;
-	float: right;
-	clear: both;
-	margin-bottom: 8px;
 	box-shadow: 0 4px 14px rgba(17,24,39,.18);
 	pointer-events: auto;
 	background: rgba(17,24,39,.85);
+}
+/* 角落模式：右下角堆叠列表（行为同旧版） */
+#zhiji-danmu.zhiji-danmu-corner li {
+	position: relative;
+	opacity: 0;
+	float: right;
+	clear: both;
+	margin-bottom: 8px;
+}
+/* 飘过模式：绝对定位在车道上，从右侧 100% 起跑，CSS 动画向左划过整屏 */
+#zhiji-danmu.zhiji-danmu-float li {
+	position: absolute;
+	left: 100%;
+	opacity: 1;
+	will-change: transform;
+	animation: zhijiDanmuFly var(--zjd, 10s) linear forwards;
+}
+@keyframes zhijiDanmuFly {
+	from { transform: translateX(0); }
+	to   { transform: translateX(calc(-100vw - 100%)); }
 }
 #zhiji-danmu li .zhiji-danmu-user {
 	display: inline-flex;
@@ -479,7 +517,7 @@ function zhiji_danmu_enqueue() {
 #zhiji-danmu li .zhiji-danmu-content {
 	flex-shrink: 0;
 }
-/* 公告：置顶、加粗、更醒目（停留更久、不被普通弹幕顶掉） */
+/* 公告：加粗、更醒目（飘过模式停留更久） */
 #zhiji-danmu li.zhiji-danmu-notice {
 	font-weight: 600;
 	height: 34px;
@@ -487,10 +525,6 @@ function zhiji_danmu_enqueue() {
 	font-size: 14px;
 	box-shadow: 0 6px 18px rgba(255,159,28,.35);
 	border: 1px solid rgba(255,255,255,.28);
-}
-#zhiji-danmu li.zhiji-danmu-notice .zhiji-danmu-notice-pin {
-	margin-right: 5px;
-	flex-shrink: 0;
 }
 @media screen and (max-width: 900px) {
 	#zhiji-danmu { display: none; }
@@ -501,60 +535,42 @@ ZHIJI_DANMU_CSS;
 
 	zhiji_asset_add_js( 'danmu-ajax', 'window.ZHIJI_DANMU_AJAX=' . wp_json_encode( admin_url( 'admin-ajax.php' ) ) . ';' );
 
+	// 2026-09-29：展示模式（float=右→左飘过，默认；corner=右下角列表）注入前端
+	$mode = ('corner' === zhiji_get_option( 'danmu_mode', 'float' )) ? 'corner' : 'float';
+	echo '<script>window.ZHIJI_DANMU_MODE=' . wp_json_encode( $mode ) . ';</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+
 	$danmu_js = <<<'ZHIJI_DANMU_JS'
-/* 知集 · 弹幕前端（jQuery 实现，右下角逐条淡入） */
+/* 知集 · 弹幕前端（双模式：float=右→左飘过 / corner=右下角列表） */
 (function () {
 	function zhijiDanmuBoot() {
 		if (typeof window.jQuery === 'undefined') { setTimeout(zhijiDanmuBoot, 80); return; }
 		if (typeof window.ZHIJI_DANMU_AJAX === 'undefined') { return; }
 		jQuery(function ($) {
+			var MODE = window.ZHIJI_DANMU_MODE || 'float';
 			// 2026-09-29 修复：容器直接 append 到 body，不再依赖 NotificationCenter
 			var box = $('#zhiji-danmu');
 			if (!box.length) {
 				box = $('<ul id="zhiji-danmu"></ul>');
 				$('body').append(box);
 			}
-			box.show();
+			box.addClass('zhiji-danmu-' + MODE).show();
 			var shown = {};
-			var rowMax = 3; // 同时最多显示行数（普通弹幕）
-			var noticeHold = 8; // 公告置顶停留秒数（秒）
+			var rowMax = 3;        // corner 模式：同时最多显示行数（普通弹幕）
+			var noticeHold = 8;    // corner 模式：公告停留秒数
+			var laneN = 3;         // float 模式：车道数
+			var laneH = 40;        // float 模式：车道高度(px)
+			var lanes = [0, 0, 0]; // float 模式：各车道最近占用时间
+			var floatMax = 12;     // float 模式：屏内最大并发条数（防堆积）
 
-			function trim() {
-				// 只清理普通弹幕，公告（.zhiji-danmu-notice）置顶独立、不受行数限制
-				var items = box.find('li').not('.zhiji-danmu-notice');
-				var removeCount = items.length - rowMax;
-				if (removeCount > 0) {
-					// 【关键修复】一次性淡出最旧的 removeCount 条，动画完成后各自移除。
-					// 旧实现 while(items.length > rowMax){ items.first().animate(...) } 中，
-					// animate 是异步移除，while 在同一执行栈内反复给同一条 li 开动画，
-					// items.length 永不减少 → 弹幕累积超 3 条即死循环冻结页面（首页卡死/OOM 根因）。
-					items.slice(0, removeCount).each(function () {
-						$(this).animate({ opacity: 0 }, 300, function () { $(this).remove(); });
-					});
-				}
+			function escHtml(s) {
+				return $('<span>').text(s || '').html();
 			}
 
-			// 公告（特殊弹幕：置顶 + 长停留 + 不同样式）
-			function showNotice(item) {
-				var name = '知集公告';
-				var text = '📢 ' + (item.content || '');
-				var li = $('<li class="zhiji-danmu-notice" style="background:rgba(99,102,241,.9)"><span style="font-weight:600">' + escHtml(text) + '</span></li>');
-				box.prepend(li);
-				li.animate({ opacity: 1 }, 400);
-				setTimeout(function () {
-					li.animate({ opacity: 0 }, 300, function () { li.remove(); });
-				}, noticeHold * 1000);
-			}
-
-			function show(item) {
-				var key = item.type + '|' + (item.name || '') + '|' + (item.content || '');
-				if (shown[key]) return; // 同一条不重复展示
-				shown[key] = 1;
-				// 2026-09-29 修复：直接往容器加 <li>（不再依赖未定义的 window.zhijiAddDanmu）
-				var name = item.name || '知集公告';
-				var text = item.content || '';
+			function buildLi(item, isNotice) {
+				var name = isNotice ? '知集公告' : (item.name || '知集公告');
+				var text = isNotice ? ('📢 ' + (item.content || '')) : (item.content || '');
 				var avatar = item.avatar || '';
-				if (item.type_label) {
+				if (!isNotice && item.type_label) {
 					text = (item.type_icon || '') + item.type_label + ' ' + text;
 				}
 				var avatar_html = avatar
@@ -562,14 +578,59 @@ ZHIJI_DANMU_CSS;
 					: '';
 				var li = $('<li>' + avatar_html + '<span class="zhiji-danmu-user">' + escHtml(name) + '</span>'
 					+ '<span style="margin:0 6px">·</span><span>' + escHtml(text) + '</span></li>');
-				box.prepend(li);
-				li.animate({ opacity: 1 }, 400);
-				trim();
+				if (isNotice) {
+					li.addClass('zhiji-danmu-notice').css('background', 'rgba(99,102,241,.9)');
+				}
+				return li;
 			}
 
-			function escHtml(s) {
-				return $('<span>').text(s || '').html();
+			/* float：右→左飘过（视频平台风格） */
+			function showFloat(item, isNotice) {
+				if (box.find('li').length >= floatMax) { return; } // 车道拥塞时丢弃，防堆积
+				var li = buildLi(item, isNotice);
+				var now = Math.floor(Date.now() / 1000);
+				var lane = 0;
+				for (var i = 1; i < laneN; i++) { if (lanes[i] < lanes[lane]) { lane = i; } }
+				lanes[lane] = now;
+				li.css('top', (lane * laneH) + 'px');
+				// 原生 setProperty 设置自定义属性（jQuery .css 对 --var 支持不稳）
+				li.get(0).style.setProperty('--zjd', (isNotice ? 14 : 10) + 's');
+				box.append(li);
+				li.on('animationend webkitAnimationEnd', function () { $(this).remove(); });
 			}
+
+			/* corner：右下角堆叠（旧版行为） */
+			function trimCorner() {
+				var items = box.find('li').not('.zhiji-danmu-notice');
+				var removeCount = items.length - rowMax;
+				if (removeCount > 0) {
+					items.slice(0, removeCount).each(function () {
+						$(this).animate({ opacity: 0 }, 300, function () { $(this).remove(); });
+					});
+				}
+			}
+			function showCorner(item, isNotice) {
+				var li = buildLi(item, isNotice);
+				if (isNotice) {
+					box.prepend(li);
+					li.animate({ opacity: 1 }, 400);
+					setTimeout(function () {
+						li.animate({ opacity: 0 }, 300, function () { li.remove(); });
+					}, noticeHold * 1000);
+				} else {
+					box.prepend(li);
+					li.animate({ opacity: 1 }, 400);
+					trimCorner();
+				}
+			}
+
+			function show(item, isNotice) {
+				var key = item.type + '|' + (item.name || '') + '|' + (item.content || '');
+				if (shown[key]) { return; } // 同一条不重复展示
+				shown[key] = 1;
+				if (MODE === 'float') { showFloat(item, isNotice); } else { showCorner(item, isNotice); }
+			}
+			function showNotice(item) { show(item, true); }
 
 			function fetchLatest() {
 				$.ajax({
@@ -579,13 +640,13 @@ ZHIJI_DANMU_CSS;
 					dataType: 'json',
 					success: function (res) {
 						if (!res || !res.length) return;
-						// v1.9.8: 倒序逐条延迟推送（每条间隔1.2秒），避免一次性刷屏
+						// 倒序逐条延迟推送，避免一次性刷屏
 						var idx = res.length - 1;
 						function pushNext() {
 							if (idx < 0) return;
-							show(res[idx]);
+							show(res[idx], false);
 							idx--;
-							setTimeout(pushNext, 2500);
+							setTimeout(pushNext, MODE === 'float' ? 1800 : 2500);
 						}
 						pushNext();
 					}

@@ -143,6 +143,10 @@ add_filter('user_medal_args', function ($args) {
         array('name' => '兑换达人', 'desc' => '累计兑换 10 次', 'icon' => $img . 'medal-2.svg', 'get_type' => 'points_mall_exchange', 'get_val' => 10),
         array('name' => '谈判专家', 'desc' => '砍价成功 1 次', 'icon' => $img . 'medal-3.svg', 'get_type' => 'bargain_success', 'get_val' => 1),
         array('name' => '学神认证', 'desc' => '答题满分 3 次', 'icon' => $img . 'medal-4.svg', 'get_type' => 'quiz_perfect', 'get_val' => 3),
+        // 隐藏成就（2026-09-29）：触发条件不公示，desc 仅作解锁后注解；无 get_type → 只能由事件授予
+        array('name' => '夜猫子', 'desc' => '隐藏成就 · 凌晨的秘密行动', 'icon' => $img . 'medal-5.svg'),
+        array('name' => '彩蛋猎人', 'desc' => '隐藏成就 · 站点里藏着一个小秘密', 'icon' => $img . 'medal-6.svg'),
+        array('name' => '坚持之王', 'desc' => '隐藏成就 · 连续坚持整整一个月', 'icon' => $img . 'medal-7.svg'),
     );
     $existing = array_column($args[$i]['items'] ?? array(), 'name');
     foreach ($new as $item) {
@@ -168,6 +172,57 @@ add_action('zhiji_bargain_success', function ($uid) {
     if (!function_exists('zib_add_user_medal')) { return; }
     Zhiji_Adapter::add_user_medal($uid, '谈判专家', '砍价成功');
 }, 10, 1);
+
+/**
+ * 一次性授勋（2026-09-29 隐藏成就体系）：幂等，meta 旗标防重复授予 + notify 解锁提醒
+ *
+ * @param int    $uid        用户 ID
+ * @param string $medal_name 勋章名（须与 user_medal_args 注册名一致）
+ * @param string $flag_key   防重旗标 user_meta key
+ * @param string $remark     授勋备注
+ * @param string $event      通知事件名（空 = 不发通知）
+ * @return bool 是否实际授予（false = 已有/环境不具备）
+ */
+function zhiji_medal_award_once($uid, $medal_name, $flag_key, $remark, $event = '')
+{
+    $uid = (int) $uid;
+    if (!$uid || !function_exists('zib_add_user_medal')) {
+        return false;
+    }
+    if (get_user_meta($uid, $flag_key, true)) {
+        return false; // 已授予，幂等返回
+    }
+    update_user_meta($uid, $flag_key, 1);
+    Zhiji_Adapter::add_user_medal($uid, $medal_name, $remark);
+    if ($event && function_exists('zhiji_notify')) {
+        zhiji_notify($event, array(
+            'user_id'    => $uid,
+            'title'      => '🎉 解锁隐藏成就',
+            'content'    => '恭喜！你获得了隐藏勋章「' . $medal_name . '」：' . $remark,
+            'dedupe_key' => 'medal_' . $flag_key,
+        ));
+    }
+    do_action('zhiji_medal_unlocked', $uid, $medal_name);
+    return true;
+}
+
+/**
+ * 隐藏成就「夜猫子」：凌晨 0~5 点签到或评论触发
+ */
+add_action('comment_post', function ($comment_id, $approved) {
+    if (1 !== (int) $approved) { return; }
+    $c = get_comment($comment_id);
+    if (!$c || empty($c->user_id)) { return; }
+    if ((int) current_time('G') < 6) {
+        zhiji_medal_award_once((int) $c->user_id, '夜猫子', 'zhiji_medal_owl', '凌晨的秘密行动', 'medal_owl');
+    }
+}, 20, 2);
+
+add_action('user_checkined', function ($user_id) {
+    if ((int) current_time('G') < 6) {
+        zhiji_medal_award_once((int) $user_id, '夜猫子', 'zhiji_medal_owl', '凌晨的秘密行动', 'medal_owl');
+    }
+}, 20, 1);
 
 function zhiji_ops_register_scene($id, array $args = array())
 {

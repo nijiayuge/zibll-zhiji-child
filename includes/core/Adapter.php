@@ -140,6 +140,19 @@ class Zhiji_Adapter
     }
 
     /**
+     * 主搜索框 HTML（父主题 zib_get_main_search 包装；缺失时返回空串）
+     *
+     * @return string
+     */
+    public static function main_search()
+    {
+        if (function_exists('zib_get_main_search')) {
+            return (string) zib_get_main_search();
+        }
+        return '';
+    }
+
+    /**
      * 用户中心地址（父主题路由；缺失时回落到首页，保证链接永远不会是空串）
      *
      * @param string $type 目标页，如 msg / order / coupon
