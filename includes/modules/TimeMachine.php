@@ -88,7 +88,9 @@ function zhiji_tm_get_posts($limit = 8)
         'no_found_rows'       => true,
         'date_query'          => array(
             array(
-                'before' => date('Y-m-d', strtotime('-1 year')), // 不含今年今天（刚发布无意义）
+                // 2026-09-30 修复：'Y-m-d' 会被 WP 解析为当天 00:00 且不含当天，
+                // 导致「恰好去年今天」发布的文章被排除（与模块意图相悖）。补足到当天 23:59:59。
+                'before' => date('Y-m-d 23:59:59', strtotime('-1 year')), // 不含今年今天（刚发布无意义）
                 'month'  => (int) current_time('n'),
                 'day'    => (int) current_time('j'),
             ),
