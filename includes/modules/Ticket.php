@@ -307,7 +307,13 @@ add_action( 'save_post_ticket', function ( $post_id, $post ) {
 			$message = "您的工单「{$post->post_title}」状态已变更为：{$status_map[$new_status]}\n\n";
 			$message .= "工单内容：\n" . wp_strip_all_tags( $post->post_content ) . "\n\n";
 			$message .= "如有疑问，请登录网站查看详情。";
-			wp_mail( $user->user_email, $subject, $message );
+			// 走 zhiji_mail_send（内部临时摘除父主题 zib_get_mail_content 包装，坑 #21）；
+			// MailTemplate 模块未启用时兜底 wp_mail。
+			if ( function_exists( 'zhiji_mail_send' ) ) {
+				zhiji_mail_send( $user->user_email, $subject, $message );
+			} else {
+				wp_mail( $user->user_email, $subject, $message );
+			}
 		}
 
 		// 站内信扩展点
