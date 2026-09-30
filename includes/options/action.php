@@ -74,6 +74,13 @@ add_action('wp_ajax_zhiji_options_import', 'zhiji_ajax_options_import');
 //备份主题设置
 function zhiji_ajax_options_backup()
 {
+    // 权限守卫：与 import / backup_delete / backup_restore 三个端点保持一致。
+    // 缺此守卫时任何已登录用户（含 subscriber）均可反复触发备份，
+    // 把「更新主题/重置」的自动回滚点挤出 20 份环形队列（安全问题，非功能问题）。
+    if (!is_super_admin()) {
+        echo(json_encode(array('error' => 1, 'ys' => 'danger', 'msg' => '操作权限不足')));
+        exit();
+    }
 
     $type   = !empty($_REQUEST['type']) ? $_REQUEST['type'] : '手动备份';
     $backup = zhiji_options_backup($type);
