@@ -76,7 +76,7 @@ if ($WHERE_order_type) {
 }
 
 if (!empty($_GET['delete'])) {
-    $delete_id = $_GET['delete'];
+    $delete_id = (int) $_GET['delete'];
     if (!isset($_REQUEST['_wpnonce']) || !wp_verify_nonce($_REQUEST['_wpnonce'], 'admin_order_delete')) {
         echo '<div class="updated notice-alt"><h4 style="color:rgb(242, 123, 94);">' . esc_html__('链接已过期，请刷新页面后稍候再试', 'zib_language') . '</h4><p><a href="' . $order_url . '" class="button button-primary">' . esc_html__('返回订单中心', 'zib_language') . '</a></p></div>';
         exit;
