@@ -14,9 +14,22 @@ defined('ABSPATH') || exit;
 Zhiji_Registry::register_module('stats_widget', array(
     'title'    => '站点统计',
     'parent'   => 'zhiji_element',
-    'priority' => 100,
+    'priority' => 105, // 2026-09-30：原 100 与 life_countdown 冲突（排序不确定），规范要求同分类内唯一
     'option'   => 'stats_widget_enabled',
 ));
+
+/* ============================================================
+ * 后台配置（2026-09-30 补齐：此前模块开关无 UI，站长无法操作）
+ * ============================================================ */
+Zhiji_Registry::register_options('stats_widget', array(
+    array(
+        'id'      => 'stats_widget_enabled',
+        'type'    => 'switcher',
+        'title'   => __( '启用站点统计', 'zhiji' ),
+        'label'   => __( '开启后前台显示站点统计组件。', 'zhiji' ),
+        'default' => false,
+    ),
+), 105);
 
 
 

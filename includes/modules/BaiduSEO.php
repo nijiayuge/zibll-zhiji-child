@@ -93,6 +93,14 @@ add_action('publish_post', function ($post_id, $post) {
     // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
     Zhiji_Registry::register_options('baidu_seo', array(
         array(
+            'id'      => 'bing_post_token',
+            'type'    => 'text',
+            'title'   => '必应 API 密钥',
+            'desc'    => __( '必应站长工具（Bing Webmaster）API 密钥；填写后可在后台「批量提交链接到必应」使用。', 'zhiji' ),
+            'label'   => __( '留空则不启用必应批量提交（提交时会提示先填写密钥）。', 'zhiji' ),
+            'default' => '',
+        ),
+        array(
             'id'      => 'baidu_seo_enabled',
             'type'    => 'switcher',
             'title'   => '启用百度收录推送',

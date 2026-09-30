@@ -374,6 +374,13 @@ function zhiji_mail_test_send( $scene, $to ) {
 if ( class_exists( 'CSF' ) ) {
 	Zhiji_Registry::register_options( 'mail_template', array(
 			array(
+				'id'      => 'mail_template_enabled',
+				'type'    => 'switcher',
+				'title'   => __( '启用邮件模板', 'zhiji' ),
+				'label'   => __( '开启后站内邮件统一走品牌模板渲染（优惠码/通知等）。', 'zhiji' ),
+				'default' => true,
+			),
+			array(
 				'title'   => '测试收件邮箱',
 				'label'   => '填写您自己的邮箱，用于接收测试邮件（默认使用站点管理员邮箱）',
 				'id'      => 'mail_test_to',

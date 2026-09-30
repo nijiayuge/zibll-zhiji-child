@@ -30,6 +30,13 @@ Zhiji_Registry::register_module('quiz', array(
  * ============================================================ */
 Zhiji_Registry::register_options('quiz', array(
     array(
+        'id'      => 'quiz_enabled',
+        'type'    => 'switcher',
+        'title'   => __( '启用互动答题', 'zhiji' ),
+        'label'   => __( '开启后前台可用短码 [zhiji_quiz] 答题赚积分。', 'zhiji' ),
+        'default' => true,
+    ),
+    array(
         'type'    => 'submessage',
         'style'   => 'info',
         'content' => __('题库每行一条：<code>题目|选项A;选项B;选项C;选项D|正确序号(1起)|解析</code>。'

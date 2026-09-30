@@ -31,6 +31,13 @@ Zhiji_Registry::register_module('seckill', array(
  * ============================================================ */
 Zhiji_Registry::register_options('seckill', array(
     array(
+        'id'      => 'seckill_enabled',
+        'type'    => 'switcher',
+        'title'   => __( '启用积分秒杀', 'zhiji' ),
+        'label'   => __( '开启后秒杀专区自动追加到积分商城页；商品需在编辑页设为「积分商品」。', 'zhiji' ),
+        'default' => false,
+    ),
+    array(
         'type'    => 'submessage',
         'style'   => 'info',
         'content' => __('<b>使用前提</b>：先在<b>商品编辑页 → 商城设置 → 价格&选项</b>中把<b>价格类型</b>改为<b>「积分商品」</b>并填写<b>起始价格</b>（即积分兑换价，父主题原生能力），'

@@ -18,7 +18,7 @@ defined('ABSPATH') || exit;
 Zhiji_Registry::register_module('tag_cloud_3d', array(
     'title'    => '3D 云标签',
     'parent'   => 'zhiji_element',
-    'priority' => 90,
+    'priority' => 95,
     'option'   => 'tag3d_enabled',
 ));
 

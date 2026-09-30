@@ -15,6 +15,7 @@ Zhiji_Registry::register_module('download_quota', array(
     'parent'   => 'zhiji_pay',
     'priority' => 15,
     'option'   => 'download_quota_enabled',
+    'always_on' => true, // 开关无运行时检查（辅助模块/后台手动触发）→ 显式常驻（S2 规范）
 ));
 
 

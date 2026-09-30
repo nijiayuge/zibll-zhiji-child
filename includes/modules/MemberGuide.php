@@ -40,6 +40,13 @@ zhiji_notify_register_event('member_guide_seq', array(
  * ============================================================ */
 Zhiji_Registry::register_options('member_guide', array(
     array(
+        'id'      => 'member_guide_enabled',
+        'type'    => 'switcher',
+        'title'   => __( '启用会员引导', 'zhiji' ),
+        'label'   => __( '开启后按后台配置的序列向新用户推送引导；可发放注册迎新券。', 'zhiji' ),
+        'default' => true,
+    ),
+    array(
         'type'    => 'submessage',
         'style'   => 'info',
         'content' => __('触达序列每行一条：<code>天数|标题|内容</code>。注册当天自动触发迎新（天数 0），'

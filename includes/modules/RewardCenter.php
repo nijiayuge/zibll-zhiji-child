@@ -90,6 +90,17 @@ function zhiji_reward_center_register_options() {
 	$vip_options = zhiji_reward_center_vip_level_options();
 
 	Zhiji_Registry::register_options( 'reward_center', array(
+				array(
+					'id'      => 'reward_center_enabled',
+					'type'    => 'switcher',
+					'title'   => __( '启用奖励中心', 'zhiji' ),
+					'label'   => __( '全站统一发奖闸门：关闭后积分商城兑换失败（自动退积分）、砍价归零不发奖、迎新券/评论福袋/订阅奖励全部停发。', 'zhiji' ),
+					'default' => true,
+				),
+				array(
+					'type'    => 'content',
+					'content' => zhiji_reward_center_overview_html(),
+				),
 
 				array(
 					'type'    => 'subheading',
@@ -489,6 +500,58 @@ function zhiji_reward_record_desc( $type, $overrides = array() ) {
  *
  * @return int
  */
+/**
+ * 奖励中心「渠道总览」面板（2026-09-30 配置体系审计 P2）
+ *
+ * 目的：奖励配置此前散落在 4 个分类 11 个模块，排查"奖为什么没发"要在分类间来回跳。
+ * 本面板把三层语义与各发奖渠道的当前状态集中展示（只读，不改变任何开关归属）。
+ *
+ * @return string HTML
+ */
+function zhiji_reward_center_overview_html() {
+	$channels = array(
+		array( 'points_mall',      '积分商城兑换', 'points_mall_enabled',      '兑换品列表 / 优惠码档位 / 有效期规则', 'points_mall' ),
+		array( 'bargain',          '砍价',         'bargain_enabled',          '时效 / 助力上限 / 归零奖励（可绑定商品）', 'bargain' ),
+		array( 'lottery',          '大转盘抽奖',   'lottery_enabled',          '奖品池 / 每日次数 / 积分加抽', 'lottery' ),
+		array( 'comment_fortune',  '评论福袋',     'comment_fortune_enabled',  '触发间隔 / 文案（奖励参数走这里）', 'comment_fortune' ),
+		array( 'member_guide',     '注册迎新',     'member_guide_enabled',     '迎新券开关 / 触达序列', 'member_guide' ),
+		array( 'email_subscribe',  '邮件订阅奖励', 'email_sub_enabled',        '订阅奖励积分 / 勾选文案', 'email_subscribe' ),
+		array( 'seckill',          '积分秒杀',     'seckill_enabled',          '活动列表（商品需设为积分商品）', 'points_mall' ),
+		array( 'quiz',             '互动答题',     'quiz_enabled',             '题库 / 每日次数 / 得分上限', 'quiz' ),
+	);
+
+	$rows = '';
+	foreach ( $channels as $c ) {
+		list( $key, $name, $opt, $params, $scene ) = $c;
+		$on    = zhiji_is_enabled( $opt, true );
+		$badge = $on
+			? '<span style="color:#16a34a;font-weight:600">● 已启用</span>'
+			: '<span style="color:#9ca3af;font-weight:600">○ 已关闭</span>';
+		$rows .= '<tr>'
+			. '<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0">' . esc_html( $name ) . '</td>'
+			. '<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0">' . $badge . '</td>'
+			. '<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;color:#666">' . esc_html( $params ) . '</td>'
+			. '<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0"><code>' . esc_html( $opt ) . '</code></td>'
+			. '</tr>';
+	}
+
+	return '<div style="margin:6px 0 18px">'
+		. '<div style="font-weight:600;margin-bottom:6px">📊 发奖渠道总览（只读）</div>'
+		. '<div style="color:#666;font-size:12px;line-height:1.9;margin-bottom:8px">'
+		. '<b>三层配置语义</b>：① <b>全局层</b> = 本页上方总开关 + 发奖参数（积分/余额区间、优惠码面值与有效期规则）；'
+		. '② <b>渠道层</b> = 下表中各渠道自身的开关与规则（在各自分类内）；'
+		. '③ <b>活动层</b> = 兑换品 / 秒杀场次 / 奖品池等具体条目。'
+		. '</div>'
+		. '<table style="width:100%;border-collapse:collapse;font-size:13px">'
+		. '<thead><tr style="background:#f7f8fa;text-align:left">'
+		. '<th style="padding:6px 10px">渠道</th><th style="padding:6px 10px">状态</th>'
+		. '<th style="padding:6px 10px">渠道内参数</th><th style="padding:6px 10px">开关键</th></tr></thead>'
+		. '<tbody>' . $rows . '</tbody></table>'
+		. '<div style="color:#999;font-size:12px;margin-top:8px">'
+		. '发放记录与明细请到「运维管理页面 → 场景」查看；渠道开关在各自分类内切换，本表随配置实时刷新。'
+		. '</div></div>';
+}
+
 function zhiji_reward_coupon_rand_expire() {
 	$pool = apply_filters( 'zhiji_reward_coupon_expire_pool', array( 7, 30, 0 ) );
 	$pool = is_array( $pool ) && ! empty( $pool ) ? $pool : array( 7, 30, 0 );

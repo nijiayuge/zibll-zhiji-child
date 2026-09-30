@@ -120,22 +120,12 @@ function zhiji_beautify_effects_output() {
 	}
 
 	// 鼠标跟随光圈（需要 .mouse-cursor 容器 + 样式）
-	// 兼容旧框架「美化效果→鼠标特效」合并开关：新旧任一开启即生效
-	$cursor_on = zhiji_get_option( 'effect_cursor', 0 ) || zhiji_get_option( 'zhiji_mouse_cursor', 0 );
-	if ( $cursor_on ) {
+	// 2026-09-30 配置体系审计（P1）：原 v1 遗留键（zhiji_mouse_cursor / zhiji_cursor_color / …2 / …3）
+	// 已通过下方一次性迁移并入 effect_cursor / effect_color，读取点删除，避免"影子配置"。
+	if ( zhiji_get_option( 'effect_cursor', 0 ) ) {
 		$color = (string) zhiji_get_option( 'effect_color', '' );
 		if ( ! $color ) {
-			$color = (string) zhiji_get_option( 'zhiji_cursor_color', '' );
-		}
-		if ( ! $color ) {
-			// 旧三开关遗留值兼容：绿/粉曾开启 → 对应色
-			if ( zhiji_get_option( 'zhiji_mouse_cursor2', 0 ) ) {
-				$color = '#22b573';
-			} elseif ( zhiji_get_option( 'zhiji_mouse_cursor3', 0 ) ) {
-				$color = '#ff69b4';
-			} else {
-				$color = '#123eed';
-			}
+			$color = '#123eed';
 		}
 		$html .= '<div class="mouse-cursor cursor-outer"></div><div class="mouse-cursor cursor-inner"></div>' . "\n";
 		$html .= '<style>.mouse-cursor{position:fixed;left:0;top:0;pointer-events:none;border-radius:50%;-webkit-transform:translateZ(0);transform:translateZ(0);visibility:hidden;z-index:10000001}.cursor-inner{margin-left:-3px;margin-top:-3px;width:6px;height:6px;background:' . esc_attr( $color ) . ';-webkit-transition:width .3s ease-in-out,height .3s ease-in-out,margin .3s ease-in-out,opacity .3s ease-in-out;transition:width .3s ease-in-out,height .3s ease-in-out,margin .3s ease-in-out,opacity .3s ease-in-out}.cursor-inner.cursor-hover{margin-left:-20px;margin-top:-20px;width:40px;height:40px;opacity:.3}.cursor-outer{margin-left:-16px;margin-top:-16px;width:32px;height:32px;border:1px solid ' . esc_attr( $color ) . ';opacity:.5;-webkit-transition:all .2s ease-in-out;transition:all .2s ease-in-out}.cursor-outer.cursor-hover{opacity:.2}</style>' . "\n";
@@ -166,3 +156,35 @@ function zhiji_beautify_effects_coin_script() {
 	echo '<script>' . $js . '</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput -- 内部生成
 }
 add_action( 'wp_head', 'zhiji_beautify_effects_coin_script', 99 );
+
+/* ============================================================
+ * v1 遗留键一次性迁移（2026-09-30 配置体系审计 P1）
+ *
+ * 背景：鼠标特效曾在 v1 使用 zhiji_mouse_cursor / zhiji_mouse_cursor2 / zhiji_mouse_cursor3
+ * / zhiji_cursor_color 四个键；v2 收敛为 effect_cursor + effect_color 后旧键仍被读取，
+ * 形成"影子配置"（后台改不了但会生效）。此处把遗留值并入新键一次，然后删除全部旧键读取。
+ * ============================================================ */
+function zhiji_beautify_effects_migrate_legacy()
+{
+	if ( get_option( 'zhiji_effects_legacy_migrated' ) ) {
+		return;
+	}
+	$old_cursor = zhiji_get_option( 'zhiji_mouse_cursor', 0 );
+	if ( $old_cursor && ! zhiji_get_option( 'effect_cursor', 0 ) ) {
+		zhiji_update_option( 'effect_cursor', 1 );
+	}
+	if ( ! zhiji_get_option( 'effect_color', '' ) ) {
+		$color = (string) zhiji_get_option( 'zhiji_cursor_color', '' );
+		if ( ! $color && zhiji_get_option( 'zhiji_mouse_cursor2', 0 ) ) {
+			$color = '#22b573';
+		}
+		if ( ! $color && zhiji_get_option( 'zhiji_mouse_cursor3', 0 ) ) {
+			$color = '#ff69b4';
+		}
+		if ( $color ) {
+			zhiji_update_option( 'effect_color', $color );
+		}
+	}
+	update_option( 'zhiji_effects_legacy_migrated', 1, false );
+}
+add_action( 'admin_init', 'zhiji_beautify_effects_migrate_legacy', 30 );

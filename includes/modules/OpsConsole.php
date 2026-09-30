@@ -27,6 +27,13 @@ Zhiji_Registry::register_module('ops_console', array(
     // 2026-09-27：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
     Zhiji_Registry::register_options('ops_console', array(
         array(
+            'id'      => 'ops_kill_switch',
+            'type'    => 'switcher',
+            'title'   => '应急止血开关（暂停前台互动）',
+            'label'   => __( '⚠️ 严肃操作：开启后前台抽奖 / 秒杀 / 砍价 / 奖励发放等互动功能立即暂停。日常请使用「运维管理页面」的按钮操作（带审计记录）。', 'zhiji' ),
+            'default' => false,
+        ),
+        array(
             'id'      => 'ops_console_enabled',
             'type'    => 'switcher',
             'title'   => '启用运维管理页面',

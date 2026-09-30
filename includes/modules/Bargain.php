@@ -33,6 +33,13 @@ Zhiji_Registry::register_module('bargain', array(
  * ============================================================ */
 Zhiji_Registry::register_options('bargain', array(
     array(
+        'id'      => 'bargain_enabled',
+        'type'    => 'switcher',
+        'title'   => __( '启用砍价', 'zhiji' ),
+        'label'   => __( '开启后前台可用短码 [zhiji_bargain] 发起砍价，归零发放奖励。', 'zhiji' ),
+        'default' => true,
+    ),
+    array(
         'type'    => 'submessage',
         'style'   => 'info',
         'content' => __('砍到 0 元发奖励。权重曲线：首刀 = 总额×首刀占比，此后递减，'

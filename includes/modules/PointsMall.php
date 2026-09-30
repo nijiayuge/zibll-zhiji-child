@@ -33,6 +33,13 @@ Zhiji_Registry::register_module('points_mall', array(
  * ============================================================ */
 Zhiji_Registry::register_options('points_mall', array(
     array(
+        'id'      => 'points_mall_enabled',
+        'type'    => 'switcher',
+        'title'   => __( '启用积分商城', 'zhiji' ),
+        'label'   => __( '开启后提供「积分商城」页（优惠码兑换 + 积分秒杀专区）。', 'zhiji' ),
+        'default' => true,
+    ),
+    array(
         'type'    => 'submessage',
         'style'   => 'info',
         'content' => __('<b>前台入口</b>：启用本模块后，站点会自动创建「积分商城」页面（<code>/points-mall</code>，首次访问后台时生成）；'

@@ -29,6 +29,13 @@ defined( 'ABSPATH' ) || exit;
     // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
     Zhiji_Registry::register_options('danmu', array(
 			array(
+				'id'      => 'danmu_event_bargain',
+				'type'    => 'switcher',
+				'title'   => __( '砍价成功上墙', 'zhiji' ),
+				'label'   => __( '开启后「砍价成功」事件写入弹幕池，即时上墙（FOMO 联动）。', 'zhiji' ),
+				'default' => true,
+			),
+			array(
 				'id'      => 'danmu_enabled',
 				'type'    => 'switcher',
 				'title'   => '启用弹幕',
