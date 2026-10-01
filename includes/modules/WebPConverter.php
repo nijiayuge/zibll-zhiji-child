@@ -210,10 +210,11 @@ add_filter('wp_get_attachment_image_src', function ($image) {
             'info',
             array('webp_enabled', '==', '1')
         ),
+        // 2026-10-01：$supported 定义曾随重构丢失（PHP 8.0 起未定义变量触发 Warning），改为内联探测
         array(
             'type'    => 'submessage',
-            'style'   => $supported ? 'success' : 'warning',
-            'content' => $supported
+            'style'   => function_exists('imagewebp') ? 'success' : 'warning',
+            'content' => function_exists('imagewebp')
                 ? '服务器支持 WebP 转换（GD 库 + imagewebp 函数）。启用后新上传的 JPG/PNG 图片将自动转换，已上传的图片不会自动转换。'
                 : '服务器不支持 WebP 转换（需要 GD 库 + imagewebp 函数）。请联系主机商启用 GD WebP 支持。',
         ),
