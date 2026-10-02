@@ -207,28 +207,6 @@ define( 'ZHIJI_LOTTERY_META_DAILY_TOTAL', 'zhiji_lottery_daily_total' ); // 每�
 define( 'ZHIJI_LOTTERY_LOG_OPTION',     'zhiji_lottery_log' );       // 全局抽奖日志
 
 /**
- * 统一事件广播（联动扩展点）。
- *
- * 各业务模块在关键动作后调用，展示类模块（灵动岛等）
- * 通过 add_action 订阅即可实现跨功能联动，互不耦合。
- *
- * @param string $event 事件名（如 lottery_win / coupon_claimed）
- * @param array  $data  事件数据（uid / name / type / value 等）
- */
-function zhiji_event_fire( $event, $data = array() ) {
-	/**
-	 * 通用事件（所有事件统一入口）
-	 *
-	 * @param string $event
-	 * @param array  $data
-	 */
-	do_action( 'zhiji_event_fire', $event, $data );
-
-	/** 细分事件（如 zhiji_event_lottery_win） */
-	do_action( 'zhiji_event_' . $event, $data );
-}
-
-/**
  * 模块初始化：注册所有钩子（仅后台总开关开启时生效）。
  */
 function zhiji_lottery_init() {

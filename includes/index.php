@@ -22,6 +22,8 @@ defined('ABSPATH') || exit;
 zib_require(array(
     'core/Constants',
     'core/Options',
+    'contracts/Contracts',
+    'core/EventBus',
     'core/Helpers',
     'core/Fields',
     'core/Adapter',
