@@ -32,6 +32,18 @@ if ( ! defined( 'ABSPATH' ) ) {
     // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
     Zhiji_Registry::register_options('lottery', array(
 			array(
+				'type'       => 'accordion',
+				'accordions' => array(
+					array(
+						'title'  => __( '① 基本规则（谁能抽、一天几抽）', 'zhiji' ),
+						'icon'   => 'fas fa-sliders-h',
+						'fields' => array(
+							array(
+								'type'    => 'submessage',
+								'style'   => 'info',
+								'content' => __( '总开关、每日免费次数、每日总上限（含消耗积分抽的）、分享可额外获得的次数、以及参与抽奖所需的最低用户等级。', 'zhiji' ),
+							),
+			array(
 				'id'      => 'lottery_enabled',
 				'type'    => 'switcher',
 				'title'   => '启用抽奖大转盘',
@@ -47,6 +59,49 @@ if ( ! defined( 'ABSPATH' ) ) {
 				'dependency' => array( 'lottery_enabled', '==', '1' ),
 			),
 			array(
+				'id'         => 'lottery_daily_total',
+				'type'       => 'number',
+				'title'      => '每日总抽奖次数上限（0=不限）',
+				'desc'       => __( '每天总抽奖次数上限，含免费与兑换（0 = 不限）。', 'zhiji' ),
+				'default'    => '0',
+				'dependency' => array( 'lottery_enabled', '==', '1' ),
+			),
+			array(
+				'id'         => 'lottery_share_daily',
+				'type'       => 'number',
+				'title'      => '每日分享得次数（0=关闭）',
+				'desc'       => __( '每天分享可获得的额外抽奖次数（0 = 关闭）。', 'zhiji' ),
+				'default'    => '1',
+				'dependency' => array( 'lottery_enabled', '==', '1' ),
+			),
+			array(
+				'id'         => 'lottery_min_level',
+				'type'       => 'number',
+				'title'      => '最低参与等级（0=不限）',
+				'desc'       => __( '参与抽奖的最低用户等级（0 = 不限）。', 'zhiji' ),
+				'default'    => '0',
+				'dependency' => array( 'lottery_enabled', '==', '1' ),
+			),
+						),
+					),
+					array(
+						'title'  => __( '② 奖品与概率', 'zhiji' ),
+						'icon'   => 'fas fa-gift',
+						'fields' => array(
+							array(
+								'type'    => 'submessage',
+								'style'   => 'info',
+								'content' => __( '奖品池配置各档奖品与中奖率；「概率预设」用于快速套用常见中奖率分布。额外抽奖需消耗积分时，在此设单价与上限。', 'zhiji' ),
+							),
+			array(
+				'id'         => 'lottery_prizes',
+				'type'       => 'textarea',
+				'title'      => '自定义奖品池',
+				'default'    => "谢谢参与|none|0|40\n积分 20|points|20|25\n积分 50|points|50|15\n经验 100|level|100|10\n余额 1 元|balance|1|8\n优惠券 5 元|coupon|5|2\n会员 1 天|vip_day|1|1\n免单券|free|0|1",
+				'desc'       => '每行一个奖品，格式：名称|类型|数值|权重。类型：none(谢谢参与)/points(积分)/balance(余额)/coupon(优惠码)/vip_day(会员天数)/vip_month(会员月数)/free(免单券)/level(经验值)',
+				'dependency' => array( 'lottery_prob_preset', '==', 'custom' ),
+			),
+			array(
 				'id'         => 'lottery_prob_preset',
 				'type'       => 'select',
 				'title'      => '奖品池预设',
@@ -58,14 +113,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 					'custom'   => '自定义（使用下方奖品池）',
 				),
 				'dependency' => array( 'lottery_enabled', '==', '1' ),
-			),
-			array(
-				'id'         => 'lottery_prizes',
-				'type'       => 'textarea',
-				'title'      => '自定义奖品池',
-				'default'    => "谢谢参与|none|0|40\n积分 20|points|20|25\n积分 50|points|50|15\n经验 100|level|100|10\n余额 1 元|balance|1|8\n优惠券 5 元|coupon|5|2\n会员 1 天|vip_day|1|1\n免单券|free|0|1",
-				'desc'       => '每行一个奖品，格式：名称|类型|数值|权重。类型：none(谢谢参与)/points(积分)/balance(余额)/coupon(优惠码)/vip_day(会员天数)/vip_month(会员月数)/free(免单券)/level(经验值)',
-				'dependency' => array( 'lottery_prob_preset', '==', 'custom' ),
 			),
 			array(
 				'id'         => 'lottery_extra_cost',
@@ -83,54 +130,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 				'default'    => '5',
 				'dependency' => array( 'lottery_enabled', '==', '1' ),
 			),
-			array(
-				'id'         => 'lottery_share_daily',
-				'type'       => 'number',
-				'title'      => '每日分享得次数（0=关闭）',
-				'desc'       => __( '每天分享可获得的额外抽奖次数（0 = 关闭）。', 'zhiji' ),
-				'default'    => '1',
-				'dependency' => array( 'lottery_enabled', '==', '1' ),
-			),
-			array(
-				'id'         => 'lottery_daily_total',
-				'type'       => 'number',
-				'title'      => '每日总抽奖次数上限（0=不限）',
-				'desc'       => __( '每天总抽奖次数上限，含免费与兑换（0 = 不限）。', 'zhiji' ),
-				'default'    => '0',
-				'dependency' => array( 'lottery_enabled', '==', '1' ),
-			),
-			array(
-				'id'         => 'lottery_min_level',
-				'type'       => 'number',
-				'title'      => '最低参与等级（0=不限）',
-				'desc'       => __( '参与抽奖的最低用户等级（0 = 不限）。', 'zhiji' ),
-				'default'    => '0',
-				'dependency' => array( 'lottery_enabled', '==', '1' ),
-			),
-			array(
-				'id'         => 'lottery_size',
-				'type'       => 'number',
-				'title'      => '转盘直径（px）',
-				'desc'       => __( '转盘的显示直径（像素），过小会影响移动端操作。', 'zhiji' ),
-				'default'    => '240',
-				'dependency' => array( 'lottery_enabled', '==', '1' ),
-			),
-			array(
-				'id'         => 'lottery_show_stats',
-				'type'       => 'switcher',
-				'title'      => '显示累计/中奖统计',
-				'desc'       => __( '是否在转盘下方显示中奖统计（人数/奖品）。', 'zhiji' ),
-				'default'    => true,
-				'dependency' => array( 'lottery_enabled', '==', '1' ),
-			),
-			array(
-				'id'         => 'lottery_float_btn',
-				'type'       => 'switcher',
-				'title'      => '右侧悬浮按钮显示抽奖入口',
-				'desc' => __( '是否在页面右侧悬浮按钮中增加抽奖入口。', 'zhiji' ),
-				'default'    => true,
-				'dependency' => array( 'lottery_enabled', '==', '1' ),
-			),
+						),
+					),
+					array(
+						'title'  => __( '③ 奖励发放规则', 'zhiji' ),
+						'icon'   => 'fas fa-coins',
+						'fields' => array(
+							array(
+								'type'    => 'submessage',
+								'style'   => 'info',
+								'content' => __( '抽中「优惠码」奖品时的有效天数与券名前缀；抽中「会员」奖品时发放的会员等级。', 'zhiji' ),
+							),
 			array(
 				'id'         => 'lottery_coupon_days',
 				'type'       => 'number',
@@ -159,18 +169,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 				),
 				'dependency' => array( 'lottery_enabled', '==', '1' ),
 			),
+						),
+					),
+					array(
+						'title'  => __( '④ 中奖通知（邮件 / 站内信）', 'zhiji' ),
+						'icon'   => 'fas fa-envelope',
+						'fields' => array(
+							array(
+								'type'    => 'submessage',
+								'style'   => 'info',
+								'content' => __( '中奖后是否发邮件与站内通知。邮件标题与正文留空则用内置品牌卡片模板。注意：优惠码奖品走「券票据」模板，其余奖品走品牌卡片。', 'zhiji' ),
+							),
 			array(
 				'id'         => 'lottery_mail_enabled',
 				'type'       => 'switcher',
 				'title'      => '中奖邮件通知',
-				'default'    => true,
-				'dependency' => array( 'lottery_enabled', '==', '1' ),
-			),
-			array(
-				'id'         => 'lottery_notice_enabled',
-				'type'       => 'switcher',
-				'title'      => '中奖站内通知',
-				'desc'       => '抽中积分/经验/余额/会员时发送站内系统消息；优惠码/免单券类已自动附带优惠码通知，不受此开关影响',
 				'default'    => true,
 				'dependency' => array( 'lottery_enabled', '==', '1' ),
 			),
@@ -189,6 +202,53 @@ if ( ! defined( 'ABSPATH' ) ) {
 				'default'    => '',
 				'desc'       => '留空用内置精美模板',
 				'dependency' => array( 'lottery_mail_enabled', '==', '1' ),
+			),
+			array(
+				'id'         => 'lottery_notice_enabled',
+				'type'       => 'switcher',
+				'title'      => '中奖站内通知',
+				'desc'       => '抽中积分/经验/余额/会员时发送站内系统消息；优惠码/免单券类已自动附带优惠码通知，不受此开关影响',
+				'default'    => true,
+				'dependency' => array( 'lottery_enabled', '==', '1' ),
+			),
+						),
+					),
+					array(
+						'title'  => __( '⑤ 前台展示', 'zhiji' ),
+						'icon'   => 'fas fa-eye',
+						'fields' => array(
+							array(
+								'type'    => 'submessage',
+								'style'   => 'info',
+								'content' => __( '转盘直径（过小影响移动端点击）、是否显示悬浮入口按钮、是否在页面展示中奖统计。', 'zhiji' ),
+							),
+			array(
+				'id'         => 'lottery_size',
+				'type'       => 'number',
+				'title'      => '转盘直径（px）',
+				'desc'       => __( '转盘的显示直径（像素），过小会影响移动端操作。', 'zhiji' ),
+				'default'    => '240',
+				'dependency' => array( 'lottery_enabled', '==', '1' ),
+			),
+			array(
+				'id'         => 'lottery_float_btn',
+				'type'       => 'switcher',
+				'title'      => '右侧悬浮按钮显示抽奖入口',
+				'desc' => __( '是否在页面右侧悬浮按钮中增加抽奖入口。', 'zhiji' ),
+				'default'    => true,
+				'dependency' => array( 'lottery_enabled', '==', '1' ),
+			),
+			array(
+				'id'         => 'lottery_show_stats',
+				'type'       => 'switcher',
+				'title'      => '显示累计/中奖统计',
+				'desc'       => __( '是否在转盘下方显示中奖统计（人数/奖品）。', 'zhiji' ),
+				'default'    => true,
+				'dependency' => array( 'lottery_enabled', '==', '1' ),
+			),
+						),
+					),
+				),
 			),
 		), 20);
 

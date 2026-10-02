@@ -1,18 +1,29 @@
 <?php
 /**
  * @module  RewardCenter
- * @desc    奖励中心总配置源（权重/额度，供福袋/优惠码/订阅/答题模块读取）
+ * @desc    发奖规则 —— 评论福袋等场景「发什么、发多少」的统一参数源
  * @option  reward_center_enabled  总开关
  * @hook    wp_footer · 余额来源文案修正
  * @since   2.0.0
  * @migrate 自 v1 `inc/Functions/RewardCenter.php`
  *          （v2 迁移：CSF 块转 csf_section_for_legacy、常量与命名规范对齐）
+ *
+ * 2026-10-03 用户反馈「奖励中心太乱也看不懂」→ 定位为**按场景重组**（原按奖励类型分组）。
+ *
+ * 【它到底是什么，2026-10-03 实测结论】
+ * 名字叫「中心」容易让人以为是大总管，实际它只是**发奖引擎 + 一份共享参数**。
+ * 全站仅 3 个调用方，且各自依赖程度不同：
+ *   · 评论福袋   grant_random() —— **完全依赖本模块的权重表与数值区间**（唯一真正依赖它的）
+ *   · 注册迎新   grant_one(…,'coupon') —— 只借发券引擎，面值走自己的 member_guide_coupon_scope
+ *   · 邮件订阅   grant_one(…,'points') —— 只借记账引擎，积分数由自己的 email_sub_reward_points 传入
+ *   · 全发模式   grant_all() —— **零调用方**（保留为能力预留，见页面内说明）
+ * 所以页面的组织方式应是「**谁在用 → 配什么**」，而不是「积分/余额/券」这种奖励类型维度。
  */
 
 defined('ABSPATH') || exit;
 
 Zhiji_Registry::register_module('reward_center', array(
-    'title'    => '奖励中心',
+    'title'    => '发奖规则',
     'parent'   => 'zhiji_user',
     'priority' => 20,
     'option'   => 'reward_center_enabled',
@@ -25,7 +36,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /* ============================================================
- * 1. 后台 CSF 分区：用户&互动 → 奖励中心（聚合 5 分节：积分规则/勋章/等级/兑换/日志）
+ * 1. 后台 CSF 分区：用户&互动 → 发奖规则
+ * ------------------------------------------------------------
+ * 结构：① 谁在用（只读速览）→ ② 各场景配置 → ③ 通用参数
+ * 依据：2026-10-03 按用户反馈重排，字段 id 一个都没改（改键名会读不到用户已存的值）。
  * ============================================================ */
 
 /**
@@ -88,17 +102,18 @@ function zhiji_reward_center_register_options() {
 	$vip_options = zhiji_reward_center_vip_level_options();
 
 	// ⚠️ 字段 id 一个都不能改 —— 改了会读不到用户已保存的值（改键名必须配「旧键→新键」映射）。
-	//    本次只调整**分节与文案**：① 7 个平铺 subheading → accordion 折叠面板（大类）
-	//    ② 修编号错乱（此前 ① 出现 3 次、④ 出现 2 次、③ 夹在两个 ④ 中间）
-	//    ③ 删掉写给开发者看的 desc（内部函数名 / 内部 option 键名列表）
-	//    ④ 修 reward_center_coupon_scope 的 desc 重复（写了两次，后者覆盖前者）
-	//    ⑤ 勋章墙从配置流中间移到末尾（它是只读展示，不是配置项）
+	//    2026-10-03 重排：按「场景」组织（原按奖励类型），并修掉 4 个具体问题：
+	//    ① 编号错乱（此前 ① 出现 3 次、④ 出现 2 次、③ 夹在两个 ④ 中间）
+	//    ② 开发者文案（内部函数名 / 内部 option 键名列表）混在用户可见的 desc 里
+	//    ③ reward_center_coupon_scope 的 desc 写了两次（后者覆盖前者）
+	//    ④ 勋章墙（只读）夹在配置流中间
 	Zhiji_Registry::register_options( 'reward_center', array(
 				array(
 					'id'      => 'reward_center_enabled',
 					'type'    => 'switcher',
-					'title'   => __( '启用奖励中心', 'zhiji' ),
-					'label'   => __( '全站统一发奖闸门：关闭后各奖励渠道全部停发、迎新券/评论福袋/订阅奖励全部停发。', 'zhiji' ),
+					'title'   => __( '启用发奖规则', 'zhiji' ),
+					'label'   => __( '总闸门：关闭后评论福袋、注册迎新券、邮件订阅奖励<b>全部停发</b>。'
+						. '各业务自己的开关不受影响。', 'zhiji' ),
 					'default' => true,
 				),
 				array(
@@ -107,21 +122,23 @@ function zhiji_reward_center_register_options() {
 				),
 
 				/* ============================================================
-				 * 大类一：随机发奖（评论福袋等「随机抽一种」的场景）
-				 * —— 唯一有外部调用方的发放模式（CommentFortune.php:234）
+				 * 场景一：评论福袋（唯一真正依赖本模块参数的场景）
+				 * —— CommentFortune.php:234 调 grant_random()，不传 overrides，
+				 *    完全按这里的权重表与数值区间发放
 				 * ============================================================ */
 				array(
 					'type'       => 'accordion',
 					'accordions' => array(
 						array(
-							'title'  => __( '① 随机发奖 · 抽哪种（权重表）', 'zhiji' ),
+							'title'  => __( '① 评论福袋 · 抽哪种', 'zhiji' ),
 							'icon'   => 'fas fa-dice',
 							'fields' => array(
 								array(
 									'type' => 'submessage',
 									'style' => 'info',
-									'content' => __( '用于<b>评论福袋</b>等「随机抽一种奖励」的场景。每种奖励的权重越大越容易被抽中；'
-										. '权重全为 0 时保底发积分；<b>免单券权重</b>决定「谢谢参与」的概率。', 'zhiji' ),
+									'content' => __( '评论福袋每次触发时，从下表<b>随机抽一种</b>奖励。'
+										. '权重越大越容易被抽中；权重全为 0 时保底发积分；'
+										. '<b>免单券权重</b>决定「谢谢参与」（没抽中）的概率。', 'zhiji' ),
 								),
 								array(
 									'id'      => 'reward_center_w_points',
@@ -166,13 +183,14 @@ function zhiji_reward_center_register_options() {
 							),
 						),
 						array(
-							'title'  => __( '② 随机发奖 · 抽中给多少（数值区间）', 'zhiji' ),
+							'title'  => __( '② 评论福袋 · 抽中给多少', 'zhiji' ),
 							'icon'   => 'fas fa-coins',
 							'fields' => array(
 								array(
 									'type' => 'submessage',
 									'style' => 'info',
-									'content' => __( '上一步决定<b>抽不抽中</b>，这一步决定<b>给多少</b>。实际发放值在「最小值 ~ 最大值」之间随机。', 'zhiji' ),
+									'content' => __( '上一步决定<b>抽不抽中</b>，这一步决定<b>给多少</b>。'
+										. '实际发放值在「最小值 ~ 最大值」之间随机。', 'zhiji' ),
 								),
 								array(
 									'id'      => 'reward_center_points_min',
@@ -228,21 +246,23 @@ function zhiji_reward_center_register_options() {
 				),
 
 				/* ============================================================
-				 * 大类二：优惠码（面值与有效期）
-				 * —— 面值走 CouponGive 的差异化区间，本模块只选区间 + 定有效期
+				 * 场景二：优惠码面值（评论福袋抽中券时用；注册迎新走自己的配置）
+				 * —— 面值区间复用 CouponGive 的差异化体系，本模块只选区间 + 定有效期
 				 * ============================================================ */
 				array(
 					'type'       => 'accordion',
 					'accordions' => array(
 						array(
-							'title'  => __( '③ 优惠码 · 面值与有效期', 'zhiji' ),
+							'title'  => __( '③ 优惠码 · 面值与有效期（评论福袋抽中券时用）', 'zhiji' ),
 							'icon'   => 'fas fa-ticket-alt',
 							'fields' => array(
 								array(
 									'type' => 'submessage',
 									'style' => 'info',
-									'content' => __( '奖励中心发出的优惠码复用<b>优惠码</b>模块的差异化面值体系：具体立减/折扣金额在所选区间内随机。'
-										. '各区间的上下限在「用户&互动 → 优惠码」中配置。', 'zhiji' ),
+									'content' => __( '评论福袋抽中「优惠码」时按此规则发券：'
+										. '在所选区间内随机出立减/折扣金额，各区间的上下限在'
+										. '<b>「用户&amp;互动 → 优惠码」</b>中配置。'
+										. '<br>注：<b>注册迎新</b>的迎新券面值走它自己的配置（该模块内的面值区间），不适用这里。', 'zhiji' ),
 								),
 								array(
 									'id'      => 'reward_center_coupon_scope',
@@ -275,9 +295,8 @@ function zhiji_reward_center_register_options() {
 				),
 
 				/* ============================================================
-				 * 大类三：全发模式（预留，当前无业务调用）
-				 * —— grant_all() 实测零调用方，故明确标注「预留」，
-				 *    避免用户以为答题/签到在用它（此前文案写「答题等达标后发放」是过时的）
+				 * 预留能力：全发模式（一次性发全部奖励）
+				 * —— grant_all() 实测**零调用方**，明确标注避免误解
 				 * ============================================================ */
 				array(
 					'type'       => 'accordion',
@@ -290,8 +309,9 @@ function zhiji_reward_center_register_options() {
 									'type' => 'submessage',
 									'style' => 'warning',
 									'content' => __( '「全发模式」会一次性发放下列<b>全部</b>奖励，而非随机抽一种。'
-										. '实测：目前<b>没有任何业务在调用</b>该模式（随机发奖才是评论福袋实际使用的方式），'
-										. '此处仅作为能力预留保留。若将来接入新场景，开启对应项即可。', 'zhiji' ),
+										. '实测：目前<b>没有任何业务在调用</b>该模式 —— 评论福袋用的是「随机抽一种」，'
+										. '注册迎新与邮件订阅各发固定奖励。此处仅作为能力预留保留，'
+										. '将来接入新场景时开启对应项即可。', 'zhiji' ),
 								),
 								array(
 									'id'      => 'reward_center_all_points',
@@ -330,15 +350,14 @@ function zhiji_reward_center_register_options() {
 				),
 
 				/* ============================================================
-				 * 大类四：只读信息（勋章墙 + 发放记录说明）
-				 * —— 这两项都不是配置项，单独成节并明确标注「只读」，
-				 *    避免用户在里面找可填的东西
+				 * 只读信息（勋章墙 + 发放记录说明）
+				 * —— 都不是配置项，单独成节并标注「只读」，避免用户在里面找可填的东西
 				 * ============================================================ */
 				array(
 					'type'       => 'accordion',
 					'accordions' => array(
 						array(
-							'title'  => __( '⑤ 勋章墙（只读 · 无需配置）', 'zhiji' ),
+							'title'  => __( '附：勋章墙（只读 · 达成即自动授予）', 'zhiji' ),
 							'icon'   => 'fas fa-award',
 							'fields' => array(
 								array(
@@ -348,7 +367,7 @@ function zhiji_reward_center_register_options() {
 							),
 						),
 						array(
-							'title'  => __( '⑥ 发放记录（只读 · 在用户中心查看）', 'zhiji' ),
+							'title'  => __( '附：发放记录（只读 · 在用户中心查看）', 'zhiji' ),
 							'icon'   => 'fas fa-list-alt',
 							'fields' => array(
 								array(
@@ -372,7 +391,11 @@ zhiji_reward_center_register_options();
  * ============================================================ */
 
 /**
- * 随机抽一种奖励发放（评论福袋/抽奖用）。
+ * 随机抽一种奖励发放。
+ *
+ * 2026-10-03 实测：**唯一调用方是评论福袋**（CommentFortune.php:234）。
+ * 抽奖（大转盘）有自己的发奖实现（zhiji_lottery_grant_prize），
+ * 不走本函数 —— 此前注释写「抽奖用」是错的，一并更正。
  *
  * @param int    $uid    用户 ID
  * @param string $source 来源标识（如 comment_fortune / lottery / quiz）
@@ -565,13 +588,13 @@ function zhiji_reward_record_desc( $type, $overrides = array() ) {
  */
 function zhiji_reward_center_overview_html() {
 	// 分类归属 = 各模块 register_module 的 parent（实测，非硬编码猜测）
-	// uses = 是否真的调用奖励中心发奖（实测：只有 3 个渠道调，其余 2 个自己发奖）
+	// uses = 是否真的读本页参数（实测：只有评论福袋；另两个只借发奖引擎）
 	$channels = array(
-		array( '评论福袋',     true,  'comment_fortune_enabled', '本渠道的触发间隔与提示文案',   'zhiji_comment', '评论福袋',     '随机抽一种（权重+区间）' ),
-		array( '注册迎新',     true,  'member_guide_enabled',    '迎新触达序列（是否发券）',     'zhiji_user',     '注册迎新',     '固定发一张券' ),
-		array( '邮件订阅奖励', true,  'email_sub_enabled',       '订阅奖励积分与勾选文案',       'zhiji_user',     '邮件订阅',     '固定发积分' ),
-		array( '大转盘抽奖',   false, 'lottery_enabled',         '奖品池 / 每日次数 / 积分加抽',  'zhiji_user',     '大转盘',       '自己发奖（奖品池独立）' ),
-		array( '互动答题',     false, 'quiz_enabled',            '题库 / 每日次数 / 得分上限',    'zhiji_interact', '互动答题',     '自己发奖（题库独立）' ),
+		array( '评论福袋',     true,  'comment_fortune_enabled', '按本页权重随机抽一种',       'zhiji_comment', '评论福袋',     '随机抽一种（用本页权重+区间）' ),
+		array( '注册迎新',     false, 'member_guide_enabled',    '固定发一张迎新券',         'zhiji_user',     '注册迎新',     '固定发券（面值走本模块配置）' ),
+		array( '邮件订阅奖励', false, 'email_sub_enabled',       '按本模块配的积分数发放',   'zhiji_user',     '邮件订阅',     '固定发积分（数量走本模块配置）' ),
+		array( '大转盘抽奖',   false, 'lottery_enabled',         '奖品池独立配置',           'zhiji_user',     '大转盘',       '自己发奖（奖品池独立）' ),
+		array( '互动答题',     false, 'quiz_enabled',            '题库独立配置',             'zhiji_interact', '互动答题',     '自己发奖（题库独立）' ),
 	);
 
 	$rows = '';
@@ -582,8 +605,8 @@ function zhiji_reward_center_overview_html() {
 			? '<span style="color:#16a34a;font-weight:600">● 已启用</span>'
 			: '<span style="color:#9ca3af;font-weight:600">○ 已关闭</span>';
 		$uses_badge = $uses
-			? '<span style="color:#2563eb">用本页参数</span>'
-			: '<span style="color:#9ca3af">独立配置</span>';
+			? '<span style="color:#2563eb">✓ 用本页配置</span>'
+			: '<span style="color:#9ca3af">仅借发奖引擎</span>';
 		// CSF 分节跳转：#tab=<父分类>/<子节>（子节 id 经 sanitize_title）
 		// ⚠️ 此前这一列直接显示内部 option 名（salary_enabled / member_guide_enabled…），
 		//    对用户毫无意义 —— 改为跳转到对应设置分区。
@@ -598,19 +621,20 @@ function zhiji_reward_center_overview_html() {
 	}
 
 	return '<div style="margin:6px 0 18px">'
-		. '<div style="font-weight:600;margin-bottom:6px">📊 谁在用奖励中心发奖（只读）</div>'
+		. '<div style="font-weight:600;margin-bottom:6px">📊 谁会用到这里的配置</div>'
 		. '<div style="color:#666;font-size:12px;line-height:1.9;margin-bottom:8px">'
-		. '「用本页参数」的渠道会读取下面折叠面板里的权重与数值区间；'
-		. '「独立配置」的渠道有自己的发奖逻辑，<b>不受本页影响</b>。'
+		. '只有<b>评论福袋</b>真正使用下面的权重与数值区间。'
+		. '注册迎新与邮件订阅只是借用这里的<b>发奖引擎</b>（负责记账/发券），'
+		. '它们发什么、发多少在各自模块内配置。'
 		. '</div>'
 		. '<table style="width:100%;border-collapse:collapse;font-size:13px">'
 		. '<thead><tr style="background:#f7f8fa;text-align:left">'
-		. '<th style="padding:6px 10px">发奖渠道</th><th style="padding:6px 10px">奖励来源</th>'
-		. '<th style="padding:6px 10px">发奖方式</th><th style="padding:6px 10px">渠道状态</th>'
+		. '<th style="padding:6px 10px">业务</th><th style="padding:6px 10px">用这里的配置吗</th>'
+		. '<th style="padding:6px 10px">它实际怎么发</th><th style="padding:6px 10px">渠道状态</th>'
 		. '<th style="padding:6px 10px">跳转</th></tr></thead>'
 		. '<tbody>' . $rows . '</tbody></table>'
 		. '<div style="color:#999;font-size:12px;margin-top:8px">'
-		. '发放记录在用户中心「余额 / 积分明细」查看；运维明细到「扩展&增强 → 运维管理」查。'
+		. '发放记录在用户中心「余额 / 积分明细」查看；运维明细到「扩展&amp;增强 → 运维管理」查。'
 		. '</div></div>';
 }
 
