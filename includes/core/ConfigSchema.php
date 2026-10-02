@@ -121,16 +121,9 @@ function zhiji_config_deprecated_keys()
         'home_search_hot_tags'       => '搜索热词列表',
         'home_search_bg_style'       => '搜索框背景样式',
 
-        // ── AF.20 下线：退出挽留弹窗 ──
-        'exit_intent_enabled'        => '退出挽留弹窗开关',
-        'exit_intent_title'          => '挽留弹窗标题',
-        'exit_intent_desc'           => '挽留弹窗描述',
-        'exit_intent_btn_text'       => '挽留弹窗按钮文案',
-        'exit_intent_btn_url'        => '挽留弹窗按钮链接',
-        'exit_intent_image'          => '挽留弹窗配图',
-        'exit_intent_coupon_code'    => '挽留弹窗券码',
-        'exit_intent_coupon_desc'    => '挽留弹窗券描述',
-        'exit_intent_kanban_trigger' => '挽留弹窗触发来源',
+        // 2026-10-03「退出挽留弹窗」恢复上线 —— 原为 AF.20 下线，
+        // 已从本表**摘除**（否则会被回收器当成废弃键删掉）。
+        // ⚠️ 恢复模块时必须同步摘除其配置键，否则第二次跑「配置回收」会误伤。
 
         // ── AF.20 下线：舔狗日记 ──
         'flatterer_enabled'          => '舔狗日记开关',
@@ -153,8 +146,7 @@ function zhiji_config_deprecated_keys()
         'infomation_enabled'         => '资讯 CPT 开关',
         'infomation_slug'            => '资讯 CPT 别名',
 
-        // ── AF.20 下线：图片宽度排版 ──
-        'image_layout_enabled'       => '图片宽度排版开关',
+        // 2026-10-03「图片宽度排版」恢复上线 —— 原为 AF.20 下线，已从本表摘除（理由同上）
 
         // ── AF.20 下线：页面元素整类（zhiji_element）──
         'notfound_game_enabled'      => '404 贪吃蛇游戏开关',

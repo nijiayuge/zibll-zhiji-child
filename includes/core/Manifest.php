@@ -75,6 +75,15 @@ function zhiji_manifest()
         'email_subscribe'        => array('layer' => 'business', 'provides' => array(), 'requires' => array('reward_center')),
         'friend_link_apply'      => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'kanban'                 => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
+        // 2026-10-03 恢复上线（原 AF.20 下线）：
+        //   image_layout 只用 zhiji_get_option + the_content 过滤器 → 无模块依赖
+        //   exit_intent 派发 zhiji_kanban_event（event 供看板娘监听，不是依赖），
+        //             但**静态调用**了 coupon_give 的「退出挽留区块」→
+        //             必须声明 requires=coupon_give，否则 preflight 的依赖对照会 BLOCK
+        //             （「软依赖可省略」是我一开始的误判：dep_scan 只看静态调用，
+        //               不区分 function_exists 包裹；守卫的规则是「有调用就得声明」）
+        'image_layout'           => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
+        'exit_intent'            => array('layer' => 'business', 'provides' => array(), 'requires' => array('coupon_give')),
         // P3：以下模块的邮件发送/渲染均改走 Template 契约（zhiji_template_render /
         // zhiji_mail_deliver），源码层已无对 mail_template 的函数调用 → requires 置空。
         // 契约不可用时薄封装会回落到原全局函数，故不存在「硬依赖」。
