@@ -17,26 +17,37 @@ defined('ABSPATH') || exit;
 
 // ① 核心层：常量 / 配置门面 / 工具 / 父主题适配层 / 模块注册表
 // ⚠️ core/Options 必须位于 core 层**最靠前**（紧随 Constants）：它提供 zhiji_get_option()，
-//    原实现位于本文件顶层（早于所有 require），故 core 层任何文件在**加载期**调用它都成立。
-//    迁入 core/Options.php 后，只有保证它最先加载才能维持这一既有事实（详见该文件头部说明）。
-zib_require(array(
-    'core/Constants',
-    'core/Options',
-    'contracts/Contracts',
-    'core/EventBus',
-    'core/Helpers',
-    'core/Fields',
-    'core/Adapter',
-    'core/Registry',
-    'core/Manifest',
-    'core/PageProvisioner',
-    'core/Assets',
-    'core/ApiRegistry',
-    'core/ClaimLog',
-    'core/EventLog',
-    'core/Ops',
-    'core/CopyToast',
-), true, 'includes/');
+  //    原实现位于本文件顶层（早于所有 require），故 core 层任何文件在**加载期**调用它都成立。
+  //    迁入 core/Options.php 后，只有保证它最先加载才能维持这一既有事实（详见该文件头部说明）。
+
+  // ── P0/P1 新增：必须先于其余 core 加载 ──────────────────────────────
+  //  ⚠️ 不可用 zib_require()：它走 get_theme_file_path()，父主题存在同名目录时
+  //     （zibll/includes/）会解析到父主题去，导致 "Failed opening required .../zibll/includes/contracts/Contracts.php"
+  //     —— 站点直接 500。故此处显式用 get_stylesheet_directory() 锁定子主题。
+  //     加载顺序要求：Contracts（接口）→ EventBus → 其余 core → Manifest → DependencyGuard
+  $zhiji_child_inc = get_stylesheet_directory() . '/includes/';
+  require_once $zhiji_child_inc . 'contracts/Contracts.php';
+  require_once $zhiji_child_inc . 'core/EventBus.php';
+
+  zib_require(array(
+      'core/Constants',
+      'core/Options',
+      'core/Helpers',
+      'core/Fields',
+      'core/Adapter',
+      'core/Registry',
+      'core/PageProvisioner',
+      'core/Assets',
+      'core/ApiRegistry',
+      'core/ClaimLog',
+      'core/EventLog',
+      'core/Ops',
+      'core/CopyToast',
+  ), true, 'includes/');
+
+  // 依赖清单与守卫：必须在 Registry 之后（要用 Registry::modules()/module_enabled()）
+  require_once $zhiji_child_inc . 'core/Manifest.php';
+  require_once $zhiji_child_inc . 'core/DependencyGuard.php';
 
 // ② 通知层：统一通知中心（事件表 → 分发 → 渠道），业务模块只允许通过 zhiji_notify() 发通知
 zib_require(array(
