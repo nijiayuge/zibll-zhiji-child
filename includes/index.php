@@ -24,9 +24,10 @@ defined('ABSPATH') || exit;
   //  ⚠️ 不可用 zib_require()：它走 get_theme_file_path()，父主题存在同名目录时
   //     （zibll/includes/）会解析到父主题去，导致 "Failed opening required .../zibll/includes/contracts/Contracts.php"
   //     —— 站点直接 500。故此处显式用 get_stylesheet_directory() 锁定子主题。
-  //     加载顺序要求：Contracts（接口）→ EventBus → 其余 core → Manifest → ContractRegistry → DependencyGuard
+  //     加载顺序要求：Contracts（接口）→ EventBus → 其余 core → Manifest → ContractRegistry
+  //     → ConfigSchema → ConfigJanitor → DependencyGuard
   //     ContractRegistry 必须在 Manifest 之后（靠 Manifest 的 provides 找实现）、在模块之前
-  //     （否则解析契约时实现方的工厂函数还不存在）。
+  //     （否则解析契约时实现方的工厂函数还不存在）。ConfigSchema 同理依赖 Registry。
   $zhiji_child_inc = get_stylesheet_directory() . '/includes/';
   require_once $zhiji_child_inc . 'contracts/Contracts.php';
   require_once $zhiji_child_inc . 'core/EventBus.php';
@@ -50,6 +51,10 @@ defined('ABSPATH') || exit;
   // 依赖清单与守卫：必须在 Registry 之后（要用 Registry::modules()/module_enabled()）
   require_once $zhiji_child_inc . 'core/Manifest.php';
   require_once $zhiji_child_inc . 'core/ContractRegistry.php';
+  // 配置键注册表（P4）：必须在 Registry 之后（要 Registry::modules() 才知道模块 option）
+  require_once $zhiji_child_inc . 'core/ConfigSchema.php';
+  // 配置回收器（P4）：依赖 ConfigSchema 的废弃键表；文件内部自带 is_admin/WP-CLI 守卫
+  require_once $zhiji_child_inc . 'core/ConfigJanitor.php';
   require_once $zhiji_child_inc . 'core/DependencyGuard.php';
 
 // ② 通知层：统一通知中心（事件表 → 分发 → 渠道），业务模块只允许通过 zhiji_notify() 发通知

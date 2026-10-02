@@ -57,6 +57,12 @@ function zhiji_options_flush()
 /**
  * 读取主题配置项（唯一实现，禁止在别处重复定义）
  *
+ * 【P4 新增：旧键兼容】
+ * 若该键在 `zhiji_config_key_aliases()` 里登记了旧名，且新键未设、旧键有值，
+ * 则回落使用旧键的值 —— 这样「改名」不需要用户手动重填配置。
+ * ⚠️ 现有 174 个字段**均未登记别名**，故此分支对当前所有键都是死路径，
+ *    行为与改造前完全一致（这是刻意的：P4 不引入任何行为变更）。
+ *
  * @param string $name    配置键
  * @param mixed  $default 键不存在时的默认值
  * @param string $subname 嵌套子键（可选）
@@ -74,6 +80,13 @@ function zhiji_get_option($name, $default = false, $subname = '')
         return $default;
     }
     if (!isset($options[$name])) {
+        // 旧键兼容：新键无值时，尝试用登记的旧键（P4；当前无键登记此分支，等价于原行为）
+        $legacy = zhiji_config_legacy_value($name, $options);
+        if (null !== $legacy) {
+            return $subname
+                ? (isset($legacy[$subname]) ? $legacy[$subname] : $default)
+                : $legacy;
+        }
         return $default;
     }
     if ($subname) {
@@ -81,6 +94,33 @@ function zhiji_get_option($name, $default = false, $subname = '')
     }
 
     return $options[$name];
+}
+
+/**
+ * 取某个键的旧键值（无别名登记时返回 null）
+ *
+ * 单独成函数而非把逻辑塞进 zhiji_get_option，是为了让 Options.php 不必
+ * 在加载期就依赖 ConfigSchema.php（后者排在更后面加载）。
+ *
+ * @param string $name    新键
+ * @param array  $options 已加载的 options 数组
+ * @return mixed null = 无别名可用
+ */
+function zhiji_config_legacy_value($name, array $options)
+{
+    if (!function_exists('zhiji_config_key_aliases')) {
+        return null;
+    }
+    $aliases = zhiji_config_key_aliases();
+    if (empty($aliases[$name])) {
+        return null;
+    }
+    foreach ((array) $aliases[$name] as $old) {
+        if (isset($options[$old])) {
+            return $options[$old];
+        }
+    }
+    return null;
 }
 
 /**

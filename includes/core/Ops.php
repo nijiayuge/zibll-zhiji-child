@@ -743,6 +743,8 @@ function zhiji_ops_action_label($action)
         'ops_query'    => '查询接口（被拒绝）',
         'ops_clear'    => '清除接口',
         'kill_switch'  => '应急模式开关',
+        // 2026-10-02（P4）新增：配置体检场景
+        'config_deprecated' => '待回收的废弃配置键',
     );
     $action = sanitize_key($action);
     return isset($map[$action]) ? $map[$action] : $action;
