@@ -1823,7 +1823,7 @@ function zhiji_coupon_expire_backfill( $force = false ) {
 		if ( is_array( $m ) && ! empty( $m['expire_time'] ) ) {
 			continue; // 已有有效期，跳过
 		}
-		$days = function_exists( 'zhiji_reward_coupon_rand_expire' ) ? zhiji_reward_coupon_rand_expire() : 0;
+		$days = zhiji_coupon_expire_rand_days();
 		if ( $days > 0 ) {
 			$expire = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) + $days * DAY_IN_SECONDS );
 			if ( class_exists( 'ZibCardPass' ) ) {
@@ -1906,4 +1906,222 @@ function zhiji_coupon_get_user_coupons( $user_id ) {
 	}
 
 	return $out;
+}
+
+/* ============================================================
+ * CouponIssuer 契约实现（P2 架构重构）
+ * ------------------------------------------------------------
+ * 优惠券发放的**唯一对外能力**。其它模块（如 reward_center / lottery）
+ * 今后只依赖本契约，不再直接调 zhiji_coupon_give_create_one()。
+ *
+ * 【为什么不直接把 create_one 暴露成契约】
+ *   create_one($meta, $post_id) 的 $meta 是父主题 ZibCardPass 的原始结构，
+ *   调用方得自己拼 discount / expire_time / source —— 抽奖和奖励中心拼法不同，
+ *   于是「同一张券在两处生成出不同 meta」的隐患一直存在。
+ *   本类把「拼 meta」收敛到一处，各调用方只表达意图（我要一张券，面额多少、给谁）。
+ * ============================================================ */
+
+if ( ! class_exists( 'Zhiji_CouponIssuer_CouponGive' ) ) :
+
+	/**
+	 * 优惠券发放（实现 Zhiji_Contract_CouponIssuer）
+	 */
+	class Zhiji_CouponIssuer_CouponGive implements Zhiji_Contract_CouponIssuer {
+
+		/**
+		 * 发放一张券
+		 *
+		 * @param array $args {
+		 *     @type int    $user_id     归属用户（0 = 不绑定）
+		 *     @type string $title       券名称
+		 *     @type string $desc        券说明
+		 *     @type array  $discount    优惠结构 {type:reduce|multiply, val:float}；缺省则按 scope 随机
+		 *     @type string $scope       面值区间 base|login|vip（缺省按当前用户自动判断）
+		 *     @type int    $expire_days 有效天数；0 = 永久；-1 = 按「随机有效期」规则
+		 *     @type string $source      来源标识（走 zhiji_coupon_give_source_label 归一为中文）
+		 *     @type bool   $notify      是否发站内通知（默认 true）
+		 *     @type int    $post_id     限定商品；0 = 全站通用
+		 * }
+		 * @return array{ok:bool,code:string,message:string,discount_text:string,expire:string}
+		 */
+		public function issue( array $args ) {
+			$args = array_merge( array(
+				'user_id'     => 0,
+				'title'       => '',
+				'desc'        => '',
+				'discount'    => null,
+				'scope'       => '',
+				'expire_days' => -1,
+				'source'      => '',
+				'notify'      => true,
+				'post_id'     => 0,
+			), $args );
+
+			$fail = array(
+				'ok'            => false,
+				'code'          => '',
+				'message'       => '',
+				'discount_text' => '',
+				'expire'        => '',
+			);
+
+			if ( ! class_exists( 'ZibCardPass' ) || ! function_exists( 'zhiji_coupon_give_create_one' ) ) {
+				$fail['message'] = __( '优惠码体系未就绪', 'zhiji' );
+				return $fail;
+			}
+
+			// 优惠结构：未指定则按身份区间随机（与邮箱领取同款口径）
+			$discount = is_array( $args['discount'] )
+				? $args['discount']
+				: zhiji_coupon_give_discount_meta( (string) $args['scope'] );
+
+			if ( empty( $discount['type'] ) || ! isset( $discount['val'] ) ) {
+				$fail['message'] = __( '优惠内容生成失败', 'zhiji' );
+				return $fail;
+			}
+
+			$discount_text = zhiji_coupon_give_discount_text( $discount );
+
+			// 有效期：-1 = 走「随机天数」规则（默认 7/30/永久）；0 = 永久；>0 = 指定天数
+			$days = (int) $args['expire_days'];
+			if ( $days < 0 ) {
+				$days = zhiji_coupon_expire_rand_days();
+			}
+			$expire = '';
+			if ( $days > 0 ) {
+				$expire = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) + $days * DAY_IN_SECONDS );
+			}
+
+			$meta = array(
+				'discount' => $discount,
+				'title'    => (string) $args['title'],
+				'desc'     => (string) $args['desc'],
+				'reuse'    => 1,
+				'user_id'  => (int) $args['user_id'],
+				'source'   => (string) $args['source'],
+			);
+			if ( $expire ) {
+				$meta['expire_time'] = $expire;
+			}
+
+			$code = zhiji_coupon_give_create_one( $meta, (int) $args['post_id'] );
+			if ( ! $code ) {
+				$fail['message'] = __( '优惠码生成失败', 'zhiji' );
+				return $fail;
+			}
+
+			// 站内通知：个人中心「我的优惠码」Tab 依据 meta.user_id 自动显示
+			if ( ! empty( $args['notify'] ) && ! empty( $args['user_id'] ) && function_exists( 'zhiji_coupon_give_notify_user' ) ) {
+				zhiji_coupon_give_notify_user(
+					(int) $args['user_id'],
+					$code,
+					$discount_text,
+					$expire,
+					(string) $args['source']
+				);
+			}
+
+			return array(
+				'ok'            => true,
+				'code'          => (string) $code,
+				'message'       => __( '发放成功', 'zhiji' ),
+				'discount_text' => $discount_text,
+				'expire'        => $expire,
+			);
+		}
+
+		/**
+		 * 某用户某来源的领取限制校验
+		 *
+		 * 契约只问「能不能领」，不负责发放。当前无「同一来源每日限领」的业务规则，
+		 * 故仅做「券体系是否可用」的判断；后续若加限领规则，落点就在这里。
+		 *
+		 * @param int    $user_id
+		 * @param string $source
+		 * @return array{ok:bool,message:string}
+		 */
+		public function check_claimable( $user_id, $source = '' ) {
+			if ( ! class_exists( 'ZibCardPass' ) ) {
+				return array( 'ok' => false, 'message' => __( '优惠码体系未就绪', 'zhiji' ) );
+			}
+			/**
+			 * 领取前钩子：业务可挂此处做限领/风控判断
+			 *
+			 * @param bool   $ok
+			 * @param int    $user_id
+			 * @param string $source
+			 */
+			$ok = (bool) apply_filters( 'zhiji_coupon_claimable', true, (int) $user_id, (string) $source );
+			return array(
+				'ok'      => $ok,
+				'message' => $ok ? '' : __( '当前不可领取', 'zhiji' ),
+			);
+		}
+
+		/**
+		 * 发送「券已到账」邮件（票据模板，与邮箱领取同款）
+		 *
+		 * 抽奖的中奖邮件复用此模板。收进契约是因为它属于「券的通知」能力，
+		 * 让抽奖不必为了发一封邮件就直接依赖 coupon_give 的内部函数。
+		 *
+		 * @param string $email         收件邮箱
+		 * @param string $code          券码
+		 * @param string $discount_text 优惠内容文案
+		 * @param string $type          claim|…
+		 * @param string $expire_time   有效期（空=永久）
+		 * @param string $source        活动来源名
+		 * @return bool
+		 */
+		public function send_mail( $email, $code, $discount_text = '', $type = 'claim', $expire_time = '', $source = '' ) {
+			if ( ! function_exists( 'zhiji_coupon_give_send_mail' ) ) {
+				return false;
+			}
+			return (bool) zhiji_coupon_give_send_mail(
+				$email,
+				$code,
+				$discount_text,
+				$type,
+				$expire_time,
+				$source
+			);
+		}
+
+		/**
+		 * 按身份区间生成优惠结构（供调用方预览面额 / 自行拼券名）
+		 *
+		 * 契约补充说明：issue() 允许不传 discount 由本类随机，但调用方常需要
+		 * 「先知道面额再拼券名」（抽奖的「来源·8.8折」就是这么做的），
+		 * 故把原有的 zhiji_coupon_give_discount_meta 收进能力面，避免调用方为拿面额去直调函数。
+		 *
+		 * @param string $scope base|login|vip；空 = 按当前用户自动判断
+		 * @return array{type:string,val:float}
+		 */
+		public function discount_meta( $scope = '' ) {
+			return zhiji_coupon_give_discount_meta( (string) $scope );
+		}
+
+		/**
+		 * 生成优惠内容文本（供调用方拼券名用，避免各处分头实现）
+		 *
+		 * @param array $discount
+		 * @return string
+		 */
+		public function discount_text( $discount ) {
+			return zhiji_coupon_give_discount_text( $discount );
+		}
+	}
+
+endif;
+
+/**
+ * 契约工厂：供 ContractRegistry 解析（工厂名规则 zhiji_contract_implementor_{模块key}）
+ *
+ * @return Zhiji_Contract_CouponIssuer
+ */
+function zhiji_contract_implementor_coupon_give() {
+	static $impl = null;
+	if ( null === $impl ) {
+		$impl = new Zhiji_CouponIssuer_CouponGive();
+	}
+	return $impl;
 }

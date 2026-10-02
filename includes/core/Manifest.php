@@ -30,12 +30,21 @@ defined('ABSPATH') || exit;
 /**
  * 模块清单（layer / provides / requires）
  *
- * requires 依据实测的跨文件**函数调用**关系填写（由 tools/preflight.py 校验）。
+ * requires 依据实测的跨文件**函数调用**关系填写。
  *
- * ⚠️ 勘误（2026-10-02）：`reward_center → coupon_give` 是**单向**依赖 —— RC 调用 CG 的
- * create_one / discount_meta / discount_text，而 CG 并未反向调用 RC。
- * 此前人工探查曾误报为「双向循环依赖」，原因是把 option 前缀匹配也算成了依赖。
- * 依赖图只认函数调用，不认 option 前缀。
+ * ⚠️ 依赖图只认**函数调用**，不认 option 前缀 / 数组键名 —— 这是本文件最容易出错的地方。
+ *
+ * 【P2 勘误（2026-10-02，经 tools/zhiji_dep_scan.py 全量扫描复核）】
+ * `coupon_give → reward_center` 这条 requires 是**误报**，已删除。证据：
+ *   ① CouponGive.php 全文**没有一处**调用 `zhiji_reward_center_*()`；
+ *   ② 唯一出现 "reward_center" 的两行（CouponGive.php:1493-1494）是
+ *      `$labels` 数组的**键名**（来源标签映射 `reward_center => '奖励中心'`），
+ *      属本地字面量，与奖励中心模块无任何调用关系。
+ * 此前之所以误报为「双向依赖」，是探查时把 option / 数组键前缀当成了函数调用。
+ * 修正后真实依赖图为**无环**，`zhiji_manifest_cycles()` 实测返回空数组。
+ *
+ * 【防复发】`tools/zhiji_dep_scan.py` 会把「真实调用关系」与「本表人工数据」逐条对照，
+ * 不一致即报 ⚠；已接入 preflight。改 requires 前先跑它。
  *
  * @return array<string,array{layer:string,provides:array,requires:array}>
  */
@@ -58,14 +67,16 @@ function zhiji_manifest()
         'comment_draw'           => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'comment_fortune'        => array('layer' => 'business', 'provides' => array(), 'requires' => array('reward_center', 'reward_notify')),
         'comment_guard'          => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
-        'coupon_give'            => array('layer' => 'platform', 'provides' => array('CouponIssuer'), 'requires' => array('mail_template', 'reward_center')),
+        'coupon_give'            => array('layer' => 'platform', 'provides' => array('CouponIssuer'), 'requires' => array('mail_template')),
         'coupon_highlight'       => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'download_quota'         => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'easter_egg'             => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'email_subscribe'        => array('layer' => 'business', 'provides' => array(), 'requires' => array('mail_template', 'reward_center')),
         'friend_link_apply'      => array('layer' => 'business', 'provides' => array(), 'requires' => array('mail_template')),
         'kanban'                 => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
-        'lottery'                => array('layer' => 'business', 'provides' => array(), 'requires' => array('coupon_give', 'mail_template')),
+        // P2：抽奖的发券（coupon / free 奖品）与券邮件均改走 CouponIssuer 契约，
+        // 源码层已无对 coupon_give 的函数调用 → requires 只剩 mail_template（品牌卡片中奖邮件）。
+        'lottery'                => array('layer' => 'business', 'provides' => array(), 'requires' => array('mail_template')),
         'mail_template'          => array('layer' => 'platform', 'provides' => array('Template'), 'requires' => array()),
         'maintenance'            => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'member_guide'           => array('layer' => 'business', 'provides' => array(), 'requires' => array('reward_center')),
@@ -76,7 +87,10 @@ function zhiji_manifest()
         'post_series'            => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'quiz'                   => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'reading_progress'       => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
-        'reward_center'          => array('layer' => 'platform', 'provides' => array('Ledger'), 'requires' => array('coupon_give')),
+        // P2：reward_center 改走 CouponIssuer 契约发放，不再直调 coupon_give 的函数 →
+        // 源码层已无跨模块函数调用，故 requires 置空。运行时依赖（缺券能力时的降级）
+        // 由 ContractRegistry 负责：拿不到契约就走保底发积分，不至于崩。
+        'reward_center'          => array('layer' => 'platform', 'provides' => array('Ledger'), 'requires' => array()),
         'reward_notify'          => array('layer' => 'platform', 'provides' => array('Dispatcher'), 'requires' => array('mail_template')),
         'security_scanner'       => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'seed_pages'             => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
@@ -155,7 +169,9 @@ function zhiji_manifest_dependents($key)
  * 依赖图环检测（DFS 三色标记）
  *
  * 返回所有发现的环，每个环是模块 key 数组。
- * 现状：reward_center ⇄ coupon_give 是一个已知的双向依赖，P2 用 CouponIssuer 解开。
+ *
+ * 现状（P2 起）：**0 环**。原「reward_center ⇄ coupon_give」是 requires 误报，已更正
+ * （见 zhiji_manifest() 头部说明）。新增依赖前请先跑 tools/zhiji_dep_scan.py 对照真实调用关系。
  *
  * @return array<int,array<int,string>>
  */

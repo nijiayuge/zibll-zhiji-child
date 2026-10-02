@@ -1406,130 +1406,297 @@ function zhiji_lottery_weighted_pick( $prizes ) {
 	return count( $prizes ) - 1;
 }
 
-/* ===================== 奖品发放（联动优惠码体系） ===================== */
+/* ===================== 发奖 Provider（P2：玩法与发奖解耦） ===================== */
 
 /**
- * 发放奖品。优惠码走 CouponGive 体系（随机立减/折扣 + 个人中心 Tab + 站内通知）。
+ * 发奖 Provider 注册表
+ *
+ * 【为什么拆】
+ * 改造前 zhiji_lottery_grant_prize() 是一个 100+ 行的 switch，把「玩法」与「发奖」焊死：
+ *   · 玩法侧（ajax_draw）要判断奖品类型、拼通知、决定要不要发邮件
+ *   · 发奖侧要 Adapter 记账、要 coupon_give、要 mail_template
+ * 于是「加一种奖品」必须改抽奖模块、「别的玩法要发奖」只能复制这段 switch。
+ *
+ * 拆分后：
+ *   玩法侧只认 `type` 字符串，具体怎么发由 provider 决定；
+ *   新增奖品 = 注册一个 provider，不碰玩法代码；
+ *   别的玩法（福袋/答题/秒杀）想发奖，也能注册自己的 provider 后共用同一分发器。
+ *
+ * 【provider 契约（约定，非接口）】
+ *   callable( int $uid, array $prize ) : array{msg:string, extra:array, won:bool}
+ *   - msg   前端展示文案（含「恭喜」即视为中奖，沿用既有判定口径）
+ *   - extra 附加数据（coupon_code / vip_expire 等），会透传给邮件模板
+ *   - won   是否中奖（默认按 msg 含「恭喜」推断，显式给出可覆盖）
+ *
+ * @return array<string,callable>
+ */
+function zhiji_lottery_grant_providers() {
+	static $p = null;
+	if ( null !== $p ) {
+		return $p;
+	}
+	$p = array(
+		'points'  => 'zhiji_lottery_grant_points',
+		'level'   => 'zhiji_lottery_grant_level',
+		'balance' => 'zhiji_lottery_grant_balance',
+		'coupon'  => 'zhiji_lottery_grant_coupon',
+		'free'    => 'zhiji_lottery_grant_free',
+		'vip_day' => 'zhiji_lottery_grant_vip_prize',
+		'vip_month' => 'zhiji_lottery_grant_vip_prize',
+	);
+	/**
+	 * 扩展发奖 provider（新增奖品类型不必改抽奖模块）
+	 *
+	 * @param array $p
+	 */
+	$p = (array) apply_filters( 'zhiji_lottery_grant_providers', $p );
+	return $p;
+}
+
+/**
+ * 注册/覆盖一个发奖 provider
+ *
+ * @param string   $type  奖品类型
+ * @param callable $fn    处理函数
+ * @return void
+ */
+function zhiji_lottery_register_grant_provider( $type, $fn ) {
+	// static 缓存在本进程内，注册后本进程立即生效；跨请求一致性由 option/代码本身保证
+	$p = zhiji_lottery_grant_providers();
+	// 需绕过 static：用过滤器方式写入（下一请求生效）
+	add_filter( 'zhiji_lottery_grant_providers', function ( $all ) use ( $type, $fn ) {
+		$all[ (string) $type ] = $fn;
+		return $all;
+	}, 99 );
+}
+
+/**
+ * 按奖品类型分发到对应 provider
  *
  * @param int   $uid
  * @param array $prize
- * @return array {msg, coupon_code?}
+ * @return array{msg:string,extra:array,won:bool}
  */
-function zhiji_lottery_grant_prize( $uid, $prize ) {
-	$name  = $prize['name'];
-	$value = (float) $prize['value'];
-	$extra = array();
+function zhiji_lottery_dispatch_grant( $uid, $prize ) {
+	$type = isset( $prize['type'] ) ? (string) $prize['type'] : '';
+	$name = isset( $prize['name'] ) ? (string) $prize['name'] : '';
 
-	switch ( $prize['type'] ) {
-		case 'points':
-			Zhiji_Adapter::update_user_points( $uid, array( 'value' => (int) $value, 'type' => '抽奖奖品', 'desc' => '大转盘中奖：' . $name ) );
-			$msg = '恭喜获得 ' . $name . '！已发放至账户积分。';
-			break;
+	$providers = zhiji_lottery_grant_providers();
+	$fn        = isset( $providers[ $type ] ) ? $providers[ $type ] : '';
 
-		case 'level':
-			Zhiji_Adapter::user_level_integral_add( $uid, (int) $value, 'lottery' );
-			$msg = '恭喜获得 ' . $name . '！经验值已到账。';
-			break;
-
-		case 'balance':
-			Zhiji_Adapter::update_user_balance( $uid, array( 'value' => $value, 'type' => '抽奖奖品', 'desc' => '大转盘中奖：' . $name ) );
-			$msg = '恭喜获得 ' . $name . '！已充值至账户余额。';
-			break;
-
-		case 'coupon':
-			$msg = '很遗憾，' . $name . '，明天再试～';
-			if ( class_exists( 'ZibCardPass' ) && function_exists( 'zhiji_coupon_give_create_one' ) ) {
-				// 与邮箱领取同款：随机优惠方式（立减/折扣）与随机面值
-				$discount = function_exists( 'zhiji_coupon_give_discount_meta' )
-					? zhiji_coupon_give_discount_meta()
-					: array( 'type' => 'reduce', 'val' => $value );
-				// 优惠码名称 = 来源 + 实际优惠（后台「抽奖优惠码名称」可配来源词，金额随实际发放，避免与随机面值不符）
-				$discount_text = function_exists( 'zhiji_coupon_give_discount_text' )
-					? zhiji_coupon_give_discount_text( $discount )
-					: $name;
-				$coupon_title = (string) zhiji_get_option( 'lottery_coupon_title', '抽奖中奖' );
-				if ( '' !== trim( $discount_text ) ) {
-					$coupon_title .= '·' . $discount_text;
-				}
-				$days = max( 1, (int) zhiji_get_option( 'lottery_coupon_days', 30 ) );
-				$expire = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) + $days * DAY_IN_SECONDS );
-				$code = zhiji_coupon_give_create_one(
-					array(
-						'title'       => $coupon_title,
-						'desc'        => '大转盘中奖',
-						'discount'    => $discount,
-						'reuse'       => 1,
-						'used_count'  => 0,
-						'expire_time' => $expire,
-						'user_id'     => $uid,
-						'source'      => 'zhiji_lottery',
-					)
-				);
-				if ( $code ) {
-					// 站内通知（个人中心「我的优惠码」Tab 依据 meta.user_id 自动显示）
-					if ( function_exists( 'zhiji_coupon_give_notify_user' ) ) {
-						zhiji_coupon_give_notify_user( $uid, $code, $discount_text, $expire, 'lottery' );
-					}
-					// 消息显示实际随机面额（如 立减8.84 / 7.3折），避免与格子「随机优惠券」不一致
-					$msg = '🎉 恭喜获得 ' . $name . '（' . $discount_text . '）！优惠码 ' . $code . ' 已发放至「个人中心→我的优惠码」，可在结算时使用。';
-					$extra['coupon_code']           = $code;
-					$extra['coupon_discount_text']  = $discount_text;
-					$extra['coupon_expire']         = $expire;
-				}
-			}
-			break;
-
-		case 'free':
-			// 免单券：创建「0 折」优惠码（multiply×0 = 订单全免），走 CouponGive 统一体系
-			$msg = '很遗憾，' . $name . '，明天再试～';
-			if ( class_exists( 'ZibCardPass' ) && function_exists( 'zhiji_coupon_give_create_one' ) ) {
-				$discount_text = '全场免单';
-				$coupon_title  = (string) zhiji_get_option( 'lottery_coupon_title', '抽奖中奖' );
-				$coupon_title .= '·' . $discount_text;
-				$days   = max( 1, (int) zhiji_get_option( 'lottery_coupon_days', 30 ) );
-				$expire = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) + $days * DAY_IN_SECONDS );
-				$code   = zhiji_coupon_give_create_one(
-					array(
-						'title'       => $coupon_title,
-						'desc'        => '大转盘中奖：免单券',
-						'discount'    => array( 'type' => 'multiply', 'val' => 0 ),
-						'reuse'       => 1,
-						'used_count'  => 0,
-						'expire_time' => $expire,
-						'user_id'     => $uid,
-						'source'      => 'zhiji_lottery',
-					)
-				);
-				if ( $code ) {
-					if ( function_exists( 'zhiji_coupon_give_notify_user' ) ) {
-						zhiji_coupon_give_notify_user( $uid, $code, $discount_text, $expire, 'lottery' );
-					}
-					$msg                         = '🎉 抽到免单券啦！券码 ' . $code . ' 已放进「个人中心 → 我的优惠码」，下单时粘贴就能免单。';
-					$extra['coupon_code']          = $code;
-					$extra['coupon_discount_text'] = $discount_text;
-					$extra['coupon_expire']        = $expire;
-				}
-			}
-			break;
-
-		case 'vip_day':
-		case 'vip_month':
-			$msg = '很遗憾，' . $name . '，明天再试～';
-			$unit       = ( 'vip_month' === $prize['type'] ) ? 'month' : 'day';
-			$vip_result = zhiji_lottery_grant_vip( $uid, (int) $value, $unit, $name );
-			if ( $vip_result['ok'] ) {
-				$msg = '🎉 恭喜获得 ' . $name . '！' . $vip_result['text'] . '（新到期：' . $vip_result['expire'] . '）';
-				$extra['vip_expire'] = $vip_result['expire'];
-			} else {
-				$msg = '很遗憾，' . $name . '（' . $vip_result['text'] . '）';
-			}
-			break;
-
-		default:
-			$msg = '很遗憾，' . $name . '，明天再试～';
+	if ( $fn && is_callable( $fn ) ) {
+		$res = call_user_func( $fn, (int) $uid, $prize );
+		if ( is_array( $res ) ) {
+			$msg = isset( $res['msg'] ) ? (string) $res['msg'] : '';
+			return array(
+				'msg'   => $msg,
+				'extra' => isset( $res['extra'] ) ? (array) $res['extra'] : array(),
+				'won'   => isset( $res['won'] ) ? (bool) $res['won'] : ( false !== strpos( $msg, '恭喜' ) ),
+			);
+		}
 	}
 
-	return array( 'msg' => $msg, 'extra' => $extra );
+	// 无 provider / provider 未返回数组 → 未中奖（与改造前 default 分支同一口径）
+	return array(
+		'msg'   => '很遗憾，' . $name . '，明天再试～',
+		'extra' => array(),
+		'won'   => false,
+	);
+}
+
+/* ===================== 奖品发放（联动优惠码体系） ===================== */
+
+/**
+ * 发放奖品（provider 分发入口）
+ *
+ * 保持函数名与签名不变 —— 玩法侧与既有调用方零改动，只是内部从 switch 改为分发。
+ *
+ * @param int   $uid
+ * @param array $prize
+ * @return array {msg, extra, won}
+ */
+function zhiji_lottery_grant_prize( $uid, $prize ) {
+	$res = zhiji_lottery_dispatch_grant( $uid, $prize );
+	// 对外仍只暴露 msg / extra（ajax_draw 与邮件调度按这两个键取值）
+	return array(
+		'msg'   => $res['msg'],
+		'extra' => $res['extra'],
+	);
+}
+
+/**
+ * provider：积分
+ *
+ * @param int   $uid
+ * @param array $prize
+ * @return array
+ */
+function zhiji_lottery_grant_points( $uid, $prize ) {
+	$name  = $prize['name'];
+	$value = (float) $prize['value'];
+	Zhiji_Adapter::update_user_points( $uid, array( 'value' => (int) $value, 'type' => '抽奖奖品', 'desc' => '大转盘中奖：' . $name ) );
+	return array(
+		'msg'  => '恭喜获得 ' . $name . '！已发放至账户积分。',
+		'won'  => true,
+	);
+}
+
+/**
+ * provider：经验值（用户等级）
+ *
+ * @param int   $uid
+ * @param array $prize
+ * @return array
+ */
+function zhiji_lottery_grant_level( $uid, $prize ) {
+	$name  = $prize['name'];
+	$value = (float) $prize['value'];
+	Zhiji_Adapter::user_level_integral_add( $uid, (int) $value, 'lottery' );
+	return array(
+		'msg'  => '恭喜获得 ' . $name . '！经验值已到账。',
+		'won'  => true,
+	);
+}
+
+/**
+ * provider：余额
+ *
+ * @param int   $uid
+ * @param array $prize
+ * @return array
+ */
+function zhiji_lottery_grant_balance( $uid, $prize ) {
+	$name  = $prize['name'];
+	$value = (float) $prize['value'];
+	Zhiji_Adapter::update_user_balance( $uid, array( 'value' => $value, 'type' => '抽奖奖品', 'desc' => '大转盘中奖：' . $name ) );
+	return array(
+		'msg'  => '恭喜获得 ' . $name . '！已充值至账户余额。',
+		'won'  => true,
+	);
+}
+
+/**
+ * provider：优惠码（走 CouponIssuer 契约）
+ *
+ * @param int   $uid
+ * @param array $prize
+ * @return array
+ */
+function zhiji_lottery_grant_coupon( $uid, $prize ) {
+	$name  = $prize['name'];
+	$value = (float) $prize['value'];
+
+	// P2：改走 CouponIssuer 契约，不再直调 coupon_give 的内部函数
+	$issuer = zhiji_contract( 'CouponIssuer' );
+	if ( ! $issuer ) {
+		return array( 'msg' => '很遗憾，' . $name . '，明天再试～', 'won' => false );
+	}
+
+	// 与邮箱领取同款：随机优惠方式（立减/折扣）与随机面值
+	$discount = $issuer->discount_meta();
+	$discount_text = $issuer->discount_text( $discount );
+
+	// 优惠码名称 = 来源 + 实际优惠（后台「抽奖优惠码名称」可配来源词，金额随实际发放，避免与随机面值不符）
+	$coupon_title = (string) zhiji_get_option( 'lottery_coupon_title', '抽奖中奖' );
+	if ( '' !== trim( $discount_text ) ) {
+		$coupon_title .= '·' . $discount_text;
+	}
+	$days   = max( 1, (int) zhiji_get_option( 'lottery_coupon_days', 30 ) );
+	$expire = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) + $days * DAY_IN_SECONDS );
+
+	$res = $issuer->issue( array(
+		'discount'    => $discount,
+		'title'       => $coupon_title,
+		'desc'        => '大转盘中奖',
+		'expire_days' => $days,
+		'user_id'     => (int) $uid,
+		'source'      => 'zhiji_lottery',
+		'notify'      => true,   // 中奖要带码通知，与原实现一致
+	) );
+
+	if ( empty( $res['ok'] ) ) {
+		return array( 'msg' => '很遗憾，' . $name . '，明天再试～', 'won' => false );
+	}
+
+	// 消息显示实际随机面额（如 立减8.84 / 7.3折），避免与格子「随机优惠券」不一致
+	return array(
+		'msg'   => '🎉 恭喜获得 ' . $name . '（' . $discount_text . '）！优惠码 ' . $res['code'] . ' 已发放至「个人中心→我的优惠码」，可在结算时使用。',
+		'won'   => true,
+		'extra' => array(
+			'coupon_code'          => $res['code'],
+			'coupon_discount_text' => $discount_text,
+			'coupon_expire'        => $expire,
+		),
+	);
+}
+
+/**
+ * provider：免单券（走 CouponIssuer 契约，multiply×0 = 订单全免）
+ *
+ * @param int   $uid
+ * @param array $prize
+ * @return array
+ */
+function zhiji_lottery_grant_free( $uid, $prize ) {
+	$name = $prize['name'];
+
+	$issuer = zhiji_contract( 'CouponIssuer' );
+	if ( ! $issuer ) {
+		return array( 'msg' => '很遗憾，' . $name . '，明天再试～', 'won' => false );
+	}
+
+	$discount_text = '全场免单';
+	$coupon_title  = (string) zhiji_get_option( 'lottery_coupon_title', '抽奖中奖' );
+	$coupon_title .= '·' . $discount_text;
+	$days   = max( 1, (int) zhiji_get_option( 'lottery_coupon_days', 30 ) );
+	$expire = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) + $days * DAY_IN_SECONDS );
+
+	$res = $issuer->issue( array(
+		'discount'    => array( 'type' => 'multiply', 'val' => 0 ),
+		'title'       => $coupon_title,
+		'desc'        => '大转盘中奖：免单券',
+		'expire_days' => $days,
+		'user_id'     => (int) $uid,
+		'source'      => 'zhiji_lottery',
+		'notify'      => true,
+	) );
+
+	if ( empty( $res['ok'] ) ) {
+		return array( 'msg' => '很遗憾，' . $name . '，明天再试～', 'won' => false );
+	}
+
+	return array(
+		'msg'   => '🎉 抽到免单券啦！券码 ' . $res['code'] . ' 已放进「个人中心 → 我的优惠码」，下单时粘贴就能免单。',
+		'won'   => true,
+		'extra' => array(
+			'coupon_code'          => $res['code'],
+			'coupon_discount_text' => $discount_text,
+			'coupon_expire'        => $expire,
+		),
+	);
+}
+
+/**
+ * provider：会员时长（vip_day / vip_month 共用）
+ *
+ * @param int   $uid
+ * @param array $prize
+ * @return array
+ */
+function zhiji_lottery_grant_vip_prize( $uid, $prize ) {
+	$name  = $prize['name'];
+	$value = (float) $prize['value'];
+	$unit  = ( 'vip_month' === $prize['type'] ) ? 'month' : 'day';
+
+	$vip_result = zhiji_lottery_grant_vip( $uid, (int) $value, $unit, $name );
+	if ( ! $vip_result['ok'] ) {
+		return array( 'msg' => '很遗憾，' . $name . '（' . $vip_result['text'] . '）', 'won' => false );
+	}
+	return array(
+		'msg'   => '🎉 恭喜获得 ' . $name . '！' . $vip_result['text'] . '（新到期：' . $vip_result['expire'] . '）',
+		'won'   => true,
+		'extra' => array( 'vip_expire' => $vip_result['expire'] ),
+	);
 }
 
 /**
@@ -1645,10 +1812,12 @@ function zhiji_lottery_send_win_mail( $uid, $prize, $extra = array() ) {
 	$name  = $user->display_name ? $user->display_name : $user->user_login;
 
 	// 优惠码奖品：走 CouponGive 票据邮件（标题/内容/占位符与邮箱领取一致，用户可在后台自定义）
-	if ( in_array( $prize['type'], array( 'coupon', 'free' ), true ) && ! empty( $extra['coupon_code'] ) && function_exists( 'zhiji_coupon_give_send_mail' ) ) {
+	// P2：改走 CouponIssuer 契约，不再直调 coupon_give 的内部函数
+	$issuer = zhiji_contract( 'CouponIssuer' );
+	if ( in_array( $prize['type'], array( 'coupon', 'free' ), true ) && ! empty( $extra['coupon_code'] ) && $issuer ) {
 		$discount_text = ! empty( $extra['coupon_discount_text'] ) ? $extra['coupon_discount_text'] : $prize['name'];
 		$expire        = ! empty( $extra['coupon_expire'] ) ? $extra['coupon_expire'] : '';
-		return zhiji_coupon_give_send_mail( $email, $extra['coupon_code'], $discount_text, 'claim', $expire, __( '抽奖活动', 'zhiji' ) );
+		return $issuer->send_mail( $email, $extra['coupon_code'], $discount_text, 'claim', $expire, __( '抽奖活动', 'zhiji' ) );
 	}
 
 	// 其余奖品：中奖通知邮件

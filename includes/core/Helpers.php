@@ -80,3 +80,36 @@ function zhiji_arr_get($arr, $key, $default = null)
 {
     return (is_array($arr) && isset($arr[$key])) ? $arr[$key] : $default;
 }
+
+/**
+ * 随机取一个「优惠码有效期」（天）
+ *
+ * 2026-10-02（P2）从 modules/RewardCenter.php 迁入 core。
+ *
+ * 【为什么迁】
+ * 旧名 `zhiji_reward_coupon_rand_expire()` 挂在 RewardCenter.php 里，但它既不发奖也不查库，
+ * 只是一行 `apply_filters + array_rand` 的纯工具函数。RewardCenter 与 CouponGive 都要用它，
+ * 于是形成真实闭环依赖：reward_center ⇄ coupon_give
+ * （证据：CouponGive.php:1826 调用它，RewardCenter.php:611 也调用它）。
+ * 纯工具函数放在任一业务模块里都是错位 —— 关掉那个模块，另一个就崩。
+ * 故下沉到 core/Helpers.php：两个模块都只依赖基础设施，不再互相依赖。
+ *
+ * 旧名保留为别名（@deprecated），供第三方扩展兼容；新代码一律用本函数。
+ *
+ * @return int 天数；0 = 永久有效
+ */
+function zhiji_coupon_expire_rand_days()
+{
+    $pool = apply_filters('zhiji_reward_coupon_expire_pool', array(7, 30, 0));
+    $pool = (is_array($pool) && !empty($pool)) ? $pool : array(7, 30, 0);
+    return (int) $pool[array_rand($pool, 1)];
+}
+
+/**
+ * @deprecated 2.0.7 改用 zhiji_coupon_expire_rand_days()（已下沉至 core，不再属于奖励中心）
+ * @return int
+ */
+function zhiji_reward_coupon_rand_expire()
+{
+    return zhiji_coupon_expire_rand_days();
+}

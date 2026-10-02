@@ -547,12 +547,6 @@ function zhiji_reward_center_overview_html() {
 		. '</div></div>';
 }
 
-function zhiji_reward_coupon_rand_expire() {
-	$pool = apply_filters( 'zhiji_reward_coupon_expire_pool', array( 7, 30, 0 ) );
-	$pool = is_array( $pool ) && ! empty( $pool ) ? $pool : array( 7, 30, 0 );
-	return (int) $pool[ array_rand( $pool, 1 ) ];
-}
-
 /**
  * 发放指定类型的一种奖励。
  *
@@ -603,24 +597,27 @@ function zhiji_reward_center_grant_one( $uid, $type, $source = '', $overrides = 
 			return array( 'type' => 'balance', 'name' => __( '余额', 'zhiji' ), 'val' => $val, 'desc' => sprintf( __( '+¥%s 余额', 'zhiji' ), number_format( $val, 2 ) ) );
 
 		case 'coupon':
-			if ( class_exists( 'ZibCardPass' ) && function_exists( 'zhiji_coupon_give_discount_meta' ) && function_exists( 'zhiji_coupon_give_create_one' ) ) {
+			// P2：改走 CouponIssuer 契约，不再直调 coupon_give 的内部函数。
+			// ⚠️ notify 显式传 false —— 原实现不发站内通知（抽奖才发），保持行为一致。
+			// ⚠️ desc 文案仍在本处自算：奖励中心口径是「立减 ¥8.84 / 8.8 折」，
+			//    与 coupon_give 的「立减8.84元」不同，改用契约返回值会变更用户可见文案。
+			$issuer = zhiji_contract( 'CouponIssuer' );
+			if ( $issuer ) {
 				$scope    = isset( $overrides['coupon_scope'] ) ? $overrides['coupon_scope'] : zhiji_get_option( 'reward_center_coupon_scope', 'login' );
-				$discount = zhiji_coupon_give_discount_meta( $scope );
+				$discount = $issuer->discount_meta( $scope );
 				// 有效期（2026-09-29 修复"全部永久有效"）：默认 7 天/30 天/永久 三档随机，可在后台改规则
 				$expire_rule = (string) zhiji_get_option( 'reward_center_coupon_expire', 'random' );
-				$expire_days = ( 'random' === $expire_rule ) ? zhiji_reward_coupon_rand_expire() : (int) $expire_rule;
-				$meta     = array(
-					'discount' => $discount,
-					'title'    => '奖励中心专属优惠码',
-					'reuse'    => 1,
-					'user_id'  => $uid,
-					'source'   => $source ? $source : 'reward_center',
-				);
-				if ( $expire_days > 0 ) {
-					$meta['expire_time'] = gmdate( 'Y-m-d H:i:s', current_time( 'timestamp' ) + $expire_days * DAY_IN_SECONDS );
-				}
-				$code = zhiji_coupon_give_create_one( $meta, 0 );
-				if ( $code ) {
+				$expire_days = ( 'random' === $expire_rule ) ? zhiji_coupon_expire_rand_days() : (int) $expire_rule;
+				$res = $issuer->issue( array(
+					'discount'    => $discount,
+					'title'       => '奖励中心专属优惠码',
+					'expire_days' => $expire_days,
+					'user_id'     => $uid,
+					'source'      => $source ? $source : 'reward_center',
+					'notify'      => false,
+				) );
+				if ( ! empty( $res['ok'] ) ) {
+					$code = $res['code'];
 					$dt = ( 'multiply' === $discount['type'] )
 					? ( ( (float) $discount['val'] <= 0 )
 						? __( '免单', 'zhiji' ) // 免单特判：与 zhiji_coupon_give_discount_text() 口径一致（0折 → 免单）
@@ -646,17 +643,19 @@ function zhiji_reward_center_grant_one( $uid, $type, $source = '', $overrides = 
 			return array( 'type' => 'vip', 'name' => __( '会员权益', 'zhiji' ), 'val' => $days, 'desc' => sprintf( __( '已开通/延长会员 %d 天（LV%d）', 'zhiji' ), $days, $level ) );
 
 		case 'free':
-			if ( class_exists( 'ZibCardPass' ) && function_exists( 'zhiji_coupon_give_create_one' ) ) {
-				$meta = array(
-					'discount' => array( 'type' => 'multiply', 'val' => 0 ),
-					'title'    => '奖励中心免单券',
-					'reuse'    => 1,
-					'user_id'  => $uid,
-					'source'   => ( $source ? $source : 'reward_center' ) . '_free',
-				);
-				$code = zhiji_coupon_give_create_one( $meta, 0 );
-				if ( $code ) {
-					return array( 'type' => 'free', 'name' => __( '免单券', 'zhiji' ), 'val' => $code, 'desc' => __( '下单直接免单', 'zhiji' ), 'code' => $code );
+			// P2：改走 CouponIssuer 契约。免单券 = multiply×0（订单全免），沿用原口径。
+			$issuer = zhiji_contract( 'CouponIssuer' );
+			if ( $issuer ) {
+				$res = $issuer->issue( array(
+					'discount'    => array( 'type' => 'multiply', 'val' => 0 ),
+					'title'       => '奖励中心免单券',
+					'expire_days' => 0,   // 原实现未设 expire_time = 永久有效
+					'user_id'     => $uid,
+					'source'      => ( $source ? $source : 'reward_center' ) . '_free',
+					'notify'      => false,
+				) );
+				if ( ! empty( $res['ok'] ) ) {
+					return array( 'type' => 'free', 'name' => __( '免单券', 'zhiji' ), 'val' => $res['code'], 'desc' => __( '下单直接免单', 'zhiji' ), 'code' => $res['code'] );
 				}
 			}
 			// 免单券生成失败，保底发积分
@@ -668,9 +667,11 @@ function zhiji_reward_center_grant_one( $uid, $type, $source = '', $overrides = 
 }
 
 /* ============================================================
+ * 3. 弹幕文案
  * ============================================================ */
 
 /**
+ * 把单条奖励转成弹幕/通知文案
  *
  * @param array $reward 单条奖励数组
  * @return string
@@ -691,6 +692,291 @@ function zhiji_reward_center_danmu_text( $reward ) {
 		default:
 			return sprintf( __( '%d 积分！', 'zhiji' ), (int) $reward['val'] );
 	}
+}
+
+/* ============================================================
+ * 4. Ledger 契约实现（P2 架构重构）
+ * ------------------------------------------------------------
+ * 把「积分 / 余额的增减」收敛成唯一入口，其余模块只依赖契约、不再
+ * 直接调 zhiji_reward_center_grant_one()。
+ *
+ * 【与既有函数的关系，一句话说清】
+ *   zhiji_reward_center_grant_one()  = 「抽一种奖励」（带随机权重/随机金额/保底降级）
+ *   本类                            = 「账本记账」（给定类型与数量，精确增减）
+ * 二者不是替代关系：grant_one 内部可以调本类记账，但本类**不含任何随机逻辑**。
+ * 这样拆分的原因：抽奖/福袋/答题要的是「随机发奖」，而商城扣积分、兑换扣减要的是
+ * 「精确记账 + 余额校验 + 幂等」。混在一起会让抽奖逻辑被扣减场景污染。
+ *
+ * 【为何要幂等键】
+ * 抽奖有「每日限量 + 网络重试 + 用户连点」，同一笔奖励被发两次是真实现象
+ * （旧代码靠 ClaimLog 事后统计，无法阻止重复发放）。has_key() 让发奖方能
+ * 在发奖**前**判重。
+ * ============================================================ */
+
+if ( ! class_exists( 'Zhiji_Ledger_RewardCenter' ) ) :
+
+	/**
+	 * 积分 / 余额账本（实现 Zhiji_Contract_Ledger）
+	 */
+	class Zhiji_Ledger_RewardCenter implements Zhiji_Contract_Ledger {
+
+		/**
+		 * 支持的账本类型 → 父主题 zibpay 的账本名
+		 * @var array<string,string>
+		 */
+		private $types = array(
+			'points'  => 'points',
+			'balance' => 'balance',
+		);
+
+		/**
+		 * 账本类型是否受支持
+		 *
+		 * @param string $type
+		 * @return bool
+		 */
+		public function supports( $type ) {
+			return isset( $this->types[ $type ] );
+		}
+
+		/**
+		 * 发放（增加余额/积分）
+		 *
+		 * @param int    $uid
+		 * @param string $type   points / balance
+		 * @param int    $amount 正数
+		 * @param array  $meta   source / desc / idem_key
+		 * @return array{ok:bool,balance:float|int,message:string}
+		 */
+		public function grant( $uid, $type, $amount, array $meta = array() ) {
+			$uid = (int) $uid;
+			$type = (string) $type;
+			$is_balance = ( 'balance' === $type );
+
+			if ( ! $uid || ! $this->supports( $type ) ) {
+				return $this->fail( __( '账本类型不支持', 'zhiji' ) );
+			}
+			$amount = $is_balance ? (float) $amount : (int) $amount;
+			if ( $amount <= 0 ) {
+				return $this->fail( __( '发放数量必须为正', 'zhiji' ) );
+			}
+			// 幂等：同一 key 已发过则直接返回当前余额，不重复发放
+			$key = isset( $meta['idem_key'] ) ? (string) $meta['idem_key'] : '';
+			if ( $key && $this->has_key( $key ) ) {
+				return array(
+					'ok'      => false,
+					'balance' => $this->balance( $uid, $type ),
+					'message' => __( '该奖励已发放过', 'zhiji' ),
+				);
+			}
+
+			$args = array(
+				'value' => $amount,
+				'type'  => isset( $meta['source'] ) && '' !== $meta['source']
+					? zhiji_reward_source_label( $meta['source'] )
+					: __( '系统奖励', 'zhiji' ),
+				'desc'  => isset( $meta['desc'] ) ? (string) $meta['desc'] : '',
+			);
+
+			$ok = $is_balance
+				? Zhiji_Adapter::update_user_balance( $uid, $args )
+				: Zhiji_Adapter::update_user_points( $uid, $args );
+
+			if ( ! $ok ) {
+				return $this->fail( __( '账本写入失败（父主题 zibpay 未就绪？）', 'zhiji' ) );
+			}
+
+			if ( $key ) {
+				$this->mark_key( $key );
+			}
+
+			return array(
+				'ok'      => true,
+				'balance' => $this->balance( $uid, $type ),
+				'message' => __( '发放成功', 'zhiji' ),
+			);
+		}
+
+		/**
+		 * 扣减（减少余额/积分）
+		 *
+		 * 余额充足性由父主题的**条件更新 SQL** 保证原子：
+		 *   UPDATE … SET meta_value = CAST(meta_value AS SIGNED) - N
+		 *    WHERE … AND CAST(meta_value AS SIGNED) >= N
+		 * 即「读-判断-写」被压成单条语句，并发下不会扣成负数。
+		 * （见父主题 zibpay/functions/zibpay-balance.php:149 zibpay_user_balance_or_points_save_db）
+		 *
+		 * @param int    $uid
+		 * @param string $type
+		 * @param int    $amount 正数，内部取负
+		 * @param array  $meta
+		 * @return array{ok:bool,balance:float|int,message:string}
+		 */
+		public function spend( $uid, $type, $amount, array $meta = array() ) {
+			$uid = (int) $uid;
+			$type = (string) $type;
+			$is_balance = ( 'balance' === $type );
+
+			if ( ! $uid || ! $this->supports( $type ) ) {
+				return $this->fail( __( '账本类型不支持', 'zhiji' ) );
+			}
+			$amount = $is_balance ? (float) $amount : (int) $amount;
+			if ( $amount <= 0 ) {
+				return $this->fail( __( '扣减数量必须为正', 'zhiji' ) );
+			}
+
+			$key = isset( $meta['idem_key'] ) ? (string) $meta['idem_key'] : '';
+			if ( $key && $this->has_key( $key ) ) {
+				return array(
+					'ok'      => false,
+					'balance' => $this->balance( $uid, $type ),
+					'message' => __( '该笔已扣减过', 'zhiji' ),
+				);
+			}
+
+			// 前置余额校验（仅用于给出准确文案；真正的原子性在 SQL 里）
+			$before = $this->balance( $uid, $type );
+			if ( ( $is_balance ? (float) $before : (int) $before ) < $amount ) {
+				return array(
+					'ok'      => false,
+					'balance' => $before,
+					'message' => $is_balance
+						? __( '余额不足', 'zhiji' )
+						: __( '积分不足', 'zhiji' ),
+				);
+			}
+
+			$args = array(
+				'value' => -1 * $amount,
+				'type'  => isset( $meta['source'] ) && '' !== $meta['source']
+					? zhiji_reward_source_label( $meta['source'] )
+					: __( '系统消费', 'zhiji' ),
+				'desc'  => isset( $meta['desc'] ) ? (string) $meta['desc'] : '',
+			);
+
+			$ok = $is_balance
+				? Zhiji_Adapter::update_user_balance( $uid, $args )
+				: Zhiji_Adapter::update_user_points( $uid, $args );
+
+			if ( ! $ok ) {
+				return $this->fail( __( '账本写入失败（余额不足或父主题未就绪）', 'zhiji' ) );
+			}
+
+			if ( $key ) {
+				$this->mark_key( $key );
+			}
+
+			return array(
+				'ok'      => true,
+				'balance' => $this->balance( $uid, $type ),
+				'message' => __( '扣减成功', 'zhiji' ),
+			);
+		}
+
+		/**
+		 * 查询余额
+		 *
+		 * @param int    $uid
+		 * @param string $type
+		 * @return int|float
+		 */
+		public function balance( $uid, $type ) {
+			$uid = (int) $uid;
+			$type = (string) $type;
+			if ( ! $uid || ! $this->supports( $type ) ) {
+				return 0;
+			}
+			return ( 'balance' === $type )
+				? (float) Zhiji_Adapter::get_user_balance( $uid )
+				: (int) Zhiji_Adapter::get_user_points( $uid );
+		}
+
+		/**
+		 * 幂等键是否已被占用
+		 *
+		 * 存 user meta（非全局 option）—— 键天然带用户维度，跨用户不会互相干扰；
+		 * 容量固定在 100 条内，超出按先进先出淘汰，避免无限制增长。
+		 *
+		 * @param string $key
+		 * @return bool
+		 */
+		public function has_key( $key ) {
+			$key = (string) $key;
+			if ( '' === $key ) {
+				return false;
+			}
+			$uid = (int) $this->key_owner( $key );
+			if ( ! $uid ) {
+				return false;
+			}
+			$keys = (array) get_user_meta( $uid, 'zhiji_ledger_idem_keys', true );
+			return in_array( $key, $keys, true );
+		}
+
+		/**
+		 * 占用一个幂等键
+		 *
+		 * @param string $key
+		 * @return void
+		 */
+		private function mark_key( $key ) {
+			$uid = (int) $this->key_owner( $key );
+			if ( ! $uid ) {
+				return;
+			}
+			$keys = (array) get_user_meta( $uid, 'zhiji_ledger_idem_keys', true );
+			if ( in_array( $key, $keys, true ) ) {
+				return;
+			}
+			$keys[] = $key;
+			if ( count( $keys ) > 100 ) {
+				$keys = array_slice( $keys, -100 );
+			}
+			update_user_meta( $uid, 'zhiji_ledger_idem_keys', $keys );
+		}
+
+		/**
+		 * 从幂等键反解出用户 ID
+		 *
+		 * 键格式约定：`<uid>:<场景>:<业务ref>`，首段即用户 ID。
+		 * 这样契约层不必为 has_key 再单独传 uid（接口签名是 has_key($key)）。
+		 *
+		 * @param string $key
+		 * @return int 0 = 解析不出
+		 */
+		private function key_owner( $key ) {
+			$parts = explode( ':', (string) $key );
+			return isset( $parts[0] ) ? (int) $parts[0] : 0;
+		}
+
+		/**
+		 * 统一失败返回
+		 *
+		 * @param string $message
+		 * @return array
+		 */
+		private function fail( $message ) {
+			return array(
+				'ok'      => false,
+				'balance' => 0,
+				'message' => $message,
+			);
+		}
+	}
+
+endif;
+
+/**
+ * 契约工厂：供 ContractRegistry 解析（工厂名规则 zhiji_contract_implementor_{模块key}）
+ *
+ * @return Zhiji_Contract_Ledger
+ */
+function zhiji_contract_implementor_reward_center() {
+	static $impl = null;
+	if ( null === $impl ) {
+		$impl = new Zhiji_Ledger_RewardCenter();
+	}
+	return $impl;
 }
 
 /* ============================================================
