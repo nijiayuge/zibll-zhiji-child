@@ -36,60 +36,12 @@ Zhiji_Registry::register_module('coupon_give', array(
     // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
     Zhiji_Registry::register_options('coupon_give', array(
 			array(
-				'id'       => 'zhiji_accordion_1',
-				       'type'       => 'accordion',
-				'accordions' => array(
-					array(
-						'title'  => __( '① 基本设置', 'zhiji' ),
-						'icon'   => 'fas fa-sliders-h',
-						'fields' => array(
-							array(
-								'type'    => 'submessage',
-								'style'   => 'info',
-								'content' => __( '访客输入邮箱领取一次性优惠码的总开关与展示文案。', 'zhiji' ),
-							),
-			array(
 				'id'      => 'coupon_give_enabled',
 				'type'    => 'switcher',
 				'title'   => '启用邮箱领取优惠码',
 				'default' => false,
 				'desc'    => '访客输入邮箱领取一次性优惠码，邮件发送+个人中心「我的优惠码」Tab。',
 			),
-			array(
-				'id'         => 'coupon_give_title',
-				'type'       => 'text',
-				'title'      => '优惠码标题',
-				'desc' => __( '优惠码在「我的优惠码」等位置的显示名称。', 'zhiji' ),
-				'default'    => '挽留弹窗专属优惠',
-				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
-			),
-			array(
-				'id'         => 'coupon_give_form_title',
-				'type'       => 'text',
-				'title'      => '领取表单标题',
-				'desc' => __( '领取表单上方的标题文字。', 'zhiji' ),
-				'default'    => '输入邮箱，领取专属优惠码',
-				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
-			),
-			array(
-				'id'         => 'coupon_give_post_id',
-				'type'       => 'text',
-				'title'      => '指定商品文章 ID',
-				'default'    => '0',
-				'desc'       => '0 = 全站通用；填写文章 ID 后优惠码仅限该商品使用。',
-				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
-			),
-						),
-					),
-					array(
-						'title'  => __( '② 面额设置（所有用户通用）', 'zhiji' ),
-						'icon'   => 'fas fa-tags',
-						'fields' => array(
-							array(
-								'type'    => 'submessage',
-								'style'   => 'info',
-								'content' => __( '「立减」是减固定金额，「折扣」是按系数打折（0.8 = 八折），「随机」则两者随机取一种。这里配的是<b>基础区间</b>，实际发放值在此区间内随机。', 'zhiji' ),
-							),
 			array(
 				'id'         => 'coupon_give_discount_type',
 				'type'       => 'button_set',
@@ -135,17 +87,6 @@ Zhiji_Registry::register_module('coupon_give', array(
 				'default'    => '0.95',
 				'dependency' => array( 'coupon_give_enabled|coupon_give_discount_type', 'any|==', '1|multiply' ),
 			),
-						),
-					),
-					array(
-						'title'  => __( '③ 差异化面值（按身份给不同额度）', 'zhiji' ),
-						'icon'   => 'fas fa-users',
-						'fields' => array(
-							array(
-								'type'    => 'submessage',
-								'style'   => 'info',
-								'content' => __( '开启后，登录用户与 VIP 用户各自使用独立的区间；关闭则都用上面的基础区间。奖励中心给评论福袋发券时也复用这套区间。', 'zhiji' ),
-							),
 			array(
 				'id'         => 'coupon_give_diff_enabled',
 				'type'       => 'switcher',
@@ -218,17 +159,6 @@ Zhiji_Registry::register_module('coupon_give', array(
 				'default'    => '0.85',
 				'dependency' => array( 'coupon_give_enabled|coupon_give_diff_enabled', 'any|==', '1|1' ),
 			),
-						),
-					),
-					array(
-						'title'  => __( '④ 领取限制与有效期（风控）', 'zhiji' ),
-						'icon'   => 'fas fa-shield-alt',
-						'fields' => array(
-							array(
-								'type'    => 'submessage',
-								'style'   => 'info',
-								'content' => __( '防刷规则：限制每天领取总量、单邮箱/单用户领取次数，以及券码本身的有效天数。', 'zhiji' ),
-							),
 			array(
 				'id'         => 'coupon_give_daily_limit',
 				'type'       => 'text',
@@ -269,17 +199,22 @@ Zhiji_Registry::register_module('coupon_give', array(
 				'default'    => '7',
 				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
 			),
-						),
-					),
-					array(
-						'title'  => __( '⑤ 分享裂变与邮件通知', 'zhiji' ),
-						'icon'   => 'fas fa-share-alt',
-						'fields' => array(
-							array(
-								'type'    => 'submessage',
-								'style'   => 'info',
-								'content' => __( '分享得券的开关与上限；以及领取成功时发送的邮件标题、正文（留空用内置模板）与站内通知。', 'zhiji' ),
-							),
+			array(
+				'id'         => 'coupon_give_title',
+				'type'       => 'text',
+				'title'      => '优惠码标题',
+				'desc' => __( '优惠码在「我的优惠码」等位置的显示名称。', 'zhiji' ),
+				'default'    => '挽留弹窗专属优惠',
+				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
+			),
+			array(
+				'id'         => 'coupon_give_post_id',
+				'type'       => 'text',
+				'title'      => '指定商品文章 ID',
+				'default'    => '0',
+				'desc'       => '0 = 全站通用；填写文章 ID 后优惠码仅限该商品使用。',
+				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
+			),
 			array(
 				'id'         => 'coupon_give_ref_enabled',
 				'type'       => 'switcher',
@@ -320,17 +255,6 @@ Zhiji_Registry::register_module('coupon_give', array(
 				'desc'       => '领取成功后发送站内消息通知。',
 				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
 			),
-						),
-					),
-					array(
-						'title'  => __( '⑥ 展示位置', 'zhiji' ),
-						'icon'   => 'fas fa-eye',
-						'fields' => array(
-							array(
-								'type'    => 'submessage',
-								'style'   => 'info',
-								'content' => __( '退出挽留弹窗里是否展示本优惠码；个人中心是否显示「我的优惠码」Tab。', 'zhiji' ),
-							),
 			array(
 				'id'         => 'coupon_give_show_in_exit',
 				'type'       => 'switcher',
@@ -340,16 +264,20 @@ Zhiji_Registry::register_module('coupon_give', array(
 				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
 			),
 			array(
+				'id'         => 'coupon_give_form_title',
+				'type'       => 'text',
+				'title'      => '领取表单标题',
+				'desc' => __( '领取表单上方的标题文字。', 'zhiji' ),
+				'default'    => '输入邮箱，领取专属优惠码',
+				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
+			),
+			array(
 				'id'         => 'coupon_give_user_tab',
 				'type'       => 'switcher',
 				'title'      => '个人中心「我的优惠码」Tab',
 				'desc' => __( '是否在个人中心增加「我的优惠码」页签。', 'zhiji' ),
 				'default'    => true,
 				'dependency' => array( 'coupon_give_enabled', '==', '1' ),
-			),
-						),
-					),
-				),
 			),
 ), 20);
 

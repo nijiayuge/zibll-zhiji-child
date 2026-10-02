@@ -55,6 +55,8 @@ defined('ABSPATH') || exit;
   require_once $zhiji_child_inc . 'core/ConfigSchema.php';
   // 配置回收器（P4）：依赖 ConfigSchema 的废弃键表；文件内部自带 is_admin/WP-CLI 守卫
   require_once $zhiji_child_inc . 'core/ConfigJanitor.php';
+  // 后台设置折叠分组（P4）：基于 subheading，替代不可用的 accordion 字段
+  require_once $zhiji_child_inc . 'core/FieldCollapse.php';
   require_once $zhiji_child_inc . 'core/DependencyGuard.php';
 
 // ② 通知层：统一通知中心（事件表 → 分发 → 渠道），业务模块只允许通过 zhiji_notify() 发通知
