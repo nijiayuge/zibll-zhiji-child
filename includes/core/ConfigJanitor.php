@@ -113,8 +113,16 @@ function zhiji_config_janitor_report()
  *
  * 幂等：已回收过的键不会重复处理（第二次调用返回 removed=0）。
  *
+ * 🛡️ **删除前逐键验活**（P4 追加的最后一道防线）
+ * 废弃键表是**人工维护**的，迟早会有「其实还在用」的键被误登记
+ * （2026-10-02 真实踩到：monitor_404_track_logged_in 被误登记成废弃，
+ *   实际 Monitor404.php 仍在读它控制「是否统计登录用户」）。
+ * 故删除前**逐键扫源码**，凡仍被 zhiji_get_option / zhiji_is_enabled 等读取的键，
+ * 一律**从回收清单中剔除**并记日志 —— 宁可不回收，也不能让一个在用的配置失效。
+ * 这样即使废弃表登记错，线上也不会被误伤（人工复核不再是唯一防线）。
+ *
  * @param bool $dry_run true = 只报告不执行
- * @return array{ok:bool,removed:int,keys:array,backed_up:int,message:string}
+ * @return array{ok:bool,removed:int,keys:array,skipped_in_use:array,backed_up:int,message:string}
  */
 function zhiji_config_janitor_run($dry_run = false)
 {
@@ -128,14 +136,38 @@ function zhiji_config_janitor_run($dry_run = false)
         }
     }
 
+    // 🛡️ 逐键验活：剔除仍被源码读取的键
+    $in_use = array();
+    foreach ($keys as $k) {
+        if (zhiji_config_key_in_use($k)) {
+            $in_use[] = $k;
+        }
+    }
+    if ($in_use) {
+        $keys = array_values(array_diff($keys, $in_use));
+        zhiji_log('回收跳过：废弃表登记有误，键仍在被使用', array('keys' => $in_use));
+    }
+
     if (!$keys) {
-        return array('ok' => true, 'removed' => 0, 'keys' => array(), 'backed_up' => 0,
-            'message' => __('没有可回收的废弃配置键', 'zhiji'));
+        return array('ok' => true, 'removed' => 0, 'keys' => array(),
+            'skipped_in_use' => $in_use, 'backed_up' => 0,
+            'message' => $in_use
+                ? sprintf(
+                    /* translators: %d: 数量 */
+                    __('没有可回收的废弃配置键（%d 个键虽在废弃表里，但源码仍在读取，已跳过）', 'zhiji'),
+                    count($in_use)
+                )
+                : __('没有可回收的废弃配置键', 'zhiji'));
     }
 
     if ($dry_run) {
-        return array('ok' => true, 'removed' => 0, 'keys' => $keys, 'backed_up' => 0,
-            'message' => sprintf(_n('预演：将回收 %d 个废弃配置键（未实际执行）', '预演：将回收 %d 个废弃配置键（未实际执行）', count($keys), 'zhiji'), count($keys)));
+        return array('ok' => true, 'removed' => 0, 'keys' => $keys,
+            'skipped_in_use' => $in_use, 'backed_up' => 0,
+            'message' => sprintf(
+                /* translators: %d: 数量 */
+                _n('预演：将回收 %d 个废弃配置键（未实际执行）', '预演：将回收 %d 个废弃配置键（未实际执行）', count($keys), 'zhiji'),
+                count($keys)
+            ));
     }
 
     // ① 先备份（存档 + 独立选项双写，前者便于遍历，后者防存档本身被误改）
@@ -162,8 +194,63 @@ function zhiji_config_janitor_run($dry_run = false)
     // ③ 日志
     zhiji_log('回收废弃配置键', array('count' => count($keys), 'keys' => $keys));
 
+    $msg = __('已回收并备份', 'zhiji');
+    if ($in_use) {
+        $msg .= sprintf(
+            /* translators: %s: 键名列表 */
+            __('（另有 %s 个键虽在废弃表里但源码仍在读取，已跳过）', 'zhiji'),
+            implode(', ', $in_use)
+        );
+    }
+
     return array('ok' => true, 'removed' => count($keys), 'keys' => $keys,
-        'backed_up' => count($archive), 'message' => __('已回收并备份', 'zhiji'));
+        'skipped_in_use' => $in_use, 'backed_up' => count($archive), 'message' => $msg);
+}
+
+/**
+ * 某配置键当前是否仍被源码读取
+ *
+ * 用途：回收器的最后一道防线 —— 废弃键表是人工维护的，难免有登记错的。
+ * 凡是仍被读的键，无论登记成什么都**不能删**。
+ *
+ * 实现：扫 includes/ 下所有 PHP，用正则找 `zhiji_xxx_option('键名'` 形态的读取。
+ * ⚠️ 只认**字面量键名**（本项目的配置读取都是字面量，不存在动态拼接）——
+ *    若将来出现 zhiji_get_option($k) 这类动态读法，本函数会漏判，
+ *    届时的兜底是 preflight 的「来路不明」报告（列出但需人工确认）。
+ *
+ * @param string $key
+ * @return bool
+ */
+function zhiji_config_key_in_use($key)
+{
+    static $cache = null;
+    if (null === $cache) {
+        $cache = array();
+        $base  = get_stylesheet_directory() . '/includes/';
+        $files = array();
+        foreach (array('', 'core/', 'notify/', 'notify/Channels/', 'modules/', 'functions/', 'options/', 'admin/') as $sub) {
+            foreach ((array) glob($base . $sub . '*.php') as $f) {
+                $files[] = $f;
+            }
+        }
+        foreach ($files as $f) {
+            $src = (string) @file_get_contents($f);
+            if ('' === $src) {
+                continue;
+            }
+            // zhiji_get_option / zhiji_is_enabled / zhiji_update_option / zhiji_option_bool|int
+            if (preg_match_all(
+                "/zhiji_(?:get_option|is_enabled|update_option|option_bool|option_int)\s*\(\s*'([A-Za-z0-9_]+)'/",
+                $src,
+                $m
+            )) {
+                foreach ($m[1] as $k) {
+                    $cache[(string) $k] = true;
+                }
+            }
+        }
+    }
+    return isset($cache[(string) $key]);
 }
 
 /**
@@ -259,10 +346,18 @@ add_action('init', function () {
             if ('dry_run' !== $op && 'clean' !== $op) {
                 return array('ok' => false, 'msg' => __('不支持的操作', 'zhiji'));
             }
-            $res = zhiji_config_janitor_run('dry_run' === $op);
+            $res  = zhiji_config_janitor_run('dry_run' === $op);
             $keys = $res['keys'] ? ('：' . implode('、', array_slice($res['keys'], 0, 30))
                 . (count($res['keys']) > 30 ? ' 等' : '')) : '';
-            return array('ok' => (bool) $res['ok'], 'msg' => $res['message'] . $keys);
+            $skip = '';
+            if (!empty($res['skipped_in_use'])) {
+                $skip = sprintf(
+                    '　⚠ 跳过 %d 个仍在使用的键：%s（废弃表登记有误，请核实）',
+                    count($res['skipped_in_use']),
+                    implode('、', $res['skipped_in_use'])
+                );
+            }
+            return array('ok' => (bool) $res['ok'], 'msg' => $res['message'] . $keys . $skip);
         },
         /**
          * 详情抽屉：本场景的行不是 ClaimLog 形态（没有 event/time/user 那套语义），

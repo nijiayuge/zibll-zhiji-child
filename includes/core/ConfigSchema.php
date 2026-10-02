@@ -178,7 +178,6 @@ function zhiji_config_deprecated_keys()
 
         // ── 其他：曾存在但当前无对应字段 ──
         'security_scanner_enabled'   => '安全扫描开关（与 security_scan_enabled 重复，已统一）',
-        'monitor_404_track_logged_in' => '404 监控是否统计登录用户（字段已并入 monitor_404_enabled 的 desc）',
 
         // ── v1 遗留：奖励规则在 v2 迁到 RewardCenter，键名同步改过 ──
         'comment_fortune_w_points'   => 'v1 遗留：福袋积分权重（已迁至 reward_center_w_points）',
@@ -362,6 +361,16 @@ function zhiji_config_known_keys()
         }
         if (preg_match_all("/['\"]id['\"]\s*=>\s*['\"]([A-Za-z0-9_]+)['\"]/", $src, $m)) {
             foreach ($m[1] as $k) {
+                $map[(string) $k] = true;
+            }
+        }
+        // ⚠️ 动态注册：zhiji_field_switch('键名', ...) / zhiji_field_*(...) 这类
+        //    **首参就是字段 id**，但源码里没有 `'id' => 'xxx'` 字面量。
+        //    漏掉它们会造成「活键被判成来路不明」→ 误报，甚至被误当成废弃键回收。
+        //    （2026-10-02 真实踩到：monitor_404_track_logged_in 被我误登记成废弃键，
+        //      执行前复核「仍被源码读取」这一项把它拦下来了。）
+        if (preg_match_all("/zhiji_field_[a-z_]+\(\s*'([A-Za-z0-9_]+)'/", $src, $m2)) {
+            foreach ($m2[1] as $k) {
                 $map[(string) $k] = true;
             }
         }
