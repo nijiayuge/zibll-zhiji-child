@@ -103,7 +103,12 @@ function zhiji_reward_center_register_options() {
 				array(
 					'type'    => 'subheading',
 					'title'   => __( '① 评论福袋 · 抽哪种（权重表）', 'zhiji' ),
-					'desc'    => __( '评论福袋每次触发时从下表随机抽一种。权重越大越容易被抽中；全为 0 时保底发积分；「免单券权重」决定「谢谢参与」（没抽中）的概率。', 'zhiji' ),
+				),
+				array(
+					'type'    => 'submessage',
+					'style'   => 'info',
+					'content' => __( '评论福袋每次触发时从下表<b>随机抽一种</b>。权重越大越容易被抽中；全为 0 时保底发积分；'
+						. '「免单券权重」决定「谢谢参与」（没抽中）的概率。', 'zhiji' ),
 				),
 				array(
 					'id'      => 'reward_center_w_points',
@@ -149,7 +154,12 @@ function zhiji_reward_center_register_options() {
 				array(
 					'type'  => 'subheading',
 					'title' => __( '② 评论福袋 · 抽中给多少（数值区间）', 'zhiji' ),
-					'desc'  => __( '上一步决定「抽不抽中」，这一步决定「给多少」——实际发放值在最小值与最大值之间随机。', 'zhiji' ),
+				),
+				// ⚠️ subheading **不渲染 desc**（实测：写了也不显示）→ 说明文字用 submessage
+				array(
+					'type'    => 'submessage',
+					'style'   => 'info',
+					'content' => __( '上一步决定「抽不抽中」，这一步决定「给多少」—— 实际发放值在最小值与最大值之间随机。', 'zhiji' ),
 				),
 				array(
 					'id'      => 'reward_center_points_min',
@@ -194,8 +204,12 @@ function zhiji_reward_center_register_options() {
 				array(
 					'type'  => 'subheading',
 					'title' => __( '③ 优惠码 · 面值与有效期（评论福袋抽中券时用）', 'zhiji' ),
-					'desc'  => __( '在所选区间内随机出立减/折扣金额，各区间的上下限在「用户&互动 → 优惠码」中配置。'
-						. '注：注册迎新的迎新券面值走它自己的配置，不适用这里。', 'zhiji' ),
+				),
+				array(
+					'type'    => 'submessage',
+					'style'   => 'info',
+					'content' => __( '在所选区间内随机出立减 / 折扣金额，各区间的上下限在「用户&amp;互动 → 优惠码」中配置。'
+						. '注：<b>注册迎新</b>的迎新券面值走它自己的配置，不适用这里。', 'zhiji' ),
 				),
 				array(
 					'id'      => 'reward_center_coupon_scope',
@@ -244,7 +258,11 @@ function zhiji_reward_center_register_options() {
 				array(
 					'type'  => 'subheading',
 					'title' => __( '④ 全发模式（预留 · 当前无业务使用）', 'zhiji' ),
-					'desc'  => __( '一次性发放下列全部奖励（而非随机抽一种）。实测：目前没有任何业务在调用该模式 —— '
+				),
+				array(
+					'type'    => 'submessage',
+					'style'   => 'warning',
+					'content' => __( '一次性发放下列全部奖励（而非随机抽一种）。实测：<b>目前没有任何业务在调用该模式</b> —— '
 						. '评论福袋用「随机抽一种」，注册迎新与邮件订阅各发固定奖励。此处仅作能力预留。', 'zhiji' ),
 				),
 				array(
@@ -287,7 +305,6 @@ function zhiji_reward_center_register_options() {
 				array(
 					'type'  => 'subheading',
 					'title' => __( '附：勋章墙（只读 · 达成即自动授予，无需配置）', 'zhiji' ),
-					'desc'  => __( '勋章由业务事件自动授予，以下为站点当前已注册勋章。', 'zhiji' ),
 				),
 				array(
 					'type'    => 'content',
