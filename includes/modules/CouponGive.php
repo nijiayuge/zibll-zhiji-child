@@ -1504,9 +1504,7 @@ function zhiji_coupon_give_source_label( $meta ) {
 		// 均因缺映射而回落显示 title「奖励中心专属优惠码」（占 84% 的"来源清一色"成因）
 		'member_guide'         => __( '注册迎新', 'zhiji' ),
 		'points_mall'          => __( '积分商城兑换', 'zhiji' ),
-		'bargain'              => __( '砍价奖励', 'zhiji' ),
 		'email_subscribe'      => __( '邮件订阅', 'zhiji' ),
-		'seckill'              => __( '积分秒杀', 'zhiji' ),
 	) );
 
 	$source = isset( $meta['source'] ) ? trim( (string) $meta['source'] ) : '';

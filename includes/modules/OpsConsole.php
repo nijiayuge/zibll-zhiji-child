@@ -30,7 +30,7 @@ Zhiji_Registry::register_module('ops_console', array(
             'id'      => 'ops_kill_switch',
             'type'    => 'switcher',
             'title'   => '应急止血开关（暂停前台互动）',
-            'label'   => __( '⚠️ 严肃操作：开启后前台抽奖 / 秒杀 / 砍价 / 奖励发放等互动功能立即暂停。日常请使用「运维管理页面」的按钮操作（带审计记录）。', 'zhiji' ),
+            'label'   => __( '⚠️ 严肃操作：开启后前台抽奖 / 奖励发放等互动功能立即暂停。日常请使用「运维管理页面」的按钮操作（带审计记录）。', 'zhiji' ),
             'default' => false,
         ),
         array(

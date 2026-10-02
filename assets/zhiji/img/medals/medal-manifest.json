@@ -6,7 +6,6 @@
   "medals": {
     "首兑新人": { "file": "zhiji-medal-first-exchange.svg", "label": "首兑新人", "source": "own", "concept": "首次兑换礼品盒" },
     "兑换达人": { "file": "zhiji-medal-exchange-pro.svg", "label": "兑换达人", "source": "own", "concept": "兑换奖杯" },
-    "谈判专家": { "file": "zhiji-medal-bargain.svg", "label": "谈判专家", "source": "own", "concept": "砍价价签" },
     "学神认证": { "file": "zhiji-medal-quiz-master.svg", "label": "学神认证", "source": "own", "concept": "答题学位帽" },
     "夜猫子":   { "file": "zhiji-medal-night-owl.svg",   "label": "夜猫子",   "source": "own", "concept": "凌晨猫头鹰" },
     "彩蛋猎人": { "file": "zhiji-medal-egg-hunter.svg",  "label": "彩蛋猎人", "source": "own", "concept": "复活节彩蛋" },

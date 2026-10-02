@@ -66,7 +66,6 @@ function zhiji_reward_center_medals_html() {
 	$public = array(
 		'首兑新人' => '首次在积分商城兑换',
 		'兑换达人' => '累计兑换 10 次',
-		'谈判专家' => '砍价成功 1 次',
 		'学神认证' => '答题满分 3 次',
 	);
 	$hidden = array( '夜猫子', '彩蛋猎人', '坚持之王' );
@@ -94,7 +93,7 @@ function zhiji_reward_center_register_options() {
 					'id'      => 'reward_center_enabled',
 					'type'    => 'switcher',
 					'title'   => __( '启用奖励中心', 'zhiji' ),
-					'label'   => __( '全站统一发奖闸门：关闭后积分商城兑换失败（自动退积分）、砍价归零不发奖、迎新券/评论福袋/订阅奖励全部停发。', 'zhiji' ),
+					'label'   => __( '全站统一发奖闸门：关闭后积分商城兑换失败（自动退积分）、迎新券/评论福袋/订阅奖励全部停发。', 'zhiji' ),
 					'default' => true,
 				),
 				array(
@@ -229,7 +228,7 @@ function zhiji_reward_center_register_options() {
 						'0'      => __( '永久有效', 'zhiji' ),
 					),
 					'default' => 'random',
-					'desc'    => __( '2026-09-29 修复：此前奖励中心渠道发的券一律未写有效期（前台显示"永久有效"）。现按此规则写入 expire_time，覆盖积分商城兑换/砍价/注册迎新/评论福袋等全部奖励中心渠道；前台「我的优惠码 → 到期时间」即时生效。', 'zhiji' ),
+					'desc'    => __( '2026-09-29 修复：此前奖励中心渠道发的券一律未写有效期（前台显示"永久有效"）。现按此规则写入 expire_time，覆盖积分商城兑换/注册迎新/评论福袋等全部奖励中心渠道；前台「我的优惠码 → 到期时间」即时生效。', 'zhiji' ),
 				),
 
 				// —— 分节三：等级（复用父主题）——
@@ -257,7 +256,7 @@ function zhiji_reward_center_register_options() {
 
 				array(
 					'type'  => 'subheading',
-					'title' => __( '④ 兑换 / 全发模式（答题/砍价等达标后发放哪些奖励）', 'zhiji' ),
+					'title' => __( '④ 兑换 / 全发模式（答题等达标后发放哪些奖励）', 'zhiji' ),
 					'desc'  => __( '开启的奖励类型在「全发模式」下会全部发放；关闭则不发。随机模式不受此开关影响。', 'zhiji' ),
 				),
 				array(
@@ -362,7 +361,7 @@ function zhiji_reward_center_grant_random( $uid, $source = '', $overrides = arra
 }
 
 /**
- * 全发模式：发放所有已启用的奖励（答题/砍价达标用）。
+ * 全发模式：发放所有已启用的奖励（答题达标用）。
  *
  * @param int    $uid
  * @param string $source
@@ -511,12 +510,10 @@ function zhiji_reward_record_desc( $type, $overrides = array() ) {
 function zhiji_reward_center_overview_html() {
 	$channels = array(
 		array( 'points_mall',      '积分商城兑换', 'points_mall_enabled',      '兑换品列表 / 优惠码档位 / 有效期规则', 'points_mall' ),
-		array( 'bargain',          '砍价',         'bargain_enabled',          '时效 / 助力上限 / 归零奖励（可绑定商品）', 'bargain' ),
 		array( 'lottery',          '大转盘抽奖',   'lottery_enabled',          '奖品池 / 每日次数 / 积分加抽', 'lottery' ),
 		array( 'comment_fortune',  '评论福袋',     'comment_fortune_enabled',  '触发间隔 / 文案（奖励参数走这里）', 'comment_fortune' ),
 		array( 'member_guide',     '注册迎新',     'member_guide_enabled',     '迎新券开关 / 触达序列', 'member_guide' ),
 		array( 'email_subscribe',  '邮件订阅奖励', 'email_sub_enabled',        '订阅奖励积分 / 勾选文案', 'email_subscribe' ),
-		array( 'seckill',          '积分秒杀',     'seckill_enabled',          '活动列表（商品需设为积分商品）', 'points_mall' ),
 		array( 'quiz',             '互动答题',     'quiz_enabled',             '题库 / 每日次数 / 得分上限', 'quiz' ),
 	);
 
@@ -540,7 +537,7 @@ function zhiji_reward_center_overview_html() {
 		. '<div style="color:#666;font-size:12px;line-height:1.9;margin-bottom:8px">'
 		. '<b>三层配置语义</b>：① <b>全局层</b> = 本页上方总开关 + 发奖参数（积分/余额区间、优惠码面值与有效期规则）；'
 		. '② <b>渠道层</b> = 下表中各渠道自身的开关与规则（在各自分类内）；'
-		. '③ <b>活动层</b> = 兑换品 / 秒杀场次 / 奖品池等具体条目。'
+		. '③ <b>活动层</b> = 兑换品 / 奖品池等具体条目。'
 		. '</div>'
 		. '<table style="width:100%;border-collapse:collapse;font-size:13px">'
 		. '<thead><tr style="background:#f7f8fa;text-align:left">'

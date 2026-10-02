@@ -28,15 +28,8 @@ defined( 'ABSPATH' ) || exit;
  * ============================================================ */
     // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
     Zhiji_Registry::register_options('danmu', array(
-			array(
-				'id'      => 'danmu_event_bargain',
-				'type'    => 'switcher',
-				'title'   => __( '砍价成功上墙', 'zhiji' ),
-				'label'   => __( '开启后「砍价成功」事件写入弹幕池，即时上墙（FOMO 联动）。', 'zhiji' ),
-				'default' => true,
-			),
-			array(
-				'id'      => 'danmu_enabled',
+		array(
+			'id'      => 'danmu_enabled',
 				'type'    => 'switcher',
 				'title'   => '启用弹幕',
 				'default' => false,
@@ -486,7 +479,6 @@ function zhiji_danmu_type_config() {
 		'sign'     => array( 'label' => '新用户', 'color' => '#7bdcb5', 'icon' => '✅' ),
 		'lottery'  => array( 'label' => '中奖', 'color' => '#f78da7', 'icon' => '🎉' ),
 		'download' => array( 'label' => '下载', 'color' => '#3b82f6', 'icon' => '📥' ),
-		'bargain'  => array( 'label' => '砍价', 'color' => '#f2760b', 'icon' => '🔪' ),
 		'exchange' => array( 'label' => '兑换', 'color' => '#e8533f', 'icon' => '🎁' ),
 		'egg'      => array( 'label' => '彩蛋', 'color' => '#f7b500', 'icon' => '🥚' ),
 		'notice'   => array( 'label' => '公告', 'color' => '#6366f1', 'icon' => '📢' ),
@@ -514,25 +506,6 @@ function zhiji_danmu_on_lottery_win( $data ) {
 	zhiji_danmu_push( 'lottery', $uid, $content, $link );
 }
 add_action( 'zhiji_event_lottery_win', 'zhiji_danmu_on_lottery_win', 10, 1 );
-
-/**
- * 事件源 5（砍价联动）：订阅砍价成功事件广播。
- *
- * 砍价模块在砍到底价发放优惠码后调用 zhiji_event_fire('bargain_success', $data)，
- * 这里将砍价成功信息写入弹幕事件池，实现「砍价成功即时上墙」。
- *
- * @param array $data {uid,name,type,value,content,url}
- */
-function zhiji_danmu_on_bargain_success( $data ) {
-	if ( ! zhiji_get_option( 'danmu_event_bargain', 1 ) ) {
-		return;
-	}
-	$content = isset( $data['content'] ) ? (string) $data['content'] : '砍价成功，获得砍后价优惠码';
-	$link    = isset( $data['url'] ) ? $data['url'] : home_url( '/' );
-	$uid     = isset( $data['uid'] ) ? (int) $data['uid'] : 0;
-	zhiji_danmu_push( 'bargain', $uid, $content, $link );
-}
-add_action( 'zhiji_event_bargain_success', 'zhiji_danmu_on_bargain_success', 10, 1 );
 
 /**
  * 事件源 3：支付购买成功（父主题 zibpay payment_order_success 钩子）。

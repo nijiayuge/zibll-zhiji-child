@@ -176,7 +176,6 @@ add_filter('user_medal_args', function ($args) {
     $new = array(
         array('name' => '首兑新人', 'desc' => '首次在积分商城兑换', 'icon' => zhiji_medal_icon('首兑新人'), 'get_type' => 'points_mall_exchange', 'get_val' => 1),
         array('name' => '兑换达人', 'desc' => '累计兑换 10 次', 'icon' => zhiji_medal_icon('兑换达人'), 'get_type' => 'points_mall_exchange', 'get_val' => 10),
-        array('name' => '谈判专家', 'desc' => '砍价成功 1 次', 'icon' => zhiji_medal_icon('谈判专家'), 'get_type' => 'bargain_success', 'get_val' => 1),
         array('name' => '学神认证', 'desc' => '答题满分 3 次', 'icon' => zhiji_medal_icon('学神认证'), 'get_type' => 'quiz_perfect', 'get_val' => 3),
         // 隐藏成就（2026-09-29）：触发条件不公示，desc 仅作解锁后注解；无 get_type → 只能由事件授予
         array('name' => '夜猫子', 'desc' => '隐藏成就 · 凌晨的秘密行动', 'icon' => zhiji_medal_icon('夜猫子')),
@@ -201,11 +200,6 @@ add_action('zhiji_pmall_exchanged', function ($uid) {
     update_user_meta($uid, 'zhiji_pmall_exchange_count', $n);
     if (1 === $n)       { Zhiji_Adapter::add_user_medal($uid, '首兑新人', '首次在积分商城兑换'); }
     if (10 === $n)      { Zhiji_Adapter::add_user_medal($uid, '兑换达人', '累计兑换 10 次'); }
-}, 10, 1);
-
-add_action('zhiji_bargain_success', function ($uid) {
-    if (!function_exists('zib_add_user_medal')) { return; }
-    Zhiji_Adapter::add_user_medal($uid, '谈判专家', '砍价成功');
 }, 10, 1);
 
 /**

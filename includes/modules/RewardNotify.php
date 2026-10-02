@@ -192,7 +192,6 @@ function zhiji_reward_notify_source_text( $source ) {
 	$map = array(
 		'comment_fortune'      => __( '评论福袋', 'zhiji' ),
 		'comment_fortune_free' => __( '评论福袋免单券', 'zhiji' ),
-		'bargain'              => __( '砍价成功奖励', 'zhiji' ),
 		'lottery'              => __( '每日抽奖', 'zhiji' ),
 		'direct'               => __( '挽留弹窗福利', 'zhiji' ),
 		'ref_bonus'            => __( '分享奖励', 'zhiji' ),
@@ -386,7 +385,7 @@ function zhiji_reward_notify_register_options() {
 				),
 				array(
 					'type'    => 'content',
-					'content' => __( '说明：本模块为全站奖励通知的统一入口；评论福袋、砍价等已接入；抽奖、挽留弹窗/裂变奖励沿用各自已有的站内通知+邮件。', 'zhiji' ),
+					'content' => __( '说明：本模块为全站奖励通知的统一入口；评论福袋等已接入；抽奖、挽留弹窗/裂变奖励沿用各自已有的站内通知+邮件。', 'zhiji' ),
 				),
 			), 30 );
 }

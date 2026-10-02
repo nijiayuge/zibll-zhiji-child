@@ -36,7 +36,7 @@ Zhiji_Registry::register_options('points_mall', array(
         'id'      => 'points_mall_enabled',
         'type'    => 'switcher',
         'title'   => __( '启用积分商城', 'zhiji' ),
-        'label'   => __( '开启后提供「积分商城」页（优惠码兑换 + 积分秒杀专区）。', 'zhiji' ),
+        'label'   => __( '开启后提供「积分商城」页（优惠码兑换）。', 'zhiji' ),
         'default' => true,
     ),
     array(
@@ -470,12 +470,6 @@ function zhiji_pmall_shortcode()
         $out .= '</div></div>'; // 关闭 right + card
     }
     $out .= '</div>';
-
-    // 积分秒杀专区（2026-09-29 新增商品类型）：Seckill 模块启用时自动追加到商城页
-    if (function_exists('zhiji_seckill_shortcode')) {
-        $out .= zhiji_seckill_shortcode();
-    }
-
     $out .= '</div>';
     return $out;
 }
