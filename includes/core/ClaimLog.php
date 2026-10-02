@@ -440,6 +440,24 @@ function zhiji_claim_log_check(array $args)
         zhiji_claim_log_email_key($email)
     ));
 
+    // 2026-10-03 排除 fixture（联调测试数据）
+    // ⚠️ 此前查询只看 scene+email_key，不过滤 meta.fixture →
+    //    联调期塞进生产表的 fixture 记录会**参与风控判定**，让该邮箱被永久拦截。
+    //    实测踩到：记录 id=83（source=selftest、meta={"fixture":true}）仍在拦领取。
+    //    fixture 本来就不该拦真实用户，故在此显式剔除。
+    if (is_array($rows) && $rows) {
+        $kept = array();
+        foreach ($rows as $r) {
+            $is_fixture = (isset($r->source) && 'selftest' === $r->source)
+                || (isset($r->meta) && false !== strpos((string) $r->meta, '"fixture":true'));
+            if ($is_fixture) {
+                continue;
+            }
+            $kept[] = $r;
+        }
+        $rows = $kept;
+    }
+
     if (is_array($rows) && $rows) {
         $active  = null;
         $cleared = null;
