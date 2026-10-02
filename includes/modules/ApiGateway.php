@@ -141,3 +141,95 @@ function zhiji_api_gateway()
     // 2026-09-29：移除「AJAX 统一网关」后台分节 —— 网关常驻启用（见上方 always_on），
     // 该分节只有一条公告、没有任何可配置项，属于「空分类」（用户反馈：左侧菜单出现
     // 无开关项的空分类）。公告语义已并入上方文件头注释。
+
+/* ============================================================
+ * Api 契约实现（P5，5 个契约的最后一个）
+ * ------------------------------------------------------------
+ * 契约签名与 core/ApiRegistry 的实际能力已对齐（这里同样按现实而非按原始设计稿）：
+ *   · register($name, $handler, $login, $group)
+ *     实际注册表第三参是 **$public**（是否允许游客），第四参是 $nonce_action，
+ *     没有 $group。→ 契约的 $group 映射为 nonce 分组前缀，$login 取反映射到 $public。
+ *   · has($name) 与注册表的 zhiji_api_has() 同义。
+ *   · 额外补 handlers() —— 「有哪些端点」是排障与自检的刚需，
+ *     原始契约没考虑，实际 ops/ajax 审计工具都要用。
+ * ============================================================ */
+
+if ( ! class_exists( 'Zhiji_Api_ApiGateway' ) ) :
+
+	/**
+	 * 统一 AJAX 网关（实现 Zhiji_Contract_Api）
+	 */
+	class Zhiji_Api_ApiGateway implements Zhiji_Contract_Api {
+
+		/**
+		 * 注册端点
+		 *
+		 * @param string   $name    端点名
+		 * @param callable $handler 处理函数
+		 * @param bool     $login   true=要求登录（契约语义）→ 内部取反成 public
+		 * @param string   $group   分组：作为 nonce 动作前缀，便于按组批量跳过校验
+		 * @return void
+		 */
+		public function register( $name, $handler, $login = true, $group = '' ) {
+			$nonce = ( '' === (string) $group )
+				? 'zhiji_nonce'
+				: 'zhiji_nonce_' . sanitize_key( $group );
+			// ⚠️ 契约的 $login 与注册表的 $public 语义相反，这里显式取反；
+			//    写反会导致「要求登录」变成「允许游客」—— 安全后果，故单独注释。
+			zhiji_api_register( $name, $handler, ! $login, $nonce );
+		}
+
+		/**
+		 * 端点是否存在
+		 *
+		 * @param string $name
+		 * @return bool
+		 */
+		public function has( $name ) {
+			return (bool) zhiji_api_has( $name );
+		}
+
+		/**
+		 * 全部已注册端点（排障 / 自检 / 审计用）
+		 *
+		 * @return array<string,array>
+		 */
+		public function handlers() {
+			return (array) zhiji_api_get_handlers();
+		}
+
+		/**
+		 * 端点清单的可读摘要（后台展示用）
+		 *
+		 * @return array<int,string>
+		 */
+		public function summary() {
+			$out = array();
+			foreach ( $this->handlers() as $name => $h ) {
+				$out[] = sprintf(
+					'%s（%s%s）',
+					$name,
+					! empty( $h['public'] ) ? '游客可访问' : '需登录',
+					'' === (string) $h['nonce'] ? ' / 自校验 nonce' : ''
+				);
+			}
+			sort( $out );
+			return $out;
+		}
+	}
+
+endif;
+
+/**
+ * 契约工厂：供 ContractRegistry 解析（工厂名规则 zhiji_contract_implementor_{模块key}）
+ *
+ * @return Zhiji_Contract_Api
+ */
+function zhiji_contract_implementor_api_gateway() {
+	static $impl = null;
+	if ( null === $impl ) {
+		$impl = new Zhiji_Api_ApiGateway();
+	}
+	return $impl;
+}
+
