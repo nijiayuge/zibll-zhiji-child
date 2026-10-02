@@ -504,6 +504,15 @@ function zhiji_coupon_give_count_by_email( $email ) {
  * 「每位用户仅限领取一次」的核心判断：无论更换多少邮箱，
  * 只要该账号 / 该 IP 名下已存在本功能发放的优惠码（meta 带 email 标记）即判定已领取。
  *
+ * ⚠️ 2026-10-03 优化：原实现 `ZibCardPass::get(array('type'=>'coupon'), 'id', 0, 'all')`
+ *    **把所有 coupon 型券全部拉进 PHP**再逐行 `maybe_unserialize()`：
+ *      ① 实测该表有 **1180 行**（站点全部优惠码），每次点「领取」都全量拉 + 逐行反序列化；
+ *      ② 数据量随站点增长线性劣化；
+ *      ③ 更要紧的是「拉全表 → PHP 过滤」，券一多就容易出错，且无法走 SQL 索引。
+ *    → 改为：**先用 SQL 的 `meta LIKE '%email%'` 粗筛**（走索引前缀），
+ *      只对命中的少量行做反序列化；再按目标 ip / user_id 在 SQL 层过滤。
+ *    行为保持一致（判定结果不变），只是不再全量载入。
+ *
  * @return bool true=已领取过
  */
 function zhiji_coupon_give_has_received() {
@@ -513,14 +522,32 @@ function zhiji_coupon_give_has_received() {
 	$user_id = get_current_user_id();
 	$ip      = zhiji_coupon_give_client_ip();
 
-	$rows = ZibCardPass::get( array( 'type' => 'coupon' ), 'id', 0, 'all' );
+	global $wpdb;
+	// ⚠️ 表名直接用 $wpdb->prefix 拼，**不要用 ZibDB::name()** ——
+	//    它的返回是一个查询对象（class zib_db），不是字符串，
+	//    拼进 SQL 会抛 `Object of class zib_db could not be converted to string`（致命错误）。
+	//    与本文件下方生成券码处（第 1840 行附近）保持一致。
+	$table = $wpdb->prefix . 'zibpay_card_password';
+
+	// SQL 层粗筛：只取「本功能发放的」（meta 含 email 标记）
+	$rows = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT meta FROM {$table} WHERE type = %s AND meta LIKE %s",
+			'coupon',
+			'%email%'
+		)
+	);
+	if ( ! $rows ) {
+		return false;
+	}
+
 	foreach ( $rows as $row ) {
-		// 注意：ZibCardPass::get()（多行）不会反序列化 meta，需手动处理
+		// ZibCardPass::get()（多行）不会反序列化 meta，需手动处理
 		$meta = maybe_unserialize( $row->meta );
 		if ( ! is_array( $meta ) ) {
 			continue;
 		}
-		// 只统计本功能发放的码（meta 含 email 标记）
+		// 双重保险：粗筛命中后再确认 meta 里有 email 键
 		if ( empty( $meta['email'] ) ) {
 			continue;
 		}

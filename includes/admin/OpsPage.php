@@ -167,7 +167,15 @@ function zhiji_ops_render_overview()
                         <?php if ($stats) : ?>
                             <div class="zhiji-ops-chipset">
                                 <?php foreach ($stats as $card) : ?>
-                                    <span class="zhiji-ops-chip"><?php echo esc_html($card['label'] . ' ' . $card['value']); ?></span>
+                                    <span class="zhiji-ops-chip"><?php
+                                        // ⚠️ 2026-10-03 补防御：场景回调可能返回不完整结构
+                                        //    （曾报 `Trying to access array offset on value of type int`）。
+                                        //    场景是插件式扩展（scenes/*.php 可自行添加），
+                                        //    渲染层不能假设每个 item 都有 label/value。
+                                        $lbl = (isset($card['label']) && is_scalar($card['label'])) ? $card['label'] : '';
+                                        $val = (isset($card['value']) && is_scalar($card['value'])) ? $card['value'] : '';
+                                        echo esc_html($lbl . ' ' . $val);
+                                    ?></span>
                                 <?php endforeach; ?>
                             </div>
                         <?php endif; ?>
@@ -456,7 +464,11 @@ function zhiji_ops_render_scene($id)
                             <?php foreach ($scene['columns'] as $col) : ?>
                                 <td>
                                     <?php
-                                    if (is_callable($col['render'])) {
+                                    // ⚠️ 2026-10-03 补防御：曾报 `Undefined array key "render"`。
+                                    //    columns 里 'render'/'export' 都是**可选**键，
+                                    //    纯 key 型列（如 ['key'=>'time','label'=>'发生时间']）本就没有 render。
+                                    //    之前的 `is_callable($col['render'])` 直接访问未定义键 → Warning。
+                                    if (isset($col['render']) && is_callable($col['render'])) {
                                         call_user_func($col['render'], $row, $id);
                                     } elseif (isset($row->{$col['key']})) {
                                         echo esc_html((string) $row->{$col['key']});
