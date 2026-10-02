@@ -2,7 +2,6 @@
 /**
  * @module  EasterEgg
  * @desc    站点彩蛋：全站任意页面按「上上下下左右左右BA」秘技（Konami Code）触发，
- *          服务端授予隐藏勋章「彩蛋猎人」+ FOMO 弹幕广播。访客未登录仅提示。
  * @option  easter_egg_enabled  总开关
  * @hook    zhiji_api zhiji_easter_egg · 彩蛋上报（幂等：每人仅首次授予）
  * @since   2.0.0（2026-09-29 新增）
@@ -25,7 +24,7 @@ Zhiji_Registry::register_options('easter_egg', array(
         'type'    => 'submessage',
         'style'   => 'info',
         'content' => __('全站任意页面键盘输入 <code>↑ ↑ ↓ ↓ ← → ← → B A</code>（经典秘技）触发隐藏成就「彩蛋猎人」。'
-            . '触发后自动授予勋章 + FOMO 弹幕全站广播。仅桌面端（键盘）可触发。', 'zhiji'),
+            . '触发后自动授予勋章。仅桌面端（键盘事件）才触发。'),
     ),
     array(
         'id'      => 'easter_egg_enabled',
@@ -60,12 +59,6 @@ function zhiji_egg_ajax_report()
         $ok = zhiji_medal_award_once($uid, '彩蛋猎人', 'zhiji_medal_egg', '发现了站点里的小秘密', 'medal_egg');
     }
 
-    // FOMO 弹幕广播（首次发现才上墙）
-    if ($ok && function_exists('zhiji_danmu_push')) {
-        $u   = get_userdata($uid);
-        $name = $u ? ($u->display_name ? $u->display_name : $u->user_login) : '一位幸运儿';
-        zhiji_danmu_push('egg', $uid, '发现了站里的隐藏彩蛋！你也来试试 ' . home_url('/'));
-    }
 
     if ($ok) {
         wp_send_json_success(array('msg' => '🥚 恭喜解锁隐藏成就「彩蛋猎人」！'));
@@ -91,7 +84,7 @@ function zhiji_egg_enqueue()
     if (!zhiji_is_enabled('easter_egg_enabled', false)) {
         return;
     }
-    zhiji_asset_add_js('points_mall_cfg_egg', 'window.ZHIJI_EGG_AJAX=' . wp_json_encode(admin_url('admin-ajax.php')) . ';');
+    zhiji_asset_add_js('egg_cfg', 'window.ZHIJI_EGG_AJAX=' . wp_json_encode(admin_url('admin-ajax.php')) . ';');
     $js = "(function(){var S=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];var i=0;document.addEventListener('keydown',function(e){var k=e.key||e.keyCode;i=(e.key===S[i]||(e.key&&e.key.toLowerCase()===S[i]))?i+1:(e.key===S[0]?1:0);if(i===S.length){i=0;var d=new FormData();d.append('action','zhiji_api');d.append('api','zhiji_easter_egg');fetch(window.ZHIJI_EGG_AJAX||'/wp-admin/admin-ajax.php',{method:'POST',credentials:'same-origin',body:d}).then(function(r){return r.json()}).then(function(j){var m=(j.data&&j.data.msg)||'';if(m){alert(m)}}).catch(function(){})}})})();";
     zhiji_asset_add_js('easter_egg', $js);
 }

@@ -785,11 +785,6 @@ function zhiji_coupon_give_ajax() {
 	// 8.3 站内通知联动：登录用户领取后发送系统通知（复用父主题 ZibMsg）
 	zhiji_coupon_give_notify_user( $user_id, $code, $discount_text, $expire_time, 'direct' );
 
-	// 8.4 FOMO 弹幕联动（2026-09-29 新增）：领取成功推弹幕（匿名化处理）
-	if ( function_exists( 'zhiji_danmu_push' ) ) {
-		$masked  = substr( $email, 0, 2 ) . '***' . substr( strrchr( $email, '@' ), 0 );
-		zhiji_danmu_push( 'claim', $user_id, sprintf( '刚刚领取了「%s」优惠码', $meta['title'] ), '', array( 'email' => $masked ) );
-	}
 
 	// 8.5 分享裂变：若开启了裂变且好友通过邀请链接提交了 ref，给邀请者发奖励码
 	if ( zhiji_get_option( 'coupon_give_ref_enabled', 0 ) && ! empty( $_POST['ref'] ) ) {
@@ -1218,7 +1213,7 @@ HTML;
 
 /* =====================================================================
  * 三、挽留弹窗内的「输入邮箱领取优惠码」表单
- *    由 inc/Functions/ExitIntent.php 调用 zhiji_coupon_give_exit_block()
+ *
  * ===================================================================== */
 
 /**
@@ -1503,7 +1498,6 @@ function zhiji_coupon_give_source_label( $meta ) {
 		// 2026-09-29 补全：DB 实测 500 张券中 member_guide=340 / points_mall=55 / bargain=28
 		// 均因缺映射而回落显示 title「奖励中心专属优惠码」（占 84% 的"来源清一色"成因）
 		'member_guide'         => __( '注册迎新', 'zhiji' ),
-		'points_mall'          => __( '积分商城兑换', 'zhiji' ),
 		'email_subscribe'      => __( '邮件订阅', 'zhiji' ),
 	) );
 

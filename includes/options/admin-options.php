@@ -43,9 +43,7 @@ function zhiji_csf_admin_options()
     $cats = array(
         'zhiji_basic'    => array('全局&功能', 'fa fa-fw fa-bullseye'),
         'zhiji_page'     => array('页面&显示', 'fa fa-fw fa-desktop'),
-        'zhiji_element'  => array('页面元素', 'fa fa-fw fa-th-large'),
         'zhiji_post'     => array('文章&列表', 'fa fa-fw fa-file-text-o'),
-        'zhiji_beautify' => array('美化效果', 'fa fa-fw fa-paint-brush'),
         'zhiji_user'     => array('用户&互动', 'fa fa-fw fa-users'),
         'zhiji_comment'  => array('评论&互动', 'fa fa-fw fa-comments-o'),
         'zhiji_interact' => array('互动&趣味', 'fa fa-fw fa-gamepad'),

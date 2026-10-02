@@ -13,9 +13,7 @@
  *
  *          声明示例（模块文件内）：
  *          Zhiji_Registry::register_module('points_mall', array(
- *              'title' => '积分商城', 'parent' => 'zhiji_user',
  *              'pages' => array(
- *                  array('slug' => 'points-mall', 'title' => '积分商城', 'content' => '[zhiji_points_mall]'),
  *              ),
  *          ));
  *

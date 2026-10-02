@@ -1,7 +1,7 @@
 <?php
 /**
  * @module  Weiyu
- * @desc    微语时间线：shuoshuo CPT + 页面模板（点赞支持弹幕联动、同源校验 + IP 限频）
+ * @desc    微语时间线：shuoshuo CPT + 页面模板（点赞支持同源校验 + IP 限频）
  * @option  weiyu_enabled         总开关
  *          weiyu_posts_per_page  每页条数
  *          weiyu_show_avatar     显示头像
@@ -122,10 +122,6 @@ function zhiji_weiyu_like()
     $raters = get_post_meta($id, 'bigfa_ding', true);
     update_post_meta($id, 'bigfa_ding', ($raters && is_numeric($raters)) ? (int) $raters + 1 : 1);
 
-    // 弹幕联动（Danmu 模块启用时）
-    if (function_exists('zhiji_danmu_push')) {
-        zhiji_danmu_push('like', get_current_user_id(), '赞了一条动态', get_permalink($id));
-    }
 
     echo get_post_meta($id, 'bigfa_ding', true);
     die;
@@ -166,7 +162,7 @@ function zhiji_weiyu_like()
             'type'       => 'switcher',
             'title'      => '启用说说点赞',
             'default'    => true,
-            'desc'       => '开启后每条微语显示点赞按钮（同源校验 + IP 限频），支持与弹幕联动。',
+            'desc'       => '开启后每条微语显示点赞按钮（同源校验 + IP 限频）。',
             'dependency' => array('weiyu_enabled', '==', '1'),
         ),
     ), 20);

@@ -309,7 +309,7 @@ function zhiji_ops_render_activity($scene = '', $limit = 10)
  * 渲染审计条目列表（2026-09-29 从 render_activity 抽出 —— 供场景页简版与总览审计面板复用）
  *
  * 结果徽标：success=绿 / denied·error=红；旧数据（无 outcome 字段）不标 —— 不猜、不误标。
- * 每行附 来源 IP + 事件 ID 前 8 位（可在沟通/工单里直接引用）。
+ * 每行附 来源 IP + 事件 ID 前 8 位（可在沟通里直接引用）。
  *
  * @param array $rows 审计条目数组
  * @return void

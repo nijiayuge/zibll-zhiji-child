@@ -5,7 +5,7 @@
  * @option  kanban_enabled   总开关
  *          kanban_position  显示位置 left|right
  * @hook    wp_footer · 输出容器与懒加载脚本
- * @event   监听/派发 zhiji_kanban_event（供 ExitIntent 等模块联动说话）
+ * @event   监听/派发 zhiji_kanban_event（预留跨模块联动）
  * @since   2.0.0
  * @migrate 自 v1 `inc/Functions/Kanban.php`
  *          ⚠️ 修复：v1 硬编码旧域名 zhiji.bbroot.com + 旧主题路径 zhiji-child，

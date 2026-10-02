@@ -125,7 +125,6 @@ class Zhiji_Registry
             return true;
         }
         // 允许模块声明"默认启用"：option 未设置时回落到 enabled_default（默认 false）。
-        // 2026-09-29 批3：积分商城默认开启（与原短码/入队逻辑一致，避免 option 未设时不建前台页）
         $default = !empty(self::$modules[$key]['enabled_default']);
         return zhiji_is_enabled(self::$modules[$key]['option'], $default);
     }
@@ -219,19 +218,9 @@ class Zhiji_Registry
             'seed_pages'              => 'fa fa-fw fa-flask',
             // 页面&显示
             'friend_link_apply'       => 'fa fa-fw fa-link',
-            'history_today'           => 'fa fa-fw fa-calendar',
-            'infomation'              => 'fa fa-fw fa-newspaper-o',
             'kanban'                  => 'fa fa-fw fa-smile-o',
-            'ticket'                  => 'fa fa-fw fa-ticket',
             'weiyu'                   => 'fa fa-fw fa-commenting-o',
             // 页面元素
-            'exit_intent'             => 'fa fa-fw fa-hand-paper-o',
-            'flatterer'               => 'fa fa-fw fa-heart-o',
-            'home_search_box'         => 'fa fa-fw fa-search',
-            'image_layout'            => 'fa fa-fw fa-file-image-o',
-            'life_countdown'          => 'fa fa-fw fa-hourglass-half',
-            'stats_widget'            => 'fa fa-fw fa-bar-chart',
-            'tag_cloud_3d'            => 'fa fa-fw fa-tags',
             // 文章&列表
             'article_expire'          => 'fa fa-fw fa-clock-o',
             'auto_image_alt'          => 'fa fa-fw fa-camera',
@@ -242,20 +231,12 @@ class Zhiji_Registry
             'transplant_beautify'     => 'fa fa-fw fa-magic',
             'tts'                     => 'fa fa-fw fa-volume-up',
             // 美化效果
-            'color_tokens'            => 'fa fa-fw fa-tint',
-            'danmu'                   => 'fa fa-fw fa-bullhorn',
-            'effects_beautify'        => 'fa fa-fw fa-star',
-            'misc_beautify'           => 'fa fa-fw fa-adjust',
-            'notfound_game'           => 'fa fa-fw fa-puzzle-piece',
-            'site_font'               => 'fa fa-fw fa-font',
             // 用户&互动
-            'consume_rank'            => 'fa fa-fw fa-trophy',
             'email_subscribe'         => 'fa fa-fw fa-envelope-o',
             'lottery'                 => 'fa fa-fw fa-life-ring',
             'mail_template'           => 'fa fa-fw fa-envelope',
             'member_guide'            => 'fa fa-fw fa-compass',
             'password_strength'       => 'fa fa-fw fa-key',
-            'points_mall'             => 'fa fa-fw fa-shopping-cart',
             'reward_center'           => 'fa fa-fw fa-gift',
             'reward_notify'           => 'fa fa-fw fa-bell-o',
             'streak_guard'            => 'fa fa-fw fa-fire',

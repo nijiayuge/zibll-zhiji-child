@@ -64,7 +64,6 @@ function zhiji_reward_center_vip_level_options() {
  */
 function zhiji_reward_center_medals_html() {
 	$public = array(
-		'首兑新人' => '首次在积分商城兑换',
 		'兑换达人' => '累计兑换 10 次',
 		'学神认证' => '答题满分 3 次',
 	);
@@ -93,7 +92,7 @@ function zhiji_reward_center_register_options() {
 					'id'      => 'reward_center_enabled',
 					'type'    => 'switcher',
 					'title'   => __( '启用奖励中心', 'zhiji' ),
-					'label'   => __( '全站统一发奖闸门：关闭后积分商城兑换失败（自动退积分）、迎新券/评论福袋/订阅奖励全部停发。', 'zhiji' ),
+					'label'   => __( '全站统一发奖闸门：关闭后各奖励渠道全部停发、迎新券/评论福袋/订阅奖励全部停发。', 'zhiji' ),
 					'default' => true,
 				),
 				array(
@@ -228,7 +227,7 @@ function zhiji_reward_center_register_options() {
 						'0'      => __( '永久有效', 'zhiji' ),
 					),
 					'default' => 'random',
-					'desc'    => __( '2026-09-29 修复：此前奖励中心渠道发的券一律未写有效期（前台显示"永久有效"）。现按此规则写入 expire_time，覆盖积分商城兑换/注册迎新/评论福袋等全部奖励中心渠道；前台「我的优惠码 → 到期时间」即时生效。', 'zhiji' ),
+					'desc'    => __( '2026-09-29 修复：此前奖励中心渠道发的券一律未写有效期（前台显示"永久有效"）。现按此规则写入 expire_time，覆盖注册迎新/评论福袋等全部奖励中心渠道；前台「我的优惠码 → 到期时间」即时生效。', 'zhiji' ),
 				),
 
 				// —— 分节三：等级（复用父主题）——
@@ -509,7 +508,6 @@ function zhiji_reward_record_desc( $type, $overrides = array() ) {
  */
 function zhiji_reward_center_overview_html() {
 	$channels = array(
-		array( 'points_mall',      '积分商城兑换', 'points_mall_enabled',      '兑换品列表 / 优惠码档位 / 有效期规则', 'points_mall' ),
 		array( 'lottery',          '大转盘抽奖',   'lottery_enabled',          '奖品池 / 每日次数 / 积分加抽', 'lottery' ),
 		array( 'comment_fortune',  '评论福袋',     'comment_fortune_enabled',  '触发间隔 / 文案（奖励参数走这里）', 'comment_fortune' ),
 		array( 'member_guide',     '注册迎新',     'member_guide_enabled',     '迎新券开关 / 触达序列', 'member_guide' ),
@@ -670,11 +668,9 @@ function zhiji_reward_center_grant_one( $uid, $type, $source = '', $overrides = 
 }
 
 /* ============================================================
- * 3. 工具函数：奖励文本摘要（供弹幕/通知用）
  * ============================================================ */
 
 /**
- * 将奖励数组转为简短文本（弹幕用）。
  *
  * @param array $reward 单条奖励数组
  * @return string

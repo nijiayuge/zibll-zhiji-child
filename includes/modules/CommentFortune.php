@@ -71,7 +71,7 @@ function zhiji_comment_fortune_on_comment( $comment_id, $comment_approved, $comm
 }
 
 /**
- * 发放一个福袋：写弹窗标记 + 持久化「待领取」记录 + 奖励通知 + 弹幕播报
+ * 发放一个福袋：持久化「待领取」记录 + 奖励通知
  *
  * 2026-09-27：从 on_comment 抽出为独立函数，便于直接调用与联调（不必真发评论）。
  *
@@ -113,25 +113,6 @@ function zhiji_comment_fortune_dispatch( $uid, $count ) {
 		zhiji_reward_notify( $uid, $reward, $notify_source );
 	}
 
-	// 弹幕联动：锦鲤必有奖励，按奖励类型上墙播报
-	if ( function_exists( 'zhiji_danmu_push' ) ) {
-		$danmu = '评论锦鲤第 ' . $count . ' 位，抽中了';
-		switch ( $reward['type'] ) {
-			case 'vip':
-				$danmu .= $reward['val'] . ' 天会员权益！';
-				break;
-			case 'free':
-				$danmu .= '一张免单券！';
-				break;
-			case 'coupon':
-				$danmu .= '一张优惠码！';
-				break;
-			default:
-				$danmu .= $reward['val'] . ' ' . $reward['name'] . '！';
-				break;
-		}
-		zhiji_danmu_push( 'fortune', $uid, $danmu );
-	}
 
 	return true;
 }

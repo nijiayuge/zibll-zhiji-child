@@ -174,8 +174,6 @@ add_filter('user_medal_args', function ($args) {
     }
     // 图标走 zhiji_medal_icon()：子主题自绘优先，缺失回退父主题兜底（2026-09-29 勋章本地化）
     $new = array(
-        array('name' => '首兑新人', 'desc' => '首次在积分商城兑换', 'icon' => zhiji_medal_icon('首兑新人'), 'get_type' => 'points_mall_exchange', 'get_val' => 1),
-        array('name' => '兑换达人', 'desc' => '累计兑换 10 次', 'icon' => zhiji_medal_icon('兑换达人'), 'get_type' => 'points_mall_exchange', 'get_val' => 10),
         array('name' => '学神认证', 'desc' => '答题满分 3 次', 'icon' => zhiji_medal_icon('学神认证'), 'get_type' => 'quiz_perfect', 'get_val' => 3),
         // 隐藏成就（2026-09-29）：触发条件不公示，desc 仅作解锁后注解；无 get_type → 只能由事件授予
         array('name' => '夜猫子', 'desc' => '隐藏成就 · 凌晨的秘密行动', 'icon' => zhiji_medal_icon('夜猫子')),
@@ -194,13 +192,6 @@ add_filter('user_medal_args', function ($args) {
 /**
  * 事件监听：v2 新模块关键行为 → 计数 + 自动授予勋章
  */
-add_action('zhiji_pmall_exchanged', function ($uid) {
-    if (!function_exists('zib_add_user_medal')) { return; }
-    $n = (int) get_user_meta($uid, 'zhiji_pmall_exchange_count', true) + 1;
-    update_user_meta($uid, 'zhiji_pmall_exchange_count', $n);
-    if (1 === $n)       { Zhiji_Adapter::add_user_medal($uid, '首兑新人', '首次在积分商城兑换'); }
-    if (10 === $n)      { Zhiji_Adapter::add_user_medal($uid, '兑换达人', '累计兑换 10 次'); }
-}, 10, 1);
 
 /**
  * 一次性授勋（2026-09-29 隐藏成就体系）：幂等，meta 旗标防重复授予 + notify 解锁提醒
@@ -411,7 +402,7 @@ function zhiji_ops_page_url($scene = '', array $extra = array())
  * 现已补齐，且**被拒绝的操作也会留痕**（权限拒绝是安全事件的第一指标）。
  *
  * 字段含义（对齐 OCSF 风格的审计要素）：
- *   event_id  稳定事件 ID，可在工单/沟通里直接引用
+ *   event_id  稳定事件 ID，可在沟通里直接引用
  *   time      站点本地时间（展示用，与旧数据一致）
  *   time_utc  UTC ISO-8601（跨时区审计用，审计规范明确要求 UTC）
  *   user/uid  操作者（0 = system）

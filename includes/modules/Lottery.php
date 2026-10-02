@@ -209,7 +209,7 @@ define( 'ZHIJI_LOTTERY_LOG_OPTION',     'zhiji_lottery_log' );       // 全局�
 /**
  * 统一事件广播（联动扩展点）。
  *
- * 各业务模块在关键动作后调用，展示类模块（弹幕 / 实时动态 / 灵动岛等）
+ * 各业务模块在关键动作后调用，展示类模块（灵动岛等）
  * 通过 add_action 订阅即可实现跨功能联动，互不耦合。
  *
  * @param string $event 事件名（如 lottery_win / coupon_claimed）
@@ -2024,19 +2024,6 @@ function zhiji_lottery_ajax_draw() {
 		wp_schedule_single_event( time() + 300, 'zhiji_lottery_send_win_mail_cron', array( $mail_key ) );
 	}
 
-	// 事件广播（供弹幕 / 实时动态订阅）
-	if ( 'none' !== $prize['type'] ) {
-		zhiji_event_fire(
-			'lottery_win',
-			array(
-				'uid'   => $uid,
-				'name'  => $prize['name'],
-				'type'  => $prize['type'],
-				'value' => $prize['value'],
-				'url'   => home_url( '/' ),
-			)
-		);
-	}
 
 	wp_send_json(
 		array(

@@ -33,7 +33,7 @@ function zhiji_assets_enqueue()
         zhiji_asset_url('js/zhiji.js'),
         array('jquery'),
         ZHIJI_VERSION,
-        false // head 输出：本站点 wp_footer 输出曾出现脚本丢失，head 更稳（同 Danmu/Lottery 模块结论）
+        false // head 输出：本站点 wp_footer 输出曾出现脚本丢失，head 更稳（Lottery 等）
     );
 
     // 通用 AJAX 地址：角标刷新等基础能力不应依赖任何业务模块是否开启
@@ -49,7 +49,7 @@ add_action('wp_enqueue_scripts', 'zhiji_assets_enqueue', 5);
 /* ============================================================
  * 内联资源服务（2026-09-26 新增，配置统一化探查报告 P2-⑦）
  *
- * 背景：多个业务模块（CouponHighlight / Danmu / Lottery 等）各自用 nowdoc
+ * 背景：多个业务模块（CouponHighlight / Lottery 等）各自用 nowdoc
  *       内联输出 CSS/JS，写法重复且缺少统一的去重与顺序控制。
  *
  * 策略（与既有结论一致，不更改）：
