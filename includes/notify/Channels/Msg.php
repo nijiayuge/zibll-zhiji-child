@@ -34,8 +34,26 @@ class Zhiji_Notify_Msg
          */
         $type = !empty($cfg['msg_type']) ? sanitize_key($cfg['msg_type']) : 'system';
 
+        /**
+         * 发送者：0 = 系统（匿名）。
+         * ⚠️ 官方类通知（如奖励到账）应传 'admin'，否则用户中心里显示为「系统」，
+         *    少了「官方」权威性。P3 接入 RewardNotify 时补上此能力。
+         *    取值：$args['send_user']（本次投递显式指定）> $cfg['msg_send_user']（事件级默认）> 0
+         */
+        $send_user = 0;
+        if (isset($args['send_user'])) {
+            $send_user = $args['send_user'];
+        } elseif (!empty($cfg['msg_send_user'])) {
+            $send_user = $cfg['msg_send_user'];
+        }
+        if (is_string($send_user) && '' !== $send_user) {
+            $send_user = sanitize_text_field($send_user);
+        } else {
+            $send_user = (int) $send_user;
+        }
+
         $result = Zhiji_Adapter::msg_add(array(
-            'send_user'    => 0,
+            'send_user'    => $send_user,
             'receive_user' => (int) $uid,
             'type'         => $type,
             'title'        => (string) $args['title'],

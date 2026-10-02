@@ -255,6 +255,92 @@ function zhiji_mail_send( $to, $subject, $html_body ) {
 	return (bool) $sent;
 }
 
+/* ============================================================
+ * Template 契约实现（P3）
+ * ------------------------------------------------------------
+ * 把「渲染邮件正文」收敛成一个能力，让业务模块不必知道
+ * 本模块的存在（此前 5 个模块直接调 zhiji_mail_template_render()）。
+ *
+ * 【为什么不直接把函数暴露成契约】
+ * zhiji_mail_template_render() 有个隐性副作用：**总开关关闭时静默降级为朴素模板**
+ * （内部判 zhiji_is_enabled('mail_template_enabled')）。调用方拿到的可能是
+ * 降级结果却不知情。契约层把这个降级**显式化**：available() 可查、
+ * opts['plain'] 可强制朴素，业务能明确知道自己在拿什么。
+ * ============================================================ */
+
+if ( ! class_exists( 'Zhiji_Template_MailTemplate' ) ) :
+
+	/**
+	 * 邮件模板（实现 Zhiji_Contract_Template）
+	 */
+	class Zhiji_Template_MailTemplate implements Zhiji_Contract_Template {
+
+		/**
+		 * 渲染正文
+		 *
+		 * @param array $vars 槽位变量表（见契约注释）
+		 * @param array $opts plain => true 强制朴素模板
+		 * @return string HTML；引擎不可用返回空串
+		 */
+		public function render( array $vars = array(), array $opts = array() ) {
+			if ( ! function_exists( 'zhiji_mail_template_render' ) || ! function_exists( 'zhiji_mail_template_plain' ) ) {
+				return '';
+			}
+			// 引擎不可用时绝不返回空串 —— 降级为朴素模板，保证调用方拿到的仍是可读 HTML
+			if ( ! empty( $opts['plain'] ) || ! $this->available() ) {
+				return (string) zhiji_mail_template_plain( $vars );
+			}
+			return (string) zhiji_mail_template_render( $vars );
+		}
+
+		/**
+		 * 模板引擎是否可用（品牌模板总开关是否打开）
+		 *
+		 * @return bool
+		 */
+		public function available() {
+			return (bool) zhiji_is_enabled( 'mail_template_enabled', true );
+		}
+
+		/**
+		 * 发送**已渲染好**的 HTML 正文
+		 *
+		 * ⚠️ 不在此渲染：调用方（含 CouponGive / Lottery / EmailSubscribe /
+		 * FriendLinkApply / RewardNotify 共 13 处）都是自己先 render() 再发，
+		 * 若本方法再渲染一次会套两层模板。渲染与发送是两个动作，各自独立。
+		 *
+		 * @param string $to
+		 * @param string $subject
+		 * @param string $html 已渲染好的正文
+		 * @return bool
+		 */
+		public function send( $to, $subject, $html ) {
+			if ( '' === (string) $html ) {
+				return false;
+			}
+			if ( function_exists( 'zhiji_mail_send' ) ) {
+				return (bool) zhiji_mail_send( $to, $subject, (string) $html );
+			}
+			// 兜底：走 Adapter（内部处理父主题 wp_mail 覆盖的摘除/还原）
+			return (bool) Zhiji_Adapter::mail_raw( $to, $subject, (string) $html, array( 'Content-Type' => 'text/html; charset=UTF-8' ) );
+		}
+	}
+
+endif;
+
+/**
+ * 契约工厂：供 ContractRegistry 解析（工厂名规则 zhiji_contract_implementor_{模块key}）
+ *
+ * @return Zhiji_Contract_Template
+ */
+function zhiji_contract_implementor_mail_template() {
+	static $impl = null;
+	if ( null === $impl ) {
+		$impl = new Zhiji_Template_MailTemplate();
+	}
+	return $impl;
+}
+
 /**
  * ---------------------------------------------------------------------
  * 邮件模板 · 后台测试发送（v1.9.56）

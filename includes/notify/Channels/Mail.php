@@ -26,6 +26,24 @@ class Zhiji_Notify_Mail
 
         $tpl     = !empty($cfg['mail']) ? $cfg['mail'] : 'ticket';
         $subject = (string) $args['title'];
+
+        // ⚠️ P3 新增：正文直通。
+        // 场景：某些业务自带**成品 HTML 正文**（如奖励到账邮件有专属票据排版、
+        // 优惠码到期提示、品牌色徽章），若强行走渠道的通用票据模板，
+        // 这些细节会被 data 映射规则压平。业务方在自己拼好 HTML 后放这里，
+        // 渠道只负责「摘掉父主题 wp_mail 覆盖 → 发送 → 还原」这件 transports 的活。
+        // 未提供时行为与改造前完全一致（见下方分支）。
+        if (isset($args['body_html']) && '' !== (string) $args['body_html']) {
+            $headers = array('Content-Type: text/html; charset=UTF-8');
+            Zhiji_Adapter::mail_filter_off();
+            $ok = wp_mail($user->user_email, $subject, (string) $args['body_html'], $headers);
+            Zhiji_Adapter::mail_filter_on();
+            if (!$ok) {
+                zhiji_log('邮件发送失败', array('event' => $event, 'user' => $uid));
+            }
+            return (bool) $ok;
+        }
+
         if ('plain' === $tpl) {
             $body = self::plain($user, $args);
         } elseif (function_exists('zhiji_mail_template_render')) {

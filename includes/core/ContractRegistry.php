@@ -193,3 +193,64 @@ function zhiji_contract_available($contract)
 {
     return (null !== zhiji_contract($contract));
 }
+
+/* ============================================================
+ * 能力薄封装
+ * ------------------------------------------------------------
+ * 为什么有这一层：13 处调用点若各写一遍「取契约 → 判空 → 降级」样板，
+ * 会把契约解析的噪音带进每个业务模块。本封装把样板收在 core 一处，
+ * 调用方保持一行调用，**逻辑与改造前逐字等价**。
+ *
+ * ⚠️ 降级策略刻意保守：拿不到契约时回落到原全局函数（不是返回空/失败）。
+ *    理由：这些路径多在「发通知/发邮件」，回落到空等于让用户收不到东西 ——
+ *    丢业务信息远比架构不纯粹严重。
+ * ============================================================ */
+
+/**
+ * 渲染邮件正文（Template 契约）
+ *
+ * @param array $vars 槽位变量表
+ * @param array $opts plain => true 强制朴素模板
+ * @return string HTML；渲染器不可用时返回朴素模板（保证非空）
+ */
+function zhiji_template_render(array $vars = array(), array $opts = array())
+{
+    $tpl = zhiji_contract('Template');
+    if ($tpl) {
+        return (string) $tpl->render($vars, $opts);
+    }
+    // 降级：契约不可用 → 直接用原函数（行为与改造前一致）
+    if (function_exists('zhiji_mail_template_render')) {
+        return (string) zhiji_mail_template_render($vars);
+    }
+    if (function_exists('zhiji_mail_template_plain')) {
+        return (string) zhiji_mail_template_plain($vars);
+    }
+    return '';
+}
+
+/**
+ * 发送**已渲染好**的 HTML 邮件（Template 契约）
+ *
+ * @param string $to
+ * @param string $subject
+ * @param string $html
+ * @return bool
+ */
+function zhiji_mail_deliver($to, $subject, $html)
+{
+    $tpl = zhiji_contract('Template');
+    if ($tpl) {
+        return (bool) $tpl->send($to, $subject, $html);
+    }
+    // 降级：契约不可用 → 直接用原函数
+    if (function_exists('zhiji_mail_send')) {
+        return (bool) zhiji_mail_send($to, $subject, $html);
+    }
+    return (bool) Zhiji_Adapter::mail_raw(
+        $to,
+        $subject,
+        (string) $html,
+        array('Content-Type' => 'text/html; charset=UTF-8')
+    );
+}

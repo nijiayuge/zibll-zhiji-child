@@ -59,6 +59,7 @@ function zhiji_manifest()
         'api_gateway'            => array('layer' => 'platform', 'provides' => array('Api'), 'requires' => array()),
         'article_expire'         => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'auto_delete_attachments'  => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
+        'brand_color'             => array('layer' => 'platform', 'provides' => array(), 'requires' => array()),
         'auto_image_alt'         => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'auto_keyword_link'      => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'baidu_seo'              => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
@@ -67,16 +68,17 @@ function zhiji_manifest()
         'comment_draw'           => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'comment_fortune'        => array('layer' => 'business', 'provides' => array(), 'requires' => array('reward_center', 'reward_notify')),
         'comment_guard'          => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
-        'coupon_give'            => array('layer' => 'platform', 'provides' => array('CouponIssuer'), 'requires' => array('mail_template')),
+        'coupon_give'            => array('layer' => 'platform', 'provides' => array('CouponIssuer'), 'requires' => array()),
         'coupon_highlight'       => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'download_quota'         => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'easter_egg'             => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
-        'email_subscribe'        => array('layer' => 'business', 'provides' => array(), 'requires' => array('mail_template', 'reward_center')),
-        'friend_link_apply'      => array('layer' => 'business', 'provides' => array(), 'requires' => array('mail_template')),
+        'email_subscribe'        => array('layer' => 'business', 'provides' => array(), 'requires' => array('reward_center')),
+        'friend_link_apply'      => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'kanban'                 => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
-        // P2：抽奖的发券（coupon / free 奖品）与券邮件均改走 CouponIssuer 契约，
-        // 源码层已无对 coupon_give 的函数调用 → requires 只剩 mail_template（品牌卡片中奖邮件）。
-        'lottery'                => array('layer' => 'business', 'provides' => array(), 'requires' => array('mail_template')),
+        // P3：以下模块的邮件发送/渲染均改走 Template 契约（zhiji_template_render /
+        // zhiji_mail_deliver），源码层已无对 mail_template 的函数调用 → requires 置空。
+        // 契约不可用时薄封装会回落到原全局函数，故不存在「硬依赖」。
+        'lottery'                => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'mail_template'          => array('layer' => 'platform', 'provides' => array('Template'), 'requires' => array()),
         'maintenance'            => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'member_guide'           => array('layer' => 'business', 'provides' => array(), 'requires' => array('reward_center')),
@@ -91,7 +93,7 @@ function zhiji_manifest()
         // 源码层已无跨模块函数调用，故 requires 置空。运行时依赖（缺券能力时的降级）
         // 由 ContractRegistry 负责：拿不到契约就走保底发积分，不至于崩。
         'reward_center'          => array('layer' => 'platform', 'provides' => array('Ledger'), 'requires' => array()),
-        'reward_notify'          => array('layer' => 'platform', 'provides' => array('Dispatcher'), 'requires' => array('mail_template')),
+        'reward_notify'          => array('layer' => 'platform', 'provides' => array('Dispatcher'), 'requires' => array()),
         'security_scanner'       => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'seed_pages'             => array('layer' => 'business', 'provides' => array(), 'requires' => array()),
         'streak_guard'           => array('layer' => 'business', 'provides' => array(), 'requires' => array()),

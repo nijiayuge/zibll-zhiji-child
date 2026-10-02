@@ -81,35 +81,58 @@ interface Zhiji_Contract_Ledger
 }
 
 /**
- * 模板契约：消息模板的渲染与版本管理
+ * 模板契约：邮件/消息正文的渲染
+ *
+ * ⚠️ P3 修订（2026-10-02）：原签名为 `render($template, $vars, $opts)`，
+ * 隐含「多套命名模板」的前提（reward_mail / welcome / …）。
+ * 但 mail_template 的真实能力是**单一模板引擎 + 参数表**：
+ * `zhiji_mail_template_render($params)` 靠 $params 里的 headline / subline /
+ * ticket_left_* / btn_text 等键决定排版，并不按模板名切换多套骨架。
+ * 硬套会造出一个不存在的语义（传 'reward_mail' 进去也只是被忽略）。
+ * → 按现实改签名为「槽位式渲染」：调用方给槽位值，引擎决定怎么排。
+ *
+ * 保留「模板标识」概念的唯一场景是**未来**真有多套骨架时，届时再加
+ * `render_named()` 之类的显式方法，而不是现在就占位。
  */
 interface Zhiji_Contract_Template
 {
     /**
-     * 渲染
+     * 渲染正文
      *
-     * @param string $template 模板标识（如 reward_mail / welcome）
-     * @param array  $vars     变量表
-     * @param array  $opts     选项（format => html|text）
-     * @return string 渲染结果；模板不存在返回空串
+     * @param array  $vars 槽位变量表（headline / subline / name / site /
+     *                     ticket_left_label / ticket_left_content /
+     *                     ticket_right_label / ticket_right_content /
+     *                     ticket_right_sub / body_html / rule_line /
+     *                     btn_text / btn_url / coupon_expiry …）
+     * @param array  $opts 选项（plain => true 强制朴素模板，忽略品牌票据）
+     * @return string 渲染结果（HTML）；引擎不可用返回空串
      */
-    public function render($template, array $vars = array(), array $opts = array());
+    public function render(array $vars = array(), array $opts = array());
 
     /**
-     * 模板是否存在
+     * 模板引擎是否可用
      *
-     * @param string $template 模板标识
      * @return bool
      */
-    public function exists($template);
+    public function available();
 
     /**
-     * 模板当前版本号
+     * 渲染并发送
      *
-     * @param string $template 模板标识
-     * @return string 版本号（无版本返回空串）
+     * ⚠️ P3 二次修订：原签名是 `send($to, $subject, array $vars)` —— 它会拿 $vars
+     * **再渲染一次**。但全站 13 处调用方（含 CouponGive / Lottery / EmailSubscribe /
+     * FriendLinkApply）都是自己先 zhiji_mail_template_render() 拿到 HTML，
+     * 再调发送。若按原签名接线，每处都要么二次渲染（正文被包两层）、
+     * 要么把渲染逻辑搬进契约（等于把业务排版塞进模板模块）—— 两条路都是行为变更。
+     * → 按现实改：`$html` 就是**已渲染好的正文**，本方法只负责 transports
+     *   （摘除父主题 wp_mail 覆盖 → wp_mail → 还原）。
+     *
+     * @param string $to      收件邮箱
+     * @param string $subject 标题
+     * @param string $html    **已渲染好的** HTML 正文
+     * @return bool 发送是否成功
      */
-    public function version($template);
+    public function send($to, $subject, $html);
 }
 
 /**

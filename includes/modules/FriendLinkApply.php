@@ -168,12 +168,12 @@ function zhiji_link_approve_action() {
 	}
 
 	// 发送邮件通知（统一品牌票据模板；模板引擎不可用时回退简单 HTML）
-	if ( $email && ( function_exists( 'zhiji_mail_template_render' ) || function_exists( 'zhiji_mail_send' ) ) ) {
+	if ( $email && zhiji_contract_available( 'Template' ) ) {
 		$subject = '【知集】友链申请已通过';
-		if ( function_exists( 'zhiji_mail_template_render' ) ) {
+		if ( zhiji_contract_available( 'Template' ) ) {
 			$user = get_user_by( 'email', $email );
 			$disp = $user ? ( $user->display_name ? $user->display_name : $user->user_login ) : '';
-			$body = zhiji_mail_template_render( array(
+			$body = zhiji_template_render( array(
 				'site'                 => get_bloginfo( 'name' ),
 				'name'                 => $disp,
 				'headline'             => __( '您的友链申请已通过审核', 'zhiji' ),
@@ -190,7 +190,7 @@ function zhiji_link_approve_action() {
 		} else {
 			$body = '<p>尊敬的站长：</p><p>您提交的友链申请已通过审核！</p><p>网站名称：' . esc_html( $name ) . '<br>网站URL：' . esc_url( $url ) . '</p><p>感谢您的支持，欢迎常来知集！</p>';
 		}
-		zhiji_mail_send( $email, $subject, $body );
+		zhiji_mail_deliver( $email, $subject, $body );
 	}
 
 	wp_redirect( admin_url( 'edit.php?post_type=link_apply' ) );
@@ -216,10 +216,10 @@ function zhiji_link_reject_action() {
 	update_post_meta( $post_id, '_zhiji_link_status', 'rejected' );
 
 	$email = get_post_meta( $post_id, '_zhiji_link_email', true );
-	if ( $email && function_exists( 'zhiji_mail_send' ) ) {
+	if ( $email && zhiji_contract_available( 'Template' ) ) {
 		$subject = '【知集】友链申请未通过';
 		$body    = '<p>尊敬的站长：</p><p>很遗憾，您提交的友链申请未通过审核。</p><p>如有疑问，请联系站长。</p>';
-		zhiji_mail_send( $email, $subject, $body );
+		zhiji_mail_deliver( $email, $subject, $body );
 	}
 
 	wp_redirect( admin_url( 'edit.php?post_type=link_apply' ) );

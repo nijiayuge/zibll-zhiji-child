@@ -1832,7 +1832,7 @@ function zhiji_lottery_send_win_mail( $uid, $prize, $extra = array() ) {
 	if ( '' !== trim( $custom_body ) ) {
 		$body = str_replace( array( '{site}', '{name}', '{prize}', '{value}' ), array( $site, $name, $prize['name'], $prize['value'] ), $custom_body );
 		$body = nl2br( esc_html( $body ) );
-	} elseif ( function_exists( 'zhiji_mail_template_render' ) ) {
+	} elseif ( zhiji_contract_available( 'Template' ) ) {
 		// v1.9.4：统一调用 MailTemplate 邮件模板引擎（品牌票据风格）
 		$type_map = array( 'points'=>'积分', 'balance'=>'余额', 'vip_day'=>'会员', 'vip_month'=>'会员', 'level'=>'经验值', 'free'=>'免单券' );
 		$type_name = isset( $type_map[$prize['type']] ) ? $type_map[$prize['type']] : '奖励';
@@ -1842,7 +1842,7 @@ function zhiji_lottery_send_win_mail( $uid, $prize, $extra = array() ) {
 		elseif ( 'vip_day' === $prize['type'] ) { $val_text = '+' . (int)$prize['value'] . ' 天'; }
 		elseif ( 'vip_month' === $prize['type'] ) { $val_text = '+' . (int)$prize['value'] . ' 个月'; }
 		elseif ( 'level' === $prize['type'] ) { $val_text = '+' . (int)$prize['value']; }
-		$body = zhiji_mail_template_render( array(
+		$body = zhiji_template_render( array(
 			'site'                 => $site,
 			'name'                 => $name,
 			'headline'             => __( '恭喜您抽中大奖！', 'zhiji' ),
@@ -1862,8 +1862,8 @@ function zhiji_lottery_send_win_mail( $uid, $prize, $extra = array() ) {
 	}
 
 	// v1.9.4：统一调用 zhiji_mail_send 发送（自动临时移除父主题 zib_get_mail_content 包装）
-	if ( function_exists( 'zhiji_mail_send' ) ) {
-		return zhiji_mail_send( $email, $subject, $body );
+	if ( zhiji_contract_available( 'Template' ) ) {
+		return zhiji_mail_deliver( $email, $subject, $body );
 	}
 
 	// 兜底：MailTemplate 未加载时手动处理父主题包装

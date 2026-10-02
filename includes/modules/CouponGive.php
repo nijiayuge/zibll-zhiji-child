@@ -968,7 +968,7 @@ function zhiji_coupon_give_send_mail( $email, $code, $discount_text = '', $type 
 		// 后台自定义了邮件内容：按纯文本 + 换行处理（兼容占位符）
 		$body = str_replace( array( '{site}', '{code}', '{discount}', '{name}', '{expire}' ), array( $site, $code, $discount_text, $name, $expire_text ), $custom_body );
 		$body = nl2br( esc_html( $body ) );
-	} elseif ( function_exists( 'zhiji_mail_template_render' ) ) {
+	} elseif ( zhiji_contract_available( 'Template' ) ) {
 		// v1.9.4：统一调用 MailTemplate 邮件模板引擎（品牌票据风格）
 		$headline = ( 'reward' === $type )
 			? __( '好友领取成功，这是您的分享奖励！', 'zhiji' )
@@ -984,7 +984,7 @@ function zhiji_coupon_give_send_mail( $email, $code, $discount_text = '', $type 
 	$mail_brand_light  = zhiji_token_color( 'brand_light' );
 	$mail_surface_soft = zhiji_token_color( 'surface_soft' );
 	$mail_border       = zhiji_token_color( 'border' );
-		$body = zhiji_mail_template_render( array(
+		$body = zhiji_template_render( array(
 			'site'                 => $site,
 			'name'                 => $name,
 			'headline'             => $headline,
@@ -1004,8 +1004,8 @@ function zhiji_coupon_give_send_mail( $email, $code, $discount_text = '', $type 
 	}
 
 	// v1.9.4：统一调用 zhiji_mail_send 发送（自动临时移除父主题 zib_get_mail_content 包装）
-	if ( function_exists( 'zhiji_mail_send' ) ) {
-		return zhiji_mail_send( $email, $subject, $body );
+	if ( zhiji_contract_available( 'Template' ) ) {
+		return zhiji_mail_deliver( $email, $subject, $body );
 	}
 
 	// 兜底：MailTemplate 未加载时手动处理父主题包装

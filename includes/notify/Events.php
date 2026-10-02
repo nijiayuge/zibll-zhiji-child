@@ -46,6 +46,8 @@ function zhiji_notify_register_event($event, array $args = array())
         'link'        => '',                                    // 站内链接模板，支持 {user_center} 占位
         'dedupe_ttl'  => DAY_IN_SECONDS,                        // 幂等有效期
         'throttle'    => array(20, HOUR_IN_SECONDS),             // [最多条数, 窗口秒数]；条数 0 = 不限
+        'msg_type'    => 'system',                               // 站内信分类（改动需同步消息中心 Tab）
+        'msg_send_user' => 0,                                    // 站内信发送者：0=系统；'admin'=官方
     );
     $GLOBALS['zhiji_notify_events'][$event] = array_merge($defaults, $args);
 }

@@ -335,8 +335,8 @@ function zhiji_email_subscribe_send_notification( $post_id ) {
             $GLOBALS['zhiji_email_sub_unsub_url'] = $unsub_url;
 
             // 发送邮件
-            if ( function_exists( 'zhiji_mail_send' ) ) {
-                zhiji_mail_send( $user->user_email, $subject, $user_content );
+            if ( zhiji_contract_available( 'Template' ) ) {
+                zhiji_mail_deliver( $user->user_email, $subject, $user_content );
             } else {
                 wp_mail( $user->user_email, $subject, $user_content, array( 'Content-Type: text/html; charset=UTF-8' ) );
             }
@@ -362,7 +362,7 @@ function zhiji_email_subscribe_render_email_content( $post, $name = '', $unsub_u
     $site_url = home_url();
 
     // 如果有邮件模板模块，使用统一品牌模板（图文卡片正文，不使用票据样式）
-    if ( function_exists( 'zhiji_mail_template_render' ) ) {
+    if ( zhiji_contract_available( 'Template' ) ) {
         $body_html = '';
         // 仅显示真正的特色图（get_post_thumbnail_id 判断），避免 zibll 取文章首图（可能是弹窗/广告截图）进邮件
         if ( get_post_thumbnail_id( $post->ID ) && $featured_image ) {
@@ -374,7 +374,7 @@ function zhiji_email_subscribe_render_email_content( $post, $name = '', $unsub_u
         if ( $unsub_url ) {
             $body_html .= '<p style="color:#9ca3af;font-size:12px;line-height:1.8;margin:14px 0 0;text-align:center;">如果不想再收到此类通知，<a href="' . esc_url( $unsub_url ) . '" style="color:#9ca3af;text-decoration:underline;">点此一键退订</a>。</p>';
         }
-        return zhiji_mail_template_render( array(
+        return zhiji_template_render( array(
             'headline'  => '您订阅的内容有新更新',
             'subline'   => '您关注的站点发布了新文章，第一时间为您送达：',
             'name'      => $name,
@@ -771,7 +771,7 @@ function zhiji_email_subscribe_send_toggle_mail( $uid, $op ) {
 	$uc_url = home_url( '/user/' );
 	if ( 'unsub' === $op ) {
 		$subject = sprintf( '【%s】邮件订阅已取消', $site );
-		$body    = zhiji_mail_template_render( array(
+		$body    = zhiji_template_render( array(
 			'headline'  => '邮件订阅已取消',
 			'name'      => $user->display_name,
 			'subline'   => '您已成功取消邮件订阅，将不再收到新文章发布通知。',
@@ -782,7 +782,7 @@ function zhiji_email_subscribe_send_toggle_mail( $uid, $op ) {
 		) );
 	} else {
 		$subject = sprintf( '【%s】邮件订阅已恢复', $site );
-		$body    = zhiji_mail_template_render( array(
+		$body    = zhiji_template_render( array(
 			'headline'  => '邮件订阅已恢复',
 			'name'      => $user->display_name,
 			'subline'   => '您已重新订阅邮件通知，新文章发布时会第一时间通知您。',
@@ -792,8 +792,8 @@ function zhiji_email_subscribe_send_toggle_mail( $uid, $op ) {
 			'btn_url'   => $uc_url,
 		) );
 	}
-	if ( function_exists( 'zhiji_mail_send' ) ) {
-		zhiji_mail_send( $user->user_email, $subject, $body );
+	if ( zhiji_contract_available( 'Template' ) ) {
+		zhiji_mail_deliver( $user->user_email, $subject, $body );
 	} else {
 		wp_mail( $user->user_email, $subject, $body, array( 'Content-Type: text/html; charset=UTF-8' ) );
 	}
