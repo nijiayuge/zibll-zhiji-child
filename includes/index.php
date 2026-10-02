@@ -28,6 +28,7 @@ zib_require(array(
     'core/Fields',
     'core/Adapter',
     'core/Registry',
+    'core/Manifest',
     'core/PageProvisioner',
     'core/Assets',
     'core/ApiRegistry',
