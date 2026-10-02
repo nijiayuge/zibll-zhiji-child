@@ -127,7 +127,8 @@ function zhiji_reward_center_register_options() {
 				 *    完全按这里的权重表与数值区间发放
 				 * ============================================================ */
 				array(
-					'type'       => 'accordion',
+					'id'       => 'zhiji_accordion_1',
+					       'type'       => 'accordion',
 					'accordions' => array(
 						array(
 							'title'  => __( '① 评论福袋 · 抽哪种', 'zhiji' ),
@@ -250,7 +251,8 @@ function zhiji_reward_center_register_options() {
 				 * —— 面值区间复用 CouponGive 的差异化体系，本模块只选区间 + 定有效期
 				 * ============================================================ */
 				array(
-					'type'       => 'accordion',
+					'id'       => 'zhiji_accordion_2',
+					       'type'       => 'accordion',
 					'accordions' => array(
 						array(
 							'title'  => __( '③ 优惠码 · 面值与有效期（评论福袋抽中券时用）', 'zhiji' ),
@@ -299,7 +301,8 @@ function zhiji_reward_center_register_options() {
 				 * —— grant_all() 实测**零调用方**，明确标注避免误解
 				 * ============================================================ */
 				array(
-					'type'       => 'accordion',
+					'id'       => 'zhiji_accordion_3',
+					       'type'       => 'accordion',
 					'accordions' => array(
 						array(
 							'title'  => __( '④ 全发模式（预留 · 当前无业务使用）', 'zhiji' ),
@@ -354,7 +357,8 @@ function zhiji_reward_center_register_options() {
 				 * —— 都不是配置项，单独成节并标注「只读」，避免用户在里面找可填的东西
 				 * ============================================================ */
 				array(
-					'type'       => 'accordion',
+					'id'       => 'zhiji_accordion_4',
+					       'type'       => 'accordion',
 					'accordions' => array(
 						array(
 							'title'  => __( '附：勋章墙（只读 · 达成即自动授予）', 'zhiji' ),
@@ -579,22 +583,55 @@ function zhiji_reward_record_desc( $type, $overrides = array() ) {
  * @return int
  */
 /**
- * 奖励中心「渠道总览」面板（2026-09-30 配置体系审计 P2）
+ * 奖励中心「谁会用到这里的配置」面板
  *
- * 目的：奖励配置此前散落在 4 个分类 11 个模块，排查"奖为什么没发"要在分类间来回跳。
- * 本面板把三层语义与各发奖渠道的当前状态集中展示（只读，不改变任何开关归属）。
+ * 目的：奖励配置散落在多个分类多个模块，排查「奖为什么没发」要来回跳。
+ * 本面板列出各业务与本页的真实关系（只读，不改变任何开关归属）。
  *
  * @return string HTML
  */
 function zhiji_reward_center_overview_html() {
-	// 分类归属 = 各模块 register_module 的 parent（实测，非硬编码猜测）
-	// uses = 是否真的读本页参数（实测：只有评论福袋；另两个只借发奖引擎）
+	/**
+	 * 跳转链接
+	 *
+	 * ⚠️ 这里连踩两个坑，都必须靠**实测**而非推断：
+	 *
+	 * ① tab id **不是** `register_module` 的 `parent`（如 zhiji_comment），
+	 *    而是**分类标题**经 `sanitize_title()` 的结果 —— 线上实测：
+	 *      '评论&互动' → '%e8%af%84%e8%ae%ba%e4%ba%92%e5%8a%a8'
+	 *      子节 = 父分类 id + '/' + sanitize_title(子节标题)
+	 *    用 parent key 拼出来的链接，点了必然无效。
+	 *
+	 * ② 子节标题**也不是**模块 key 或我以为的名字：member_guide 的分区叫
+	 *    「会员引导」（不是「注册迎新」）、lottery 叫「抽奖大转盘」（不是「大转盘」）。
+	 *    → 所以这里**从 Registry 动态取真实 title**，不硬编码。
+	 *    父分类标题取自 includes/options/admin-options.php 的 $cats。
+	 *
+	 * @param string $parent_title 父分类标题（如 '用户&互动'）
+	 * @param string $module_key   模块 key（用于取真实分区名）
+	 * @return string
+	 */
+	$link = function ( $parent_title, $module_key ) {
+		$mods    = Zhiji_Registry::modules();
+		$sub     = isset( $mods[ $module_key ]['title'] ) ? (string) $mods[ $module_key ]['title'] : $module_key;
+		$id      = sanitize_title( $parent_title ) . '/' . sanitize_title( $sub );
+		return sprintf(
+			'<a href="#tab=%1$s" data-zhiji-goto="%1$s" class="zhiji-goto-section" title="去「%2$s → %3$s」设置">去设置 →</a>',
+			esc_attr( $id ),
+			esc_attr( $parent_title ),
+			esc_attr( $sub )
+		);
+	};
+
+	// 分区名一律走 Registry 动态取（见上方 $link 的注释：子节标题不是模块 key，
+	// 实测 member_guide=「会员引导」、lottery=「抽奖大转盘」）。
+	// 第 4 列是**模块 key**，第 6 列 $how 是说明文案。
 	$channels = array(
-		array( '评论福袋',     true,  'comment_fortune_enabled', '按本页权重随机抽一种',       'zhiji_comment', '评论福袋',     '随机抽一种（用本页权重+区间）' ),
-		array( '注册迎新',     false, 'member_guide_enabled',    '固定发一张迎新券',         'zhiji_user',     '注册迎新',     '固定发券（面值走本模块配置）' ),
-		array( '邮件订阅奖励', false, 'email_sub_enabled',       '按本模块配的积分数发放',   'zhiji_user',     '邮件订阅',     '固定发积分（数量走本模块配置）' ),
-		array( '大转盘抽奖',   false, 'lottery_enabled',         '奖品池独立配置',           'zhiji_user',     '大转盘',       '自己发奖（奖品池独立）' ),
-		array( '互动答题',     false, 'quiz_enabled',            '题库独立配置',             'zhiji_interact', '互动答题',     '自己发奖（题库独立）' ),
+		array( '评论福袋',     true,  'comment_fortune_enabled', '按本页权重随机抽一种',     '评论&互动', 'comment_fortune', '随机抽一种（用本页权重+区间）' ),
+		array( '注册迎新',     false, 'member_guide_enabled',    '固定发一张迎新券',       '用户&互动', 'member_guide',    '固定发券（面值走本模块配置）' ),
+		array( '邮件订阅奖励', false, 'email_sub_enabled',       '按本模块配的积分数发放', '用户&互动', 'email_subscribe', '固定发积分（数量走本模块配置）' ),
+		array( '大转盘抽奖',   false, 'lottery_enabled',         '奖品池独立配置',         '用户&互动', 'lottery',         '自己发奖（奖品池独立）' ),
+		array( '互动答题',     false, 'quiz_enabled',            '题库独立配置',           '互动&趣味', 'quiz',            '自己发奖（题库独立）' ),
 	);
 
 	$rows = '';
@@ -607,16 +644,15 @@ function zhiji_reward_center_overview_html() {
 		$uses_badge = $uses
 			? '<span style="color:#2563eb">✓ 用本页配置</span>'
 			: '<span style="color:#9ca3af">仅借发奖引擎</span>';
-		// CSF 分节跳转：#tab=<父分类>/<子节>（子节 id 经 sanitize_title）
 		// ⚠️ 此前这一列直接显示内部 option 名（salary_enabled / member_guide_enabled…），
 		//    对用户毫无意义 —— 改为跳转到对应设置分区。
-		$link = '<a href="' . esc_attr( '#tab=' . $parent . '/' . sanitize_title( $sub ) ) . '">去设置 →</a>';
+		$goto = $link( $parent, $sub );
 		$rows .= '<tr>'
 			. '<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0">' . esc_html( $name ) . '</td>'
 			. '<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0">' . $uses_badge . '</td>'
 			. '<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0;color:#666">' . esc_html( $how ) . '</td>'
 			. '<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0">' . $badge . '</td>'
-			. '<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0">' . $link . '</td>'
+			. '<td style="padding:6px 10px;border-bottom:1px solid #f0f0f0">' . $goto . '</td>'
 			. '</tr>';
 	}
 
@@ -635,7 +671,57 @@ function zhiji_reward_center_overview_html() {
 		. '<tbody>' . $rows . '</tbody></table>'
 		. '<div style="color:#999;font-size:12px;margin-top:8px">'
 		. '发放记录在用户中心「余额 / 积分明细」查看；运维明细到「扩展&amp;增强 → 运维管理」查。'
-		. '</div></div>';
+		. '</div></div>'
+		. zhiji_reward_center_goto_js();
+}
+
+/**
+ * 「去设置」跳转的 JS 兜底
+ *
+ * ⚠️ 为什么需要它（实测得出，不能想当然）：
+ *   ① CSF 的 tab id **不是** register_module 的 parent（如 zhiji_comment），
+ *      而是**分类标题**经 sanitize_title() 的结果（线上实测 '评论&互动'
+ *      → '%e8%af%84%e8%ae%ba%e4%ba%92%e5%8a%a8'），子节 = 父 + '/' + sanitize_title(子节标题)。
+ *      用 parent key 拼出来的链接，点了必然无效。
+ *   ② CSF 的切换由**它自己绑在侧边栏 `<a data-tab-id>` 上的事件**驱动，
+ *      **不监听 location.hash** —— 光有正确的 `href="#tab=…"` 也不会切换。
+ *      线上实测其内容区是 `div.csf-section.hidden[data-section-id]`，
+ *      侧边栏是 `li.csf-tab-item > a[data-tab-id]`，页面里**没有** ui-tabs。
+ *
+ * 做法：点「去设置」时，转而在侧边栏找到对应 `a[data-tab-id="…"]` 并 `.trigger('click')`，
+ * 把切换交还给 CSF 自己的逻辑 —— 不重复实现它的切换动画与状态管理。
+ * 若找不到（分类被改名等），回退到直接显示目标分区，至少让用户看得到内容。
+ */
+function zhiji_reward_center_goto_js() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return '';
+	}
+	return <<<'HTML'
+<script id="zhiji-rc-goto">
+(function(){
+  function go(anchor){
+    var id = anchor.getAttribute('data-zhiji-goto');
+    if(!id) return;
+    var target = document.querySelector('.csf-nav-options a[data-tab-id="' + id + '"]');
+    if(target){ target.click(); return; }
+    // 侧边栏没有该分区（可能被改名/移除）：直接把目标分区显示出来，避免点了没反应
+    var sec = document.querySelector('.csf-section[data-section-id="' + id + '"]');
+    if(sec){
+      var secs = document.querySelectorAll('.csf-section');
+      for(var i=0;i<secs.length;i++){ secs[i].classList.add('hidden'); }
+      sec.classList.remove('hidden');
+      sec.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+  }
+  document.addEventListener('click', function(e){
+    var a = e.target.closest ? e.target.closest('a[data-zhiji-goto]') : null;
+    if(!a) return;
+    e.preventDefault();
+    go(a);
+  });
+})();
+</script>
+HTML;
 }
 
 /**

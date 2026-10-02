@@ -32,7 +32,8 @@ if ( ! defined( 'ABSPATH' ) ) {
     // 2026-09-26：改为 Registry 统一登记（P3-⑨），钩子由核心统一挂载
     Zhiji_Registry::register_options('lottery', array(
 			array(
-				'type'       => 'accordion',
+				'id'       => 'zhiji_accordion_1',
+				       'type'       => 'accordion',
 				'accordions' => array(
 					array(
 						'title'  => __( '① 基本规则（谁能抽、一天几抽）', 'zhiji' ),
