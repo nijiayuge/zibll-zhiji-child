@@ -42,6 +42,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             array(
                 'type'  => 'subheading',
                 'title' => __( '① 前台展示', 'zhiji' ),
+                'dependency' => array('email_sub_enabled', '==', '1'),
             ),
             array(
                 'id'         => 'email_sub_label',
@@ -56,6 +57,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             array(
                 'type'  => 'subheading',
                 'title' => __( '② 新文章通知', 'zhiji' ),
+                'dependency' => array('email_sub_enabled', '==', '1'),
             ),
             array(
                 'id'         => 'email_sub_new_post',
@@ -84,6 +86,7 @@ if ( ! defined( 'ABSPATH' ) ) {
             array(
                 'type'  => 'subheading',
                 'title' => __( '③ 订阅奖励', 'zhiji' ),
+                'dependency' => array('email_sub_enabled', '==', '1'),
             ),
             array(
                 'id'         => 'email_sub_reward_enabled',

@@ -416,6 +416,7 @@ function zhiji_comment_fortune_register_options() {
 				array(
 				    'type'  => 'subheading',
 				    'title' => __( '① 触发规则', 'zhiji' ),
+				    'dependency' => array('comment_fortune_enabled', '==', '1'),
 				),
 				array(
 					'dependency' => array( 'comment_fortune_enabled', '==', '1' ),
@@ -437,6 +438,7 @@ function zhiji_comment_fortune_register_options() {
 				array(
 				    'type'  => 'subheading',
 				    'title' => __( '② 福袋文案', 'zhiji' ),
+				    'dependency' => array('comment_fortune_enabled', '==', '1'),
 				),
 				array(
 					'dependency' => array( 'comment_fortune_enabled', '==', '1' ),

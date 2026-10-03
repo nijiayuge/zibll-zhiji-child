@@ -452,6 +452,7 @@ function zhiji_reward_notify_register_options() {
 				array(
 				    'type'  => 'subheading',
 				    'title' => __( '① 站内信通知', 'zhiji' ),
+				    'dependency' => array('reward_notify_enabled', '==', '1'),
 				),
 				array(
 					'dependency' => array( 'reward_notify_enabled', '==', '1' ),
@@ -464,6 +465,7 @@ function zhiji_reward_notify_register_options() {
 				array(
 				    'type'  => 'subheading',
 				    'title' => __( '② 邮件通知', 'zhiji' ),
+				    'dependency' => array('reward_notify_enabled', '==', '1'),
 				),
 				array(
 					'dependency' => array( 'reward_notify_enabled', '==', '1' ),

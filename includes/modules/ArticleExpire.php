@@ -105,6 +105,7 @@ add_filter('the_content', 'zhiji_article_expire_notice', 5);
         array(
             'type'  => 'subheading',
             'title' => __( '① 过期规则', 'zhiji' ),
+            'dependency' => array('article_expire_enabled', '==', '1'),
         ),
         array(
             'id'         => 'article_expire_days',
@@ -119,6 +120,7 @@ add_filter('the_content', 'zhiji_article_expire_notice', 5);
         array(
             'type'  => 'subheading',
             'title' => __( '② 提示文案与样式', 'zhiji' ),
+            'dependency' => array('article_expire_enabled', '==', '1'),
         ),
         array(
             'id'         => 'article_expire_text',

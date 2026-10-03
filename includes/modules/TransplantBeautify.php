@@ -98,6 +98,7 @@ add_filter('the_content', function ($content) {
         array(
             'type'  => 'subheading',
             'title' => __( '① 文章字数与阅读时间', 'zhiji' ),
+            'dependency' => array('transplant_enabled', '==', '1'),
         ),
         array(
             'id'         => 'transplant_wcr',
@@ -110,6 +111,7 @@ add_filter('the_content', function ($content) {
         array(
             'type'  => 'subheading',
             'title' => __( '② 阅读速度与显示位置', 'zhiji' ),
+            'dependency' => array('transplant_enabled', '==', '1'),
         ),
         array(
             'id'         => 'transplant_wcr_speed',

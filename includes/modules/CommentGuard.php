@@ -112,6 +112,7 @@ zhiji_footer_add( 'comment-guard', function () {
         array(
             'type'  => 'subheading',
             'title' => __( '① 检测规则', 'zhiji' ),
+            'dependency' => array('comment_guard_enabled', '==', '1'),
         ),
         array(
             'id'         => 'comment_guard_words',
@@ -139,6 +140,7 @@ zhiji_footer_add( 'comment-guard', function () {
         array(
             'type'  => 'subheading',
             'title' => __( '② 前台提示', 'zhiji' ),
+            'dependency' => array('comment_guard_enabled', '==', '1'),
         ),
         array(
             'id'         => 'comment_guard_hint',

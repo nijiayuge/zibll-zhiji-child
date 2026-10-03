@@ -59,7 +59,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 				),
 				'dependency' => array( 'lottery_enabled', '==', '1' ),
 			),
-			array(				'type'    => 'subheading',				'title'   => __( '② 奖品与概率', 'zhiji' ),			),			array(				'type'    => 'submessage',				'style'   => 'info',				'content' => __( '奖品池配置各档奖品与中奖率；「概率预设」用于快速套用常见中奖率分布。', 'zhiji' ),			),			array(
+			array(
+				'type'       => 'subheading',
+				'title'      => __( '② 奖品与概率', 'zhiji' ),
+				'dependency' => array( 'lottery_enabled', '==', '1' ),
+			),
+			array(				'type'    => 'submessage',				'style'   => 'info',				'content' => __( '奖品池配置各档奖品与中奖率；「概率预设」用于快速套用常见中奖率分布。', 'zhiji' ),			),			array(
 				'id'         => 'lottery_prizes',
 				'type'       => 'textarea',
 				'title'      => '自定义奖品池',
@@ -107,7 +112,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 				'default'    => '0',
 				'dependency' => array( 'lottery_enabled', '==', '1' ),
 			),
-			array(				'type'    => 'subheading',				'title'   => __( '⑤ 前台展示', 'zhiji' ),			),			array(
+			array(
+				'type'       => 'subheading',
+				'title'      => __( '⑤ 前台展示', 'zhiji' ),
+				'dependency' => array( 'lottery_enabled', '==', '1' ),
+			),
+			array(
 				'id'         => 'lottery_size',
 				'type'       => 'number',
 				'title'      => '转盘直径（px）',
@@ -131,7 +141,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 				'default'    => true,
 				'dependency' => array( 'lottery_enabled', '==', '1' ),
 			),
-			array(				'type'    => 'subheading',				'title'   => __( '③ 奖励发放规则', 'zhiji' ),			),			array(				'type'    => 'submessage',				'style'   => 'info',				'content' => __( '抽中「优惠码」奖品时的有效天数与券名前缀；抽中「会员」奖品时发放的会员等级。', 'zhiji' ),			),			array(
+			array(
+				'type'       => 'subheading',
+				'title'      => __( '③ 奖励发放规则', 'zhiji' ),
+				'dependency' => array( 'lottery_enabled', '==', '1' ),
+			),
+			array(				'type'    => 'submessage',				'style'   => 'info',				'content' => __( '抽中「优惠码」奖品时的有效天数与券名前缀；抽中「会员」奖品时发放的会员等级。', 'zhiji' ),			),			array(
 				'id'         => 'lottery_coupon_days',
 				'type'       => 'number',
 				'title'      => '中奖优惠码有效期（天）',
@@ -159,7 +174,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 				),
 				'dependency' => array( 'lottery_enabled', '==', '1' ),
 			),
-			array(				'type'    => 'subheading',				'title'   => __( '④ 中奖通知（邮件 / 站内信）', 'zhiji' ),			),			array(
+			array(
+				'type'       => 'subheading',
+				'title'      => __( '④ 中奖通知（邮件 / 站内信）', 'zhiji' ),
+				'dependency' => array( 'lottery_enabled', '==', '1' ),
+			),
+			array(
 				'id'         => 'lottery_mail_enabled',
 				'type'       => 'switcher',
 				'title'      => '中奖邮件通知',

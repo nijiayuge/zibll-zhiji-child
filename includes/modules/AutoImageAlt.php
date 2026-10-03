@@ -137,6 +137,7 @@ add_filter('wp_generate_attachment_metadata', 'zhiji_auto_image_alt_process_atta
         array(
             'type'  => 'subheading',
             'title' => __( '① alt 前后缀', 'zhiji' ),
+            'dependency' => array('auto_image_alt_enabled', '==', '1'),
         ),
         array(
             'id'         => 'auto_image_alt_prefix',

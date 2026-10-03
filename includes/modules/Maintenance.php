@@ -127,6 +127,7 @@ add_action('template_redirect', function () {
         array(
             'type'  => 'subheading',
             'title' => __( '① 维护页文案', 'zhiji' ),
+            'dependency' => array('maintenance_enabled', '==', '1'),
         ),
         array(
             'id'         => 'maintenance_title',
@@ -147,6 +148,7 @@ add_action('template_redirect', function () {
         array(
             'type'  => 'subheading',
             'title' => __( '② 访问控制', 'zhiji' ),
+            'dependency' => array('maintenance_enabled', '==', '1'),
         ),
         array(
             'id'         => 'maintenance_allow_login',

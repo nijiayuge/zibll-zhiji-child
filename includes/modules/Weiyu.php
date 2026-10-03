@@ -142,6 +142,7 @@ function zhiji_weiyu_like()
         array(
             'type'  => 'subheading',
             'title' => __( '① 列表展示', 'zhiji' ),
+            'dependency' => array('weiyu_enabled', '==', '1'),
         ),
         array(
             'id'         => 'weiyu_posts_per_page',
@@ -156,6 +157,7 @@ function zhiji_weiyu_like()
         array(
             'type'  => 'subheading',
             'title' => __( '② 互动元素', 'zhiji' ),
+            'dependency' => array('weiyu_enabled', '==', '1'),
         ),
         array(
             'id'         => 'weiyu_show_avatar',

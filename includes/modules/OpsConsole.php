@@ -47,6 +47,7 @@ Zhiji_Registry::register_module('ops_console', array(
         array(
             'type'  => 'subheading',
             'title' => __( '② 运维权限', 'zhiji' ),
+            'dependency' => array('ops_console_enabled', '==', '1'),
         ),
         array(
             'id'         => 'ops_console_clear_enabled',
@@ -92,6 +93,7 @@ Zhiji_Registry::register_module('ops_console', array(
         array(
             'type'  => 'subheading',
             'title' => __( '③ 运维场景（各页面开关）', 'zhiji' ),
+            'dependency' => array('ops_console_enabled', '==', '1'),
         ),
         array(
             'id'         => 'ops_scene_claim_enabled',

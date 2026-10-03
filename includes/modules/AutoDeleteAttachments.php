@@ -98,6 +98,7 @@ add_action('before_delete_post', 'zhiji_auto_delete_attachments', 10, 1);
         array(
             'type'  => 'subheading',
             'title' => __( '① 删除范围', 'zhiji' ),
+            'dependency' => array('auto_delete_attachments_enabled', '==', '1'),
         ),
         array(
             'id'         => 'auto_delete_attachments_mode',

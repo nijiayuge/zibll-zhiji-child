@@ -152,6 +152,7 @@ zhiji_footer_add( 'exit-intent', function () {
         array(
             'type'  => 'subheading',
             'title' => __( '① 弹窗内容（标题与说明）', 'zhiji' ),
+            'dependency' => array('exit_intent_enabled', '==', '1'),
         ),
         array(
             'id'         => 'exit_intent_title',
@@ -172,6 +173,7 @@ zhiji_footer_add( 'exit-intent', function () {
         array(
             'type'  => 'subheading',
             'title' => __( '② 顶部图片与按钮', 'zhiji' ),
+            'dependency' => array('exit_intent_enabled', '==', '1'),
         ),
         array(
             'id'          => 'exit_intent_image',
@@ -200,6 +202,7 @@ zhiji_footer_add( 'exit-intent', function () {
         array(
             'type'  => 'subheading',
             'title' => __( '③ 挽留优惠码', 'zhiji' ),
+            'dependency' => array('exit_intent_enabled', '==', '1'),
         ),
         array(
             'id'          => 'exit_intent_coupon_code',
@@ -220,6 +223,7 @@ zhiji_footer_add( 'exit-intent', function () {
         array(
             'type'  => 'subheading',
             'title' => __( '④ 联动与行为', 'zhiji' ),
+            'dependency' => array('exit_intent_enabled', '==', '1'),
         ),
         array(
             'id'         => 'exit_intent_kanban_trigger',

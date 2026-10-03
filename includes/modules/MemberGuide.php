@@ -55,11 +55,13 @@ Zhiji_Registry::register_options('member_guide', array(
     array(
         'type'  => 'subheading',
         'title' => __( '① 迎新优惠码', 'zhiji' ),
+        'dependency' => array('member_guide_enabled', '==', '1'),
     ),
     array(
         'id'         => 'member_guide_welcome_coupon',
         'type'       => 'switcher',
         'title'      => '注册即发迎新优惠码',
+        'dependency' => array('member_guide_enabled', '==', '1'),
         'default'    => false,
         'desc'       => __('注册成功立刻发放一张迎新优惠码（「立刻可核销」是新会员激活的关键）。', 'zhiji'),
     ),
@@ -67,6 +69,7 @@ Zhiji_Registry::register_options('member_guide', array(
         'id'         => 'member_guide_coupon_scope',
         'type'       => 'select',
         'title'      => '迎新券档位',
+        'dependency' => array('member_guide_enabled', '==', '1'),
         'options'    => array(
             'login'  => __('登录档（默认）', 'zhiji'),
             'active' => __('活跃档', 'zhiji'),
@@ -77,11 +80,13 @@ Zhiji_Registry::register_options('member_guide', array(
     array(
         'type'  => 'subheading',
         'title' => __( '② 触达序列', 'zhiji' ),
+        'dependency' => array('member_guide_enabled', '==', '1'),
     ),
     array(
         'id'         => 'member_guide_seq',
         'type'       => 'textarea',
         'title'      => '触达序列',
+        'dependency' => array('member_guide_enabled', '==', '1'),
         'rows'       => 6,
         'sanitize'   => false,
         'placeholder' => "0|欢迎加入知集|这里是权益总览与新手指南…\n7|你已加入 7 天|试试用积分在商城兑换奖品…\n30|老朋友，好久不见|回顾一下你的专属权益…",

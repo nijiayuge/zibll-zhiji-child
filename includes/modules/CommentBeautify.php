@@ -117,6 +117,7 @@ add_filter('comment_footer_info', function ($info, $comment, $depth) {
         array(
             'type'  => 'subheading',
             'title' => __( '① B 站风格 UID 标签', 'zhiji' ),
+            'dependency' => array('comment_uid_enabled', '==', '1'),
         ),
         array(
             'id'      => 'comment_uid_enabled',
