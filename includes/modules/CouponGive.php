@@ -645,6 +645,151 @@ function zhiji_coupon_give_ops_cleared( $email ) {
 }
 
 /**
+ * 运维放行检查（统一入口：邮箱维度 + IP 维度）
+ *
+ * 三条限领规则（5.1 邮箱唯一 / 5.2 每邮箱限领 / 5.5 每用户仅限一次）共用本判定，
+ * 保证「重置并放行」对**全部**规则一致生效，不再出现「放行了 5.1 却被 5.5 拦住」。
+ *
+ * ┌ 为什么不能只用 zhiji_coupon_give_ops_cleared()（旧实现）
+ * │   它走 zhiji_claim_log_check()，后者内部 `if ('' === $email) return allow`
+ * │   —— 只能按**邮箱**查，无法按 IP/账号查；且它只看 claim_log，
+ * │      看不到「优惠码表里还有券」这个事实（5.2 / 5.5 恰恰读券码表）。
+ * └ 于是运维放行后用户仍被拦，必须手动「作废券」—— 这正是用户实测反馈的现象。
+ *
+ * 判定：满足任一即视为「运维已放行且放行尚未被消费」
+ *   A) 邮箱维度：claim_log 中该邮箱存在 cleared 记录（reason=cleared_by_ops）
+ *   B) IP 维度：该 IP 的最新 cleared 时间 > 该 IP 最后一次领券时间
+ *
+ * 「尚未被消费」保证只生效一次：放行 → 领一次 → 券码表时间更新 → 下次自动重新拦截。
+ *
+ * @param string $email 待校验邮箱
+ * @return bool true=跳过限领校验（可再领一次）
+ */
+function zhiji_coupon_give_ops_released( $email ) {
+	if ( zhiji_coupon_give_ops_cleared( $email ) ) {
+		return true;
+	}
+	return zhiji_coupon_give_ops_cleared_ip();
+}
+
+/**
+ * 运维放行检查（**全维度**：邮箱 / 账号 / IP，覆盖「每位用户仅限一次」规则）
+ *
+ * ---------------------------------------------------------------------
+ * 为什么必须单独存在（2026-10-03 实测踩坑的完整根因）：
+ *
+ * 「重置并放行」按钮只做一件事 —— 把 `wp_zhiji_claim_log` 里的记录
+ * UPDATE 成 status='cleared'。**它完全不碰优惠码表** `wp_zibpay_card_password`。
+ *
+ * 而「每位用户仅限一次」这条规则读的是**两个数据源**：
+ *   · zhiji_claim_log（放行会清）—— 5.1 规则读它，所以放行后 5.1 能过
+ *   · 优惠码表（放行**不清**）—— zhiji_coupon_give_has_received() 只读它
+ *
+ * 于是放行后 5.1 过了，却卡在 5.5：`has_received()` 仍为 true
+ * → 用户必须手动点「作废券」把券码表清掉才能领。这正是
+ * 「运维页重置放行后又出现『每位用户仅可领取一次挽留优惠』，
+ *  只有在点作废券才能领取」的真因。
+ *
+ * 另：zhiji_coupon_give_ops_cleared() 走 zhiji_claim_log_check()，而后者
+ * 内部 `if ('' === $email) return allow` —— 只能按邮箱查，**不支持 IP 维度**，
+ * 所以「换个邮箱再领」也拦不住的问题同样源于此。
+ *
+ * ---------------------------------------------------------------------
+ * 判定规则（只生效一次）：
+ *   取当前访客（同一 IP）在本场景下的**最新一条 cleared 记录的 cleared 时间**，
+ *   与「该 IP/账号名下最后一次领券时间」比较：
+ *     cleared_time > last_claim_time  → 放行尚未被消费 → 允许领取一次
+ *     cleared_time <= last_claim_time → 放行已被消费（或从未放行）→ 拦截
+ *
+ *   这样「放行 → 领一次 → 再领」会被重新拦下，符合「只生效一次」的预期，
+ *   不会把放行变成无限领取通道。
+ *
+ * @return bool true=运维已放行且尚未消费（跳过「仅限一次」拦截）
+ */
+function zhiji_coupon_give_ops_cleared_ip() {
+	if ( ! function_exists( 'zhiji_claim_log_table' ) ) {
+		return false;
+	}
+	$ip = zhiji_coupon_give_client_ip();
+	if ( '' === (string) $ip ) {
+		return false;
+	}
+	global $wpdb;
+	$table = zhiji_claim_log_table();
+	$scene = ZHIJI_COUPON_GIVE_CLAIM_SCENE;
+
+	// 取该 IP 下最新一条「已放行」记录的时间。
+	// 走 SQL 侧 ORDER BY cleared DESC 直接拿时间，不用再把整行拉回来判 id ——
+	// 相比旧实现更贴合语义：放行是 UPDATE 原地改 status，id 不变，
+	// 「比较 id」在混合了多个邮箱记录时会得出错误结论（旧实现的真实缺陷）。
+	$cleared_at = $wpdb->get_var(
+		$wpdb->prepare(
+			"SELECT cleared FROM {$table}
+			 WHERE scene = %s AND ip = %s AND status = 'cleared'
+			   AND cleared > '1970-01-01 00:00:00'
+			   AND ( meta NOT LIKE %s )
+			 ORDER BY cleared DESC LIMIT 1",
+			$scene,
+			$ip,
+			'%"fixture":true%'
+		)
+	);
+	if ( ! $cleared_at ) {
+		return false;
+	}
+
+	// 该 IP 名下「最后一次领券时间」——以优惠码表为准（与 has_received 同源）
+	$last_claim = zhiji_coupon_give_last_claim_time_by_ip( $ip );
+	if ( ! $last_claim ) {
+		// 券码表里没有该 IP 的券 → 本就不该被 has_received() 拦，交给它自己判断
+		return false;
+	}
+
+	return ( strtotime( (string) $cleared_at ) > strtotime( (string) $last_claim ) );
+}
+
+/**
+ * 取某 IP 名下最后一次领券时间（优惠码表）
+ *
+ * 与 zhiji_coupon_give_has_received() 同源（都读 wp_zibpay_card_password），
+ * 用于判断「运维放行」是否已被消费。
+ *
+ * @param string $ip 访客 IP
+ * @return string 'Y-m-d H:i:s'，无记录返回空串
+ */
+function zhiji_coupon_give_last_claim_time_by_ip( $ip ) {
+	if ( '' === (string) $ip ) {
+		return '';
+	}
+	global $wpdb;
+	// ⚠️ 不能用 ZibDB::name()（返回查询对象不是字符串），见 has_received() 注释
+	$table = $wpdb->prefix . 'zibpay_card_password';
+
+	$rows = $wpdb->get_results(
+		$wpdb->prepare(
+			"SELECT create_time, meta FROM {$table}
+			 WHERE type = %s AND meta LIKE %s
+			 ORDER BY create_time DESC LIMIT 50",
+			'coupon',
+			'%email%'
+		)
+	);
+	if ( ! $rows ) {
+		return '';
+	}
+	foreach ( $rows as $row ) {
+		$meta = maybe_unserialize( $row->meta );
+		if ( ! is_array( $meta ) || empty( $meta['email'] ) ) {
+			continue;
+		}
+		if ( ! empty( $meta['ip'] ) && $meta['ip'] === $ip ) {
+			return (string) $row->create_time;
+		}
+	}
+	return '';
+}
+
+/**
  * 累计「同一邮箱重复领取」被拦截次数（供运维总览评估规则命中情况）
  *
  * @return void
@@ -740,8 +885,12 @@ function zhiji_coupon_give_ajax() {
 	}
 
 	// 5. 领取前校验之一：领取记录持久化（同一邮箱仅限领取一次）
-	//    运维已在后台「重置并放行」的邮箱跳过「邮箱维度」限领，使运维动作一键生效
-	$ops_cleared = zhiji_coupon_give_ops_cleared( $email );
+	//    运维已放行的邮箱跳过「邮箱维度」限领，使运维动作一键生效
+	//
+	//    ⚠️ 2026-10-03：统一用 zhiji_coupon_give_ops_released() 判定，
+	//    它同时覆盖 claim_log（按邮箱）与优惠码表（按邮箱/IP）两个数据源。
+	//    原因见该函数注释：「重置并放行」不碰优惠码表，而下面 5.2 读的正是它。
+	$ops_cleared = zhiji_coupon_give_ops_released( $email );
 	if ( zhiji_get_option( 'coupon_give_unique_email', 1 ) && ! $ops_cleared ) {
 		$chk = zhiji_claim_log_check( array( 'scene' => ZHIJI_COUPON_GIVE_CLAIM_SCENE, 'email' => $email ) );
 		if ( empty( $chk['allow'] ) ) {
@@ -751,6 +900,8 @@ function zhiji_coupon_give_ajax() {
 	}
 
 	// 5.2 每邮箱限领数量（历史规则；运维已放行的邮箱跳过，避免放行后被旧规则二次拦截）
+	//      本规则读的是**优惠码表**（count_by_email），所以放行判定必须能穿透到券码表，
+	//      否则「重置并放行」后仍被这里拦下 —— 与 5.5 同一个根因。
 	$limit   = max( 1, (int) zhiji_get_option( 'coupon_give_limit_per', 1 ) );
 	$already = zhiji_coupon_give_count_by_email( $email );
 	if ( ! $ops_cleared && $already >= $limit ) {
@@ -758,7 +909,24 @@ function zhiji_coupon_give_ajax() {
 	}
 
 	// 5.5 每位用户仅限领取一次（同账号 / 同 IP，换邮箱也拦截）
-	if ( zhiji_get_option( 'coupon_give_once_per_user', 1 ) && zhiji_coupon_give_has_received() ) {
+	//
+	// ⚠️ 2026-10-03 修复：本规则的「运维放行」此前**完全无效**。
+	//
+	//    根因不是「缺 $ops_cleared 豁免」这么简单 —— 本规则读的是**两个数据源**：
+	//      · zhiji_claim_log  → 「重置并放行」按钮会 UPDATE 成 cleared
+	//      · 优惠码表          → 「重置并放行」**完全不碰**
+	//    而 zhiji_coupon_give_has_received() 只读优惠码表，所以放行后它仍返回 true，
+	//    用户依然被拦；必须手动点「作废券」清券码表才能领（用户实测反馈的现象）。
+	//
+	//    且旧 $ops_cleared 走 zhiji_claim_log_check()，后者 `if ('' === $email) return allow`
+	//    —— 只能按**邮箱**查，本条规则却按**账号/IP** 判，所以「换个邮箱再领」也漏放行。
+	//
+	//    现在 $ops_cleared 统一由 zhiji_coupon_give_ops_released() 判定，
+	//    同时覆盖 claim_log（按邮箱）与优惠码表（按邮箱/IP）两个数据源，
+	//    放行后用户可立即再领一次，领完即重新占用（「只生效一次」）。
+	if ( ! $ops_cleared
+		&& zhiji_get_option( 'coupon_give_once_per_user', 1 )
+		&& zhiji_coupon_give_has_received() ) {
 		wp_send_json_error( array( 'msg' => __( '每位用户仅可领取一次挽留优惠，感谢支持', 'zhiji' ) ) );
 	}
 
