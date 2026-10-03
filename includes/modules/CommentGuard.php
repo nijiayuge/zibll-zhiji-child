@@ -110,6 +110,10 @@ zhiji_footer_add( 'comment-guard', function () {
             'default' => false,
         ),
         array(
+            'type'  => 'subheading',
+            'title' => __( '① 检测规则', 'zhiji' ),
+        ),
+        array(
             'id'         => 'comment_guard_words',
             'type'       => 'textarea',
             'title'      => '敏感词列表',
@@ -131,6 +135,10 @@ zhiji_footer_add( 'comment-guard', function () {
             'default'    => 0,
             'desc'       => '超过该字数的评论置为待审核，0 表示不限制',
             'dependency' => array('comment_guard_enabled', '==', '1'),
+        ),
+        array(
+            'type'  => 'subheading',
+            'title' => __( '② 前台提示', 'zhiji' ),
         ),
         array(
             'id'         => 'comment_guard_hint',

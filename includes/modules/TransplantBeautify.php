@@ -96,12 +96,20 @@ add_filter('the_content', function ($content) {
             'default' => true,
         ),
         array(
+            'type'  => 'subheading',
+            'title' => __( '① 文章字数与阅读时间', 'zhiji' ),
+        ),
+        array(
             'id'         => 'transplant_wcr',
             'type'       => 'switcher',
             'title'      => '文章字数和阅读时间',
             'default'    => true,
             'desc'       => '在文章内容末尾显示「共计X字，阅读大约X分钟」。',
             'dependency' => array('transplant_enabled', '==', '1'),
+        ),
+        array(
+            'type'  => 'subheading',
+            'title' => __( '② 阅读速度与显示位置', 'zhiji' ),
         ),
         array(
             'id'         => 'transplant_wcr_speed',

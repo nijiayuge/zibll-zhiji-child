@@ -128,6 +128,10 @@ add_filter('the_content', 'zhiji_auto_keyword_link_process', 20);
             'default' => false,
         ),
         array(
+            'type'  => 'subheading',
+            'title' => __( '① 替换规则', 'zhiji' ),
+        ),
+        array(
             'id'         => 'auto_keyword_link_max',
             'type'       => 'number',
             'title'      => '每个关键词最大替换次数',
@@ -136,6 +140,10 @@ add_filter('the_content', 'zhiji_auto_keyword_link_process', 20);
             'min'        => 1,
             'max'        => 5,
             'dependency' => array('auto_keyword_link_enabled', '==', '1'),
+        ),
+        array(
+            'type'  => 'subheading',
+            'title' => __( '② 自定义关键词映射', 'zhiji' ),
         ),
         array(
             'id'         => 'auto_keyword_link_custom',

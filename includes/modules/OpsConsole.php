@@ -34,11 +34,19 @@ Zhiji_Registry::register_module('ops_console', array(
             'default' => false,
         ),
         array(
+            'type'  => 'subheading',
+            'title' => __( '① 总开关与基础设置', 'zhiji' ),
+        ),
+        array(
             'id'      => 'ops_console_enabled',
             'type'    => 'switcher',
             'title'   => '启用运维管理页面',
             'default' => true,
             'desc'    => '启用后后台左侧出现「知集运维」菜单，集中管理需要人工干预的业务状态与可变配置。',
+        ),
+        array(
+            'type'  => 'subheading',
+            'title' => __( '② 运维权限', 'zhiji' ),
         ),
         array(
             'id'         => 'ops_console_clear_enabled',
@@ -80,6 +88,10 @@ Zhiji_Registry::register_module('ops_console', array(
             'default'    => '0',
             'desc'       => '0 = 永久保留；大于 0 时每天自动清理超过该天数的领取记录。',
             'dependency' => array('ops_console_enabled', '==', '1'),
+        ),
+        array(
+            'type'  => 'subheading',
+            'title' => __( '③ 运维场景（各页面开关）', 'zhiji' ),
         ),
         array(
             'id'         => 'ops_scene_claim_enabled',

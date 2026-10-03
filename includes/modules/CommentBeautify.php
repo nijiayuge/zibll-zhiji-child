@@ -115,6 +115,10 @@ add_filter('comment_footer_info', function ($info, $comment, $depth) {
             'desc'    => '评论区圆角卡片、hover 上浮与品牌色描边（自动适配暗色模式）。',
         ),
         array(
+            'type'  => 'subheading',
+            'title' => __( '① B 站风格 UID 标签', 'zhiji' ),
+        ),
+        array(
             'id'      => 'comment_uid_enabled',
             'type'    => 'switcher',
             'title'   => '启用 B 站风格 UID 标签',

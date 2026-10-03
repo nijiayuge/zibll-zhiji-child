@@ -140,6 +140,10 @@ function zhiji_weiyu_like()
             'desc'    => '开启后注册 shuoshuo 自定义文章类型，并提供微语时间线页面模板（页面属性中选择）。',
         ),
         array(
+            'type'  => 'subheading',
+            'title' => __( '① 列表展示', 'zhiji' ),
+        ),
+        array(
             'id'         => 'weiyu_posts_per_page',
             'type'       => 'number',
             'title'      => '每页显示条数',
@@ -148,6 +152,10 @@ function zhiji_weiyu_like()
             'min'        => 5,
             'max'        => 50,
             'dependency' => array('weiyu_enabled', '==', '1'),
+        ),
+        array(
+            'type'  => 'subheading',
+            'title' => __( '② 互动元素', 'zhiji' ),
         ),
         array(
             'id'         => 'weiyu_show_avatar',

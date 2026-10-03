@@ -40,6 +40,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
             // 勾选框文字
             array(
+                'type'  => 'subheading',
+                'title' => __( '① 前台展示', 'zhiji' ),
+            ),
+            array(
                 'id'         => 'email_sub_label',
                 'type'       => 'text',
                 'title'      => '勾选框文字',
@@ -49,6 +53,10 @@ if ( ! defined( 'ABSPATH' ) ) {
             ),
 
             // 新文章通知
+            array(
+                'type'  => 'subheading',
+                'title' => __( '② 新文章通知', 'zhiji' ),
+            ),
             array(
                 'id'         => 'email_sub_new_post',
                 'type'       => 'switcher',
@@ -73,6 +81,10 @@ if ( ! defined( 'ABSPATH' ) ) {
             ),
 
             // 订阅送奖励
+            array(
+                'type'  => 'subheading',
+                'title' => __( '③ 订阅奖励', 'zhiji' ),
+            ),
             array(
                 'id'         => 'email_sub_reward_enabled',
                 'type'       => 'switcher',

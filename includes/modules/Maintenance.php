@@ -125,6 +125,10 @@ add_action('template_redirect', function () {
             'desc'    => '开启后，前台访客将看到维护页（HTTP 503），登录用户和白名单IP不受影响。',
         ),
         array(
+            'type'  => 'subheading',
+            'title' => __( '① 维护页文案', 'zhiji' ),
+        ),
+        array(
             'id'         => 'maintenance_title',
             'type'       => 'text',
             'title'      => '维护页标题',
@@ -139,6 +143,10 @@ add_action('template_redirect', function () {
             'desc' => __( '维护模式下展示的说明文字（可写维护原因与恢复时间）。', 'zhiji' ),
             'default'    => '我们正在对站点进行升级维护，预计很快恢复。给您带来不便，敬请谅解！',
             'dependency' => array('maintenance_enabled', '==', '1'),
+        ),
+        array(
+            'type'  => 'subheading',
+            'title' => __( '② 访问控制', 'zhiji' ),
         ),
         array(
             'id'         => 'maintenance_allow_login',

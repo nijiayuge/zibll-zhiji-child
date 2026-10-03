@@ -43,6 +43,10 @@ Zhiji_Registry::register_options('quiz', array(
             . '正确序号只存服务端，前端抽题不回传答案；答对发积分，单日积分封顶。', 'zhiji'),
     ),
     array(
+        'type'  => 'subheading',
+        'title' => __( '① 题库', 'zhiji' ),
+    ),
+    array(
         'id'         => 'quiz_pool',
         'type'       => 'textarea',
         'title'      => '题库',
@@ -51,8 +55,16 @@ Zhiji_Registry::register_options('quiz', array(
         'placeholder' => "知集子主题基于哪个父主题？|Vela;子比主题(Zibll);Storefront|2|子比主题是父主题。",
         'desc'       => __('选项用半角分号分隔。', 'zhiji'),
     ),
+    array(
+        'type'  => 'subheading',
+        'title' => __( '② 答题规则', 'zhiji' ),
+    ),
     array('id' => 'quiz_count', 'type' => 'number', 'title' => '每次抽题数', 'default' => 5, 'min' => 1, 'max' => 20),
     array('id' => 'quiz_daily', 'type' => 'number', 'title' => '每日答题次数上限', 'default' => 3, 'min' => 1, 'max' => 50),
+    array(
+        'type'  => 'subheading',
+        'title' => __( '③ 积分奖励', 'zhiji' ),
+    ),
     array('id' => 'quiz_points_per', 'type' => 'number', 'title' => '每答对 1 题积分', 'default' => 1, 'min' => 0, 'max' => 100),
     array('id' => 'quiz_points_daily_max', 'type' => 'number', 'title' => '单日积分上限', 'default' => 15, 'min' => 0, 'max' => 500,
         'desc' => __('防刷红线：单日答题积分到此封顶（行业口径 15 分/日）。', 'zhiji')),

@@ -37,6 +37,10 @@ Zhiji_Registry::register_options('time_machine', array(
         'default' => false,
     ),
     array(
+        'type'  => 'subheading',
+        'title' => __( '① 展示规则', 'zhiji' ),
+    ),
+    array(
         'id'         => 'timemachine_years',
         'type'       => 'number',
         'title'      => '回溯年数',
@@ -54,6 +58,10 @@ Zhiji_Registry::register_options('time_machine', array(
         'min'        => 1,
         'max'        => 30,
         'dependency' => array('timemachine_enabled', '==', '1'),
+    ),
+    array(
+        'type'  => 'subheading',
+        'title' => __( '② 文章页自动追加', 'zhiji' ),
     ),
     array(
         'id'         => 'timemachine_auto',

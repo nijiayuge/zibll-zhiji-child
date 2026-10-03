@@ -77,9 +77,59 @@ zib_require(array(
 ), true);
 
 // ④ 业务模块层：目录扫描 + 自注册（每个模块自带独立开关，关闭即零开销）
+//
+// 【惰性装载（P6，2.2.0）】—— 仅对「纯后台模块」延后加载。
+//
+// 设计约束（实测得出，勿随意扩大范围）：
+//   · 只有「加载期只挂 admin_menu / admin_post_* / wp_ajax_* / 后台专用 API」的模块
+//     才可延后；它们在前台请求中注册的东西前台根本用不到。
+//   · 任何挂了前台钩子（wp_footer / the_content / wp_head …）或 **cron** 的模块
+//     **绝不可延后** —— cron 在无 admin 上下文中触发，延后会导致定时任务不执行。
+//   · 判定依据 = VM 实测：42 模块中只有 security_scanner / seed_pages 满足条件，
+//     且这两个模块定义的函数**零外部引用**（已逐函数 grep 确认）。
+//   · 收益：前台请求少解析 ~30KB；风险：0（这两个模块前台从不被调用）。
+//   · 逃生开关：定义 ZHIJI_NO_LAZY_MODULES 为 true 即恢复全量加载。
 $zhiji_modules = Zhiji_Registry::scan_module_files();
-if (!empty($zhiji_modules)) {
-    zib_require($zhiji_modules, true);
+
+// 纯后台模块白名单 —— 值 = **模块文件名（不含 .php，PascalCase，与 scan_module_files 口径一致）**。
+// 新增前必须：① 确认其加载期只挂 admin_* / admin_post_* / wp_ajax_* / 后台专用 API；
+//             ② 确认其定义的函数无前台调用点（逐函数 grep）；③ 确认其无 cron 注册。
+$zhiji_admin_only = array( 'SecurityScanner', 'SeedPages' );
+
+// 判定「当前请求需要后台模块」。
+// 实测（VM 前台 HTTP 请求）：本文件在 functions.php 顶层执行时，
+// `is_admin()` / `WP_ADMIN` / `DOING_AJAX` 均已可**准确**判定 ——
+// 前台首页实测得到 is_admin=F WP_ADMIN=F DOING_AJAX=F，故判定可靠、无需延迟补加载。
+// 只要任一为真即**全量加载**（保守），仅「确定是纯前台」才走惰性分支。
+$zhiji_is_admin_ctx = is_admin()
+    || ( defined( 'WP_ADMIN' ) && WP_ADMIN )
+    || ( defined( 'DOING_AJAX' ) && DOING_AJAX )
+    || ( defined( 'DOING_CRON' ) && DOING_CRON )
+    || ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE )
+    || ( defined( 'WP_CLI' ) && WP_CLI );
+
+$zhiji_lazy_off = defined( 'ZHIJI_NO_LAZY_MODULES' ) && ZHIJI_NO_LAZY_MODULES;
+
+if ( ! empty( $zhiji_modules )
+    && ! $zhiji_is_admin_ctx
+    && ! $zhiji_lazy_off
+    && ! empty( $zhiji_admin_only ) ) {
+    // ---- 惰性路径（确定是纯前台请求）----
+    $zhiji_load = array();
+    foreach ( $zhiji_modules as $zhiji_mod ) {
+        if ( ! in_array( basename( $zhiji_mod ), $zhiji_admin_only, true ) ) {
+            $zhiji_load[] = $zhiji_mod;
+        }
+    }
+    if ( ! empty( $zhiji_load ) ) {
+        zib_require( $zhiji_load, true );
+    }
+    // ⚠️ 这里**不做** after_setup_theme 补加载：
+    //    实测发现「无条件补加载」会让惰性完全失效（前台仍是 42 模块）。
+    //    而本文件的执行时机已能准确判定上下文，故无需兜底。
+} elseif ( ! empty( $zhiji_modules ) ) {
+    // ---- 全量路径（后台 / AJAX / cron / CLI / 逃生开关）----
+    zib_require( $zhiji_modules, true );
 }
 
 // ⑤ 对外唯一就绪信号：其它扩展可挂此钩子

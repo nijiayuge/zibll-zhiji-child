@@ -450,12 +450,20 @@ function zhiji_reward_notify_register_options() {
 					'desc'    => __( '全站所有功能发放奖励（积分/余额/优惠码/会员/免单券）时统一发送站内系统通知 + 邮件。', 'zhiji' ),
 				),
 				array(
+				    'type'  => 'subheading',
+				    'title' => __( '① 站内信通知', 'zhiji' ),
+				),
+				array(
 					'dependency' => array( 'reward_notify_enabled', '==', '1' ),
 					'id'         => 'reward_notify_msg_enabled',
 					'type'       => 'switcher',
 					'title'      => __( '站内系统通知', 'zhiji' ),
 					'default'    => true,
 					'desc'       => __( '写入父主题消息中心（type=system，前台显示「系统」）。', 'zhiji' ),
+				),
+				array(
+				    'type'  => 'subheading',
+				    'title' => __( '② 邮件通知', 'zhiji' ),
 				),
 				array(
 					'dependency' => array( 'reward_notify_enabled', '==', '1' ),

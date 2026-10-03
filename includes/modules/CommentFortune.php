@@ -414,6 +414,10 @@ function zhiji_comment_fortune_register_options() {
 					'desc'    => __( '当日评论总数每满 N 条，命中福袋位的登录用户下次打开页面时收到「今日第 X 位锦鲤」彩蛋弹窗，并随机获得积分 / 余额 / 优惠码奖励，给评论互动加惊喜。', 'zhiji' ),
 				),
 				array(
+				    'type'  => 'subheading',
+				    'title' => __( '① 触发规则', 'zhiji' ),
+				),
+				array(
 					'dependency' => array( 'comment_fortune_enabled', '==', '1' ),
 					'id'         => 'comment_fortune_every',
 					'type'       => 'number',
@@ -429,6 +433,10 @@ function zhiji_comment_fortune_register_options() {
 					'type'    => 'submessage',
 					'style'   => 'info',
 					'content' => __( '奖励类型、权重与数值区间已统一到「用户&互动 → 奖励中心」配置，本页保留福袋的触发规则与文案。', 'zhiji' ),
+				),
+				array(
+				    'type'  => 'subheading',
+				    'title' => __( '② 福袋文案', 'zhiji' ),
 				),
 				array(
 					'dependency' => array( 'comment_fortune_enabled', '==', '1' ),

@@ -150,6 +150,10 @@ zhiji_footer_add( 'exit-intent', function () {
             'desc'    => '鼠标移出视口顶部时弹出挽留层，每次会话仅弹一次。',
         ),
         array(
+            'type'  => 'subheading',
+            'title' => __( '① 弹窗内容（标题与说明）', 'zhiji' ),
+        ),
+        array(
             'id'         => 'exit_intent_title',
             'type'       => 'text',
             'title'      => '弹窗标题',
@@ -164,6 +168,10 @@ zhiji_footer_add( 'exit-intent', function () {
             'desc'       => __( '弹窗说明文字，用于解释挽留理由。', 'zhiji' ),
             'default'    => '还有超多优质资源等你发现，先逛逛再走吧！',
             'dependency' => array('exit_intent_enabled', '==', '1'),
+        ),
+        array(
+            'type'  => 'subheading',
+            'title' => __( '② 顶部图片与按钮', 'zhiji' ),
         ),
         array(
             'id'          => 'exit_intent_image',
@@ -190,6 +198,10 @@ zhiji_footer_add( 'exit-intent', function () {
             'dependency'  => array('exit_intent_enabled', '==', '1'),
         ),
         array(
+            'type'  => 'subheading',
+            'title' => __( '③ 挽留优惠码', 'zhiji' ),
+        ),
+        array(
             'id'          => 'exit_intent_coupon_code',
             'type'        => 'text',
             'title'       => '挽留优惠码',
@@ -204,6 +216,10 @@ zhiji_footer_add( 'exit-intent', function () {
             'desc'       => __( '优惠码区域的说明文字。', 'zhiji' ),
             'default'    => '专属优惠码，下单立减！',
             'dependency' => array('exit_intent_enabled', '==', '1'),
+        ),
+        array(
+            'type'  => 'subheading',
+            'title' => __( '④ 联动与行为', 'zhiji' ),
         ),
         array(
             'id'         => 'exit_intent_kanban_trigger',

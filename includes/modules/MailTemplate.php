@@ -467,6 +467,10 @@ if ( class_exists( 'CSF' ) ) {
 				'default' => true,
 			),
 			array(
+			    'type'  => 'subheading',
+			    'title' => __( '① 测试发信', 'zhiji' ),
+			),
+			array(
 				'title'   => '测试收件邮箱',
 				'label'   => '填写您自己的邮箱，用于接收测试邮件（默认使用站点管理员邮箱）',
 				'id'      => 'mail_test_to',

@@ -53,6 +53,10 @@ Zhiji_Registry::register_options('member_guide', array(
             . '其余按「注册日 + 天数」经站内消息 + 角标送达；每用户每条只发一次（幂等）。', 'zhiji'),
     ),
     array(
+        'type'  => 'subheading',
+        'title' => __( '① 迎新优惠码', 'zhiji' ),
+    ),
+    array(
         'id'         => 'member_guide_welcome_coupon',
         'type'       => 'switcher',
         'title'      => '注册即发迎新优惠码',
@@ -69,6 +73,10 @@ Zhiji_Registry::register_options('member_guide', array(
             'vip'    => __('VIP 档', 'zhiji'),
         ),
         'default'    => 'login',
+    ),
+    array(
+        'type'  => 'subheading',
+        'title' => __( '② 触达序列', 'zhiji' ),
     ),
     array(
         'id'         => 'member_guide_seq',
