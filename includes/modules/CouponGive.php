@@ -1719,6 +1719,16 @@ function zhiji_coupon_give_source_label( $meta ) {
 		// 均因缺映射而回落显示 title「奖励中心专属优惠码」（占 84% 的"来源清一色"成因）
 		'member_guide'         => __( '注册迎新', 'zhiji' ),
 		'email_subscribe'      => __( '邮件订阅', 'zhiji' ),
+		// 2026-10-03 补全：points_mall / bargain / seckill 三个模块虽已下线
+		//（6133dd3 彻底移除 18 个模块），但**历史券仍在库中**（实测 points_mall=55 张）。
+		// 缺映射时这些券会回落显示券标题 → 来源列失真。保留映射仅用于**历史数据可读**，
+		// 不影响任何在跑业务（模块已不在，不会产生新券）。
+		'points_mall'          => __( '积分商城兑换', 'zhiji' ),
+		'bargain'              => __( '砍价奖励', 'zhiji' ),
+		'seckill'              => __( '积分秒杀', 'zhiji' ),
+		// 注意：`regression_test` **刻意不加映射** —— 它是联调套件生成的临时券 source，
+		// 用作「未知 source → 回落显示 title」这条分支的活样本（见 zhiji_it_coupon_source.py S1）。
+		// 给它加映射会让该分支失去覆盖，测试随之失去意义。
 	) );
 
 	$source = isset( $meta['source'] ) ? trim( (string) $meta['source'] ) : '';
